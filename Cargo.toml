@@ -1,0 +1,23 @@
+[package]
+name = "bonsai"
+version = "0.1.0"
+authors = ["Pierre Talbot <ptalbot@hyc.io>"]
+
+description = "Language for specifying search strategies."
+repository = "https://github.com/ptal/bonsai"
+keywords = ["constraint", "language"]
+license = "Apache-2.0"
+
+[lib]
+
+path = "src/lib.rs"
+crate_type = ["dylib"]
+plugin = true
+
+[dependencies]
+pcp = { git = "https://github.com/ptal/pcp" }
+oak = "^0.4.1"
+oak_runtime = "^0.4.0"
+intervallum = "^0.5.5"
+gcollections = "^0.2.2"
+ama = "^0.1.3"
