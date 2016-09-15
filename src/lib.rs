@@ -28,6 +28,7 @@ use rustc_plugin::Registry;
 mod rust;
 mod code_gen;
 mod grammar;
+mod grammar2;
 // mod ast;
 
 #[plugin_registrar]
