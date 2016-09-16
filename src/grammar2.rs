@@ -17,66 +17,288 @@
 grammar! bonsai2 {
   // #![show_api]
 
+  pub type Program = Vec<Item>;
+
+  pub enum Item {
+    Statement(Stmt),
+    Fn(Function)
+  }
+
+  pub type Block = Vec<Stmt>;
+  pub type JavaTy = String;
+
+  pub struct Function {
+    name: String,
+    params: Vec<String>,
+    body: Block
+  }
+
+  pub enum Stmt {
+    Par(Vec<Block>),
+    Space(Vec<Block>),
+    Let(LetDecl),
+    LetInStore(String, String, Expr),
+    When(EntailmentRel, Block),
+    Pause,
+    Trap(String, Block),
+    Exit(String),
+    Loop(Block),
+    FnCall(String, Vec<String>),
+    Tell(Var, Expr)
+  }
+
+  pub struct LetDecl {
+    transient: bool,
+    var: String,
+    java_ty: Option<JavaTy>,
+    spacetime: Spacetime,
+    expr: Expr
+  }
+
+  pub struct EntailmentRel {
+    left: StreamVar,
+    right: Expr
+  }
+
+  pub struct Var {
+    name: String,
+    args: Vec<Var>
+  }
+
+  pub struct StreamVar {
+    name: String,
+    past: usize,
+    args: Vec<StreamVar>
+  }
+
+  pub enum Spacetime {
+    SingleSpace,
+    SingleTime,
+    WorldLine,
+    Location(String)
+  }
+
+  pub enum Expr {
+    JavaNew(String, Vec<Expr>),
+    JavaObjectCall(String, Vec<JavaCall>),
+    Number(u64),
+    StringLiteral(String),
+    Variable(StreamVar)
+  }
+
+  pub struct JavaCall {
+    property: String, // can be an attribute or a method.
+    args: Vec<Expr>
+  }
+
+  use std::str::FromStr;
+
   program = spacing item+
 
   item
-    = stmt_list
-    / FN identifier LPAREN list_ident RPAREN LBRACE stmt_list RBRACE
+    = stmt > make_stmt_item
+    / FN identifier LPAREN list_ident RPAREN block > make_function_item
 
-  list_ident = identifier (COMMA identifier)* / ""
+  fn make_stmt_item(stmt: Stmt) -> Item {
+    Item::Statement(stmt)
+  }
+
+  fn make_function_item(name: String, params: Vec<String>, body: Block) -> Item {
+    Item::Fn(Function {
+      name: name,
+      params: params,
+      body: body
+    })
+  }
+
+  list_ident
+    = identifier (COMMA identifier)* > make_list_ident
+    / "" > empty_ident_list
+
+  fn make_list_ident(first: String, rest: Vec<String>) -> Vec<String> {
+    extend_front(first, rest)
+  }
+
+  fn empty_ident_list() -> Vec<String> {
+    vec![]
+  }
 
   stmt_list = stmt+
 
+  block = LBRACE stmt_list RBRACE
+
   stmt
-    = PAR BARBAR? stmt_list (BARBAR stmt_list)* END
-    / SPACE BARBAR? stmt_list (BARBAR stmt_list)* END
-    / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON
-    / LET identifier EQ identifier LEFT_ARROW expr SEMI_COLON
-    / WHEN entailment LBRACE stmt_list RBRACE
-    / PAUSE SEMI_COLON
-    / TRAP identifier LBRACE stmt_list RBRACE
-    / EXIT identifier SEMI_COLON
-    / LOOP LBRACE stmt_list RBRACE
-    / identifier LPAREN list_ident RPAREN SEMI_COLON
-    / var LEFT_ARROW expr SEMI_COLON
+    = PAR BARBAR? stmt_list (BARBAR stmt_list)* END > make_par
+    / SPACE BARBAR? stmt_list (BARBAR stmt_list)* END > make_space
+    / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON > make_let
+    / LET identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store
+    / WHEN entailment block > make_when
+    / PAUSE SEMI_COLON > make_pause
+    / TRAP identifier block > make_trap
+    / EXIT identifier SEMI_COLON > make_exit
+    / LOOP block > make_loop
+    / identifier LPAREN list_ident RPAREN SEMI_COLON > make_fn_call
+    / var LEFT_ARROW expr SEMI_COLON > make_tell
+
+  fn make_par(first: Block, rest: Vec<Block>) -> Stmt {
+    Stmt::Par(extend_front(first, rest))
+  }
+
+  fn make_space(first: Block, rest: Vec<Block>) -> Stmt {
+    Stmt::Space(extend_front(first, rest))
+  }
+
+  fn make_let(transient: Option<()>, var_name: String,
+    java_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr) -> Stmt
+  {
+    let let_decl = LetDecl {
+      transient: transient.is_some(),
+      var: var_name,
+      java_ty: java_ty,
+      spacetime: spacetime,
+      expr: expr
+    };
+    Stmt::Let(let_decl)
+  }
+
+  fn make_let_in_store(location: String, store: String, expr: Expr) -> Stmt {
+    Stmt::LetInStore(location, store, expr)
+  }
+
+  fn make_when(entailment: EntailmentRel, body: Block) -> Stmt {
+    Stmt::When(entailment, body)
+  }
+
+  fn make_pause() -> Stmt {
+    Stmt::Pause
+  }
+
+  fn make_trap(name: String, block: Block) -> Stmt {
+    Stmt::Trap(name, block)
+  }
+
+  fn make_exit(name: String) -> Stmt {
+    Stmt::Exit(name)
+  }
+
+  fn make_loop(block: Block) -> Stmt {
+    Stmt::Loop(block)
+  }
+
+  fn make_fn_call(fn_name: String, args: Vec<String>) -> Stmt {
+    Stmt::FnCall(fn_name, args)
+  }
+
+  fn make_tell(var: Var, expr: Expr) -> Stmt {
+    Stmt::Tell(var, expr)
+  }
 
   expr
     = java_expr
-    / stream_var
+    / stream_var > make_stream_var_expr
+
+  fn make_stream_var_expr(var: StreamVar) -> Expr { Expr::Variable(var) }
 
   java_ty
     = identifier
 
   // We consider single identifier to be part of bonsai language.
   java_expr
-    = NEW identifier LPAREN list_expr RPAREN
-    / identifier (DOT identifier (LPAREN list_expr RPAREN)?)+
-    / number
-    / string_literal
+    = NEW identifier LPAREN list_expr RPAREN > java_new
+    / identifier java_call+ > java_object_calls
+    / number > make_number_expr
+    / string_literal > make_string_literal
+
+  fn java_new(class_name: String, args: Vec<Expr>) -> Expr {
+    Expr::JavaNew(class_name, args)
+  }
+
+  fn java_object_calls(object: String, calls: Vec<JavaCall>) -> Expr {
+    Expr::JavaObjectCall(object, calls)
+  }
+
+  fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
+  fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
+
+  java_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_call
+
+  fn make_java_call(property: String, args: Option<Vec<Expr>>) -> JavaCall {
+    JavaCall {
+      property: property,
+      args: args.unwrap_or(vec![])
+    }
+  }
 
   list_expr
-    = expr (COMMA expr)*
-    / ""
+    = expr (COMMA expr)* > make_list_expr
+    / "" > empty_expr_list
 
-  entailment = stream_var ENTAILMENT expr
+  fn make_list_expr(first: Expr, rest: Vec<Expr>) -> Vec<Expr> {
+    extend_front(first, rest)
+  }
 
-  stream_var = PRE* identifier (LBRACKET list_stream_var RBRACKET)?
-  list_stream_var = stream_var (COMMA stream_var)*
+  fn empty_expr_list() -> Vec<Expr> {
+    vec![]
+  }
 
-  var = identifier (LBRACKET list_var RBRACKET)?
-  list_var = var (COMMA var)*
+  entailment = stream_var ENTAILMENT expr > make_entailment_rel
 
-  spacetime = WORLD_LINE / SINGLE_TIME / SINGLE_SPACE / identifier
+  fn make_entailment_rel(left: StreamVar, right: Expr) -> EntailmentRel {
+    EntailmentRel {
+      left: left,
+      right: right
+    }
+  }
 
-  identifier = !digit !(keyword !ident_char) ident_char+ spacing -> (^) //> to_string
+  stream_var = PRE* identifier (LBRACKET list_stream_var RBRACKET)? > make_stream_var
+  list_stream_var = stream_var (COMMA stream_var)* > concat_list_stream_var
+
+  fn make_stream_var(past: Vec<()>, name: String, args: Option<Vec<StreamVar>>) -> StreamVar {
+    StreamVar {
+      name: name,
+      past: past.len(),
+      args: args.unwrap_or(vec![])
+    }
+  }
+
+  fn concat_list_stream_var(first: StreamVar, rest: Vec<StreamVar>) -> Vec<StreamVar> {
+    extend_front(first, rest)
+  }
+
+  var = identifier (LBRACKET list_var RBRACKET)? > make_var
+  list_var = var (COMMA var)* > concat_list_var
+
+  fn make_var(name: String, args: Option<Vec<Var>>) -> Var {
+    Var {
+      name: name,
+      args: args.unwrap_or(vec![])
+    }
+  }
+
+  fn concat_list_var(first: Var, rest: Vec<Var>) -> Vec<Var> {
+    extend_front(first, rest)
+  }
+
+  spacetime
+    = WORLD_LINE > world_line
+    / SINGLE_TIME > single_time
+    / SINGLE_SPACE > single_space
+    / identifier > location_spacetime
+
+  fn world_line() -> Spacetime { Spacetime::WorldLine }
+  fn single_time() -> Spacetime { Spacetime::SingleTime }
+  fn single_space() -> Spacetime { Spacetime::SingleSpace }
+  fn location_spacetime(loc: String) -> Spacetime { Spacetime::Location(loc) }
+
+  identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
 
-  number = digits -> (^) //> make_number
-  digits = digit+ (UNDERSCORE* digit)* //> concat
+  number = digits > make_number
+  digits = digit+ (UNDERSCORE* digit)* > concat
   digit = ["0-9"]
 
   // TODO: proper escape mechanism
-  string_literal = "\"" (!"\"" .)* "\"" -> (^)
+  string_literal = "\"" (!"\"" .)* "\"" > to_string
 
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
@@ -89,8 +311,8 @@ grammar! bonsai2 {
   PAR = "par" kw_tail
   SPACE = "space" kw_tail
   END = "end" kw_tail
-  TRANSIENT = "transient" kw_tail //-> ()
-  PRE = "pre" kw_tail
+  TRANSIENT = "transient" kw_tail -> ()
+  PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
   LOOP = "loop" kw_tail
   PAUSE = "pause" kw_tail
@@ -130,9 +352,27 @@ grammar! bonsai2 {
   java_kw = "new"
   NEW = "new" kw_tail
 
-  // fn to_string(raw_text: Vec<char>) -> String {
-  //   raw_text.into_iter().collect()
-  // }
+  fn to_string(raw_text: Vec<char>) -> String {
+    raw_text.into_iter().collect()
+  }
+
+  fn concat(mut x: Vec<char>, y: Vec<char>) -> Vec<char> {
+    x.extend(y.into_iter());
+    x
+  }
+
+  fn make_number(raw_number: Vec<char>) -> u64 {
+    match u64::from_str(&*to_string(raw_number)).ok() {
+      Some(x) => x,
+      None => panic!("int literal is too large")
+    }
+  }
+
+  fn extend_front<T>(first: T, rest: Vec<T>) -> Vec<T> {
+    let mut r = vec![first];
+    r.extend(rest.into_iter());
+    r
+  }
 }
 
 
