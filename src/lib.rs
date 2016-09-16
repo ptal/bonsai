@@ -18,7 +18,7 @@
 #![plugin(oak)]
 
 extern crate oak_runtime;
-extern crate ama;
+// extern crate ama;
 extern crate rustc;
 extern crate rustc_plugin;
 extern crate syntax;
@@ -26,10 +26,8 @@ extern crate syntax;
 use rustc_plugin::Registry;
 
 mod rust;
-mod code_gen;
+mod ast;
 mod grammar;
-mod grammar2;
-// mod ast;
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -47,6 +45,7 @@ fn expand<'cx>(cx: &'cx mut rust::ExtCtxt, _sp: rust::Span,
 fn parse<'cx>(cx: &'cx rust::ExtCtxt,
   tts: Vec<rust::TokenTree>) -> Box<rust::MacResult + 'cx>
 {
-  let mut compiler = code_gen::CodeGenerator::new(cx);
-  ama::compile_anonymous_macro(cx, tts, &mut compiler)
+  unreachable!();
+  // let mut compiler = code_gen::CodeGenerator::new(cx);
+  // ama::compile_anonymous_macro(cx, tts, &mut compiler)
 }

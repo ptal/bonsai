@@ -1,4 +1,4 @@
-// Copyright 2015 Pierre Talbot (IRCAM)
+// Copyright 2016 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,254 +13,278 @@
 // limitations under the License.
 
 #![allow(dead_code)]
+#![allow(non_snake_case)]
 grammar! bonsai {
   // #![show_api]
+  use std::str::FromStr;
+  use ast::*;
 
-  program = spacing statement_list eof
+  program = spacing item+
 
-  expression = spacing store_placement eof
+  item
+    = stmt > make_stmt_item
+    / FN identifier LPAREN list_ident RPAREN block > make_function_item
 
-  statement_list = (statement semi_colon)+
+  fn make_stmt_item(stmt: Stmt) -> Item {
+    Item::Statement(stmt)
+  }
 
-  statement
-    = store_let_binding > make_let_binding_stmt
-    / store_placement > make_store_placement_stmt
+  fn make_function_item(name: String, params: Vec<String>, body: Block) -> Item {
+    Item::Fn(Function {
+      name: name,
+      params: params,
+      body: body
+    })
+  }
 
-  store_let_binding
-    = let_kw identifier bind_op store_placement > make_let_binding
+  list_ident
+    = identifier (COMMA identifier)* > make_list_ident
+    / "" > empty_ident_list
 
-  store_placement = identifier left_arrow store_expression > make_store_placement
+  fn make_list_ident(first: String, rest: Vec<String>) -> Vec<String> {
+    extend_front(first, rest)
+  }
 
-  store_expression
-    = range > make_store_domain
-    / constraint > make_store_constraint
+  fn empty_ident_list() -> Vec<String> {
+    vec![]
+  }
 
-  range = arith_expr dotdot arith_expr > make_pcp_range
+  stmt_list = stmt+
 
-  constraint
-    = bin_constraint > make_store_bin_constraint
-    / nary_constraint > make_store_nary_constraint
+  block = LBRACE stmt_list RBRACE
 
-  nary_constraint = identifier lparen list_arith_expr rparen > make_nary_constraint
+  stmt
+    = PAR BARBAR? stmt_list (BARBAR stmt_list)* END > make_par
+    / SPACE BARBAR? stmt_list (BARBAR stmt_list)* END > make_space
+    / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON > make_let
+    / LET identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store
+    / WHEN entailment block > make_when
+    / PAUSE SEMI_COLON > make_pause
+    / TRAP identifier block > make_trap
+    / EXIT identifier SEMI_COLON > make_exit
+    / LOOP block > make_loop
+    / identifier LPAREN list_ident RPAREN SEMI_COLON > make_fn_call
+    / var LEFT_ARROW expr SEMI_COLON > make_tell
 
-  bin_constraint = arith_expr cmp_op arith_expr > make_bin_constraint
+  fn make_par(first: Block, rest: Vec<Block>) -> Stmt {
+    Stmt::Par(extend_front(first, rest))
+  }
 
-  list_arith_expr = arith_expr (comma arith_expr)* > arith_expr_list
+  fn make_space(first: Block, rest: Vec<Block>) -> Stmt {
+    Stmt::Space(extend_front(first, rest))
+  }
 
-  arith_expr
-    = term (term_op term)* > fold_left
+  fn make_let(transient: Option<()>, var_name: String,
+    java_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr) -> Stmt
+  {
+    let let_decl = LetDecl {
+      transient: transient.is_some(),
+      var: var_name,
+      java_ty: java_ty,
+      spacetime: spacetime,
+      expr: expr
+    };
+    Stmt::Let(let_decl)
+  }
 
-  term
-    = factor (factor_op factor)* > fold_left
+  fn make_let_in_store(location: String, store: String, expr: Expr) -> Stmt {
+    Stmt::LetInStore(location, store, expr)
+  }
 
-  factor
-    = integer > number_arith_expr
-    / indexed_expr
-    / identifier > variable_arith_expr
-    / unary_arith_expr
-    / lparen arith_expr rparen
+  fn make_when(entailment: EntailmentRel, body: Block) -> Stmt {
+    Stmt::When(entailment, body)
+  }
 
-  indexed_expr = identifier lbracket arith_expr rbracket > make_indexed_expr
+  fn make_pause() -> Stmt {
+    Stmt::Pause
+  }
 
-  unary_arith_expr
-    = unary_neg_op factor > make_unary_expr
+  fn make_trap(name: String, block: Block) -> Stmt {
+    Stmt::Trap(name, block)
+  }
 
-  term_op
-    = add_op > add_bin_op
-    / sub_op > sub_bin_op
+  fn make_exit(name: String) -> Stmt {
+    Stmt::Exit(name)
+  }
 
-  factor_op
-    = mul_op > mul_bin_op
+  fn make_loop(block: Block) -> Stmt {
+    Stmt::Loop(block)
+  }
 
-  cmp_op
-    = lt > lt_bin_op
-    / le > le_bin_op
-    / gt > gt_bin_op
-    / ge > ge_bin_op
-    / eq > eq_bin_op
-    / neq > neq_bin_op
+  fn make_fn_call(fn_name: String, args: Vec<String>) -> Stmt {
+    Stmt::FnCall(fn_name, args)
+  }
 
-  identifier = !digit !keyword ident_char+ spacing > to_string
+  fn make_tell(var: Var, expr: Expr) -> Stmt {
+    Stmt::Tell(var, expr)
+  }
+
+  expr
+    = java_expr
+    / stream_var > make_stream_var_expr
+
+  fn make_stream_var_expr(var: StreamVar) -> Expr { Expr::Variable(var) }
+
+  java_ty
+    = identifier
+
+  // We consider single identifier to be part of bonsai language.
+  java_expr
+    = NEW identifier LPAREN list_expr RPAREN > java_new
+    / identifier java_call+ > java_object_calls
+    / number > make_number_expr
+    / string_literal > make_string_literal
+
+  fn java_new(class_name: String, args: Vec<Expr>) -> Expr {
+    Expr::JavaNew(class_name, args)
+  }
+
+  fn java_object_calls(object: String, calls: Vec<JavaCall>) -> Expr {
+    Expr::JavaObjectCall(object, calls)
+  }
+
+  fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
+  fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
+
+  java_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_call
+
+  fn make_java_call(property: String, args: Option<Vec<Expr>>) -> JavaCall {
+    JavaCall {
+      property: property,
+      args: args.unwrap_or(vec![])
+    }
+  }
+
+  list_expr
+    = expr (COMMA expr)* > make_list_expr
+    / "" > empty_expr_list
+
+  fn make_list_expr(first: Expr, rest: Vec<Expr>) -> Vec<Expr> {
+    extend_front(first, rest)
+  }
+
+  fn empty_expr_list() -> Vec<Expr> {
+    vec![]
+  }
+
+  entailment = stream_var ENTAILMENT expr > make_entailment_rel
+
+  fn make_entailment_rel(left: StreamVar, right: Expr) -> EntailmentRel {
+    EntailmentRel {
+      left: left,
+      right: right
+    }
+  }
+
+  stream_var = PRE* identifier (LBRACKET list_stream_var RBRACKET)? > make_stream_var
+  list_stream_var = stream_var (COMMA stream_var)* > concat_list_stream_var
+
+  fn make_stream_var(past: Vec<()>, name: String, args: Option<Vec<StreamVar>>) -> StreamVar {
+    StreamVar {
+      name: name,
+      past: past.len(),
+      args: args.unwrap_or(vec![])
+    }
+  }
+
+  fn concat_list_stream_var(first: StreamVar, rest: Vec<StreamVar>) -> Vec<StreamVar> {
+    extend_front(first, rest)
+  }
+
+  var = identifier (LBRACKET list_var RBRACKET)? > make_var
+  list_var = var (COMMA var)* > concat_list_var
+
+  fn make_var(name: String, args: Option<Vec<Var>>) -> Var {
+    Var {
+      name: name,
+      args: args.unwrap_or(vec![])
+    }
+  }
+
+  fn concat_list_var(first: Var, rest: Vec<Var>) -> Vec<Var> {
+    extend_front(first, rest)
+  }
+
+  spacetime
+    = WORLD_LINE > world_line
+    / SINGLE_TIME > single_time
+    / SINGLE_SPACE > single_space
+    / identifier > location_spacetime
+
+  fn world_line() -> Spacetime { Spacetime::WorldLine }
+  fn single_time() -> Spacetime { Spacetime::SingleTime }
+  fn single_space() -> Spacetime { Spacetime::SingleSpace }
+  fn location_spacetime(loc: String) -> Spacetime { Spacetime::Location(loc) }
+
+  identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
 
-  keyword = "let"
-  kw_tail = !ident_char spacing
-  let_kw = "let" kw_tail
-
-  underscore = "_"
-  dotdot = ".." spacing
-  semi_colon = ";" spacing
-  comma = "," spacing
-  left_arrow = "<-" spacing
-  bind_op = "=" spacing
-  add_op = "+" spacing
-  sub_op = "-" spacing
-  mul_op = "*" spacing
-  lparen = "(" spacing
-  rparen = ")" spacing
-  lbracket = "[" spacing
-  rbracket = "]" spacing
-
-  lt = "<" spacing
-  le = "<=" spacing
-  gt = ">" spacing
-  ge = ">=" spacing
-  eq = "==" spacing
-  neq = "!=" spacing
-
-  spacing = [" \n\r\t"]* -> (^)
-  eof = !.
-
-  integer
-    = number integer_suffix? spacing > make_integer
-
-  unary_neg_op = sub_op > make_neg_unary_op
-
   number = digits > make_number
-  digits = digit+ (underscore* digit)* > concat
+  digits = digit+ (UNDERSCORE* digit)* > concat
   digit = ["0-9"]
 
-  integer_suffix
-    = "u8" > make_u8
-    / "u16" > make_u16
-    / "u32" > make_u32
-    / "u64" > make_u64
-    / "usize" > make_usize
-    / "i8" > make_i8
-    / "i16" > make_i16
-    / "i32" > make_i32
-    / "i64" > make_i64
-    / "isize" > make_isize
+  // TODO: proper escape mechanism
+  string_literal = "\"" (!"\"" .)* "\"" > to_string
 
-  pub use syntax::ast::*;
-  use std::str::FromStr;
-  use self::ArithExpr::*;
-  use self::BinArithOp::*;
+  keyword
+    = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
+    / "loop" / "pause" / "trap" / "exit" / "in" / "world_line"
+    / "single_time" / "single_space" / "bot" / "top" / java_kw
+  kw_tail = !ident_char spacing
 
-  #[derive(Debug, Clone)]
-  pub enum Statement {
-    Local(LetBinding),
-    Tell(StorePlacement)
-  }
+  LET = "let" kw_tail
+  FN = "fn" kw_tail
+  PAR = "par" kw_tail
+  SPACE = "space" kw_tail
+  END = "end" kw_tail
+  TRANSIENT = "transient" kw_tail -> ()
+  PRE = "pre" kw_tail -> ()
+  WHEN = "when" kw_tail
+  LOOP = "loop" kw_tail
+  PAUSE = "pause" kw_tail
+  TRAP = "trap" kw_tail
+  EXIT = "exit" kw_tail
+  IN = "in" kw_tail
+  WORLD_LINE = "world_line" kw_tail
+  SINGLE_TIME = "single_time" kw_tail
+  SINGLE_SPACE = "single_space" kw_tail
+  BOT = "bot" kw_tail
+  TOP = "top" kw_tail
 
-  #[derive(Debug, Clone)]
-  pub struct LetBinding {
-    pub var_name: String,
-    pub store_placement: StorePlacement
-  }
+  UNDERSCORE = "_"
+  DOTDOT = ".." spacing
+  SEMI_COLON = ";" spacing
+  COLON = ":" spacing
+  EQ = "=" spacing
+  COMMA = "," spacing
+  DOT = "." spacing
+  BARBAR = "||" spacing
+  ENTAILMENT = "|=" spacing
+  LEFT_ARROW = "<-" spacing
+  BIND_OP = "=" spacing
+  ADD_OP = "+" spacing
+  SUB_OP = "-" spacing
+  MUL_OP = "*" spacing
+  LPAREN = "(" spacing
+  RPAREN = ")" spacing
+  LBRACKET = "[" spacing
+  RBRACKET = "]" spacing
+  LBRACE = "{" spacing
+  RBRACE = "}" spacing
 
-  #[derive(Debug, Clone)]
-  pub struct StorePlacement {
-    pub store_name: String,
-    pub expr: StoreExpression
-  }
+  spacing = [" \n\r\t"]* -> (^)
 
-  #[derive(Debug, Copy, Clone)]
-  pub enum BinArithOp {
-    Add, Sub, Mul
-  }
-
-  #[derive(Debug, Clone, Copy)]
-  pub enum RelationalOp {
-    Lt, Le, Gt, Ge, Eq, Neq
-  }
-
-  #[derive(Debug, Clone)]
-  pub enum StoreExpression {
-    Domain(Range),
-    Constraint(Constraint)
-  }
-
-  #[derive(Debug, Clone)]
-  pub enum Constraint {
-    Binary(BinaryConstraint),
-    Nary(NaryConstraint)
-  }
-
-  #[derive(Debug, Clone)]
-  pub struct Range {
-    pub min: AExpr,
-    pub max: AExpr
-  }
-
-  #[derive(Debug, Clone)]
-  pub struct NaryConstraint {
-    pub name: String,
-    pub args: Vec<AExpr>
-  }
-
-  #[derive(Debug, Clone)]
-  pub struct BinaryConstraint {
-    pub rel_op: RelationalOp,
-    pub left: AExpr,
-    pub right: AExpr
-  }
-
-  #[derive(Debug, Clone)]
-  pub enum ArithExpr {
-    Variable(String),
-    Number(LitKind),
-    IndexedExpr(String, AExpr),
-    UnaryArithExpr(UnOp, AExpr),
-    BinaryArithExpr(BinArithOp, AExpr, AExpr)
-  }
-
-  pub type AExpr = Box<ArithExpr>;
-
-  fn number_arith_expr(value: LitKind) -> AExpr {
-    Box::new(Number(value))
-  }
-
-  fn variable_arith_expr(ident: String) -> AExpr {
-    Box::new(Variable(ident))
-  }
-
-  fn make_indexed_expr(ident: String, index: AExpr) -> AExpr {
-    Box::new(IndexedExpr(ident, index))
-  }
-
-  fn fold_left(head: AExpr, rest: Vec<(BinArithOp, AExpr)>) -> AExpr {
-    rest.into_iter().fold(head,
-      |accu, (op, expr)| Box::new(BinaryArithExpr(op, accu, expr)))
-  }
-
-  fn fold_right(front: Vec<(AExpr, BinArithOp)>, last: AExpr) -> AExpr {
-    front.into_iter().rev().fold(last,
-      |accu, (expr, op)| Box::new(BinaryArithExpr(op, expr, accu)))
-  }
-
-  fn add_bin_op() -> BinArithOp { Add }
-  fn sub_bin_op() -> BinArithOp { Sub }
-  fn mul_bin_op() -> BinArithOp { Mul }
-
-  fn concat(mut x: Vec<char>, y: Vec<char>) -> Vec<char> {
-    x.extend(y.into_iter());
-    x
-  }
+  // Java keyword
+  java_kw = "new"
+  NEW = "new" kw_tail
 
   fn to_string(raw_text: Vec<char>) -> String {
     raw_text.into_iter().collect()
   }
 
-  fn make_u8() -> LitIntType { LitIntType::Unsigned(UintTy::U8) }
-  fn make_u16() -> LitIntType { LitIntType::Unsigned(UintTy::U16) }
-  fn make_u32() -> LitIntType { LitIntType::Unsigned(UintTy::U32) }
-  fn make_u64() -> LitIntType { LitIntType::Unsigned(UintTy::U64) }
-  fn make_usize() -> LitIntType { LitIntType::Unsigned(UintTy::Us) }
-  fn make_i8() -> LitIntType { LitIntType::Signed(IntTy::I8) }
-  fn make_i16() -> LitIntType { LitIntType::Signed(IntTy::I16) }
-  fn make_i32() -> LitIntType { LitIntType::Signed(IntTy::I32) }
-  fn make_i64() -> LitIntType { LitIntType::Signed(IntTy::I64) }
-  fn make_isize() -> LitIntType { LitIntType::Signed(IntTy::Is) }
-
-  fn make_neg_unary_op() -> UnOp { UnOp::Neg }
-
-  fn make_integer(number: u64, suffix: Option<LitIntType>) -> LitKind {
-    let ty = match suffix {
-      None => LitIntType::Unsuffixed,
-      Some(x) => x
-    };
-    LitKind::Int(number, ty)
+  fn concat(mut x: Vec<char>, y: Vec<char>) -> Vec<char> {
+    x.extend(y.into_iter());
+    x
   }
 
   fn make_number(raw_number: Vec<char>) -> u64 {
@@ -270,80 +294,10 @@ grammar! bonsai {
     }
   }
 
-  fn make_unary_expr(op: UnOp, expr: AExpr) -> AExpr {
-    Box::new(UnaryArithExpr(op, expr))
-  }
-
-  fn make_pcp_range(min_bound: AExpr, max_bound: AExpr) -> Range {
-    Range {
-      min: min_bound,
-      max: max_bound
-    }
-  }
-
-  fn lt_bin_op() -> RelationalOp { RelationalOp::Lt }
-  fn le_bin_op() -> RelationalOp { RelationalOp::Le }
-  fn gt_bin_op() -> RelationalOp { RelationalOp::Gt }
-  fn ge_bin_op() -> RelationalOp { RelationalOp::Ge }
-  fn eq_bin_op() -> RelationalOp { RelationalOp::Eq }
-  fn neq_bin_op() -> RelationalOp { RelationalOp::Neq }
-
-  fn make_let_binding_stmt(let_binding: LetBinding) -> Statement {
-    Statement::Local(let_binding)
-  }
-
-  fn make_store_placement_stmt(store: StorePlacement) -> Statement {
-    Statement::Tell(store)
-  }
-
-  fn make_let_binding(var_name: String, store_placement: StorePlacement) -> LetBinding {
-    LetBinding {
-      var_name: var_name,
-      store_placement: store_placement
-    }
-  }
-
-  fn make_store_placement(store_name: String, expr: StoreExpression) -> StorePlacement {
-    StorePlacement {
-      store_name: store_name,
-      expr: expr
-    }
-  }
-
-  fn make_store_domain(range: Range) -> StoreExpression {
-    StoreExpression::Domain(range)
-  }
-
-  fn make_store_constraint(constraint: Constraint) -> StoreExpression {
-    StoreExpression::Constraint(constraint)
-  }
-
-  fn make_store_bin_constraint(bin_constraint: BinaryConstraint) -> Constraint {
-    Constraint::Binary(bin_constraint)
-  }
-
-  fn make_store_nary_constraint(nary_constraint: NaryConstraint) -> Constraint {
-    Constraint::Nary(nary_constraint)
-  }
-
-  fn make_bin_constraint(left: AExpr, rel_op: RelationalOp, right: AExpr) -> BinaryConstraint {
-    BinaryConstraint {
-      rel_op: rel_op,
-      left: left,
-      right: right
-    }
-  }
-
-  fn arith_expr_list(x: AExpr, mut list: Vec<AExpr>) -> Vec<AExpr> {
-    list.push(x);
-    list
-  }
-
-  fn make_nary_constraint(name: String, args: Vec<AExpr>) -> NaryConstraint {
-    NaryConstraint {
-      name: name,
-      args: args
-    }
+  fn extend_front<T>(first: T, rest: Vec<T>) -> Vec<T> {
+    let mut r = vec![first];
+    r.extend(rest.into_iter());
+    r
   }
 }
 
@@ -357,11 +311,69 @@ mod test
   #[test]
   fn test_grammar()
   {
-    let state = bonsai::recognize_program(
-      "let x = variables <- 9i32 .. 100;
-      constraints <- x*1 > y + (z - 9);
-      let y = variables <- 0..0;".into_state());
-    match state.into_result() {
+    let state = bonsai::recognize_program("
+      let variables in world_line = new VarStore();
+      let constraints in world_line = new ConstraintStore(variables);
+      let consistent in single_time = new Consistent();
+
+      fn first_fail_middle() {
+        let var in single_space = new FirstFail();
+        let val in single_space = new IntDomainMin();
+        loop {
+          when consistent |= Consistent.Unknown {
+            let x in variables = var.getVariable(variables.vars());
+            let mid:int in single_time = val.selectValue(variables[x]);
+            space
+            || constraints[variables] <- new ArithCons(x, \">\", mid);
+            || constraints[variables] <- new ArithCons(x, \"<=\", mid);
+            end
+          }
+          pause;
+        }
+      }
+
+      fn model() {
+        let queen1 = variables <- new IntDomain(0,1);
+        let queen2 = variables <- new IntDomain(0,1);
+
+        constraints[variables] <- new ArithCons(queen1, \"!=\", queen2);
+        let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
+      }
+
+      fn propagation() {
+        loop {
+          consistent <- Solver.propagate(constraints, variables);
+          pause;
+        }
+      }
+
+      fn one_solution() {
+        loop {
+          when consistent |= Consistent.True {
+            exit FoundSolution;
+          }
+          pause;
+        }
+      }
+
+      fn engine() {
+        trap FoundSolution {
+          par
+          || fail_first_middle();
+          || propagation();
+          || one_solution();
+          end
+        }
+      }
+
+     par
+     || model();
+     || engine();
+     end
+     ".into_state());
+    let result = state.into_result();
+    println!("{:?}", result);
+    match result {
       Success(_) => (),
       Partial(_, _)
     | Failure(_) => assert!(false)
