@@ -312,20 +312,20 @@ mod test
   fn test_grammar()
   {
     let state = bonsai::recognize_program("
-      let variables in world_line = new VarStore();
-      let constraints in world_line = new ConstraintStore(variables);
-      let consistent in single_time = new Consistent();
+      let domains in world_line = VarStore.bottom();
+      let constraints in world_line = ConstraintStore.bottom();
+      let consistent in single_time = ConsistentLattice.bottom();
 
       fn first_fail_middle() {
         let var in single_space = new FirstFail();
         let val in single_space = new IntDomainMin();
         loop {
           when consistent |= Consistent.Unknown {
-            let x in variables = var.getVariable(variables.vars());
-            let mid:int in single_time = val.selectValue(variables[x]);
+            let x: IntVar in domains = var.getVariable(domains.vars());
+            let mid: int in single_time = val.selectValue(domains[x]);
             space
-            || constraints[variables] <- new ArithCons(x, \">\", mid);
-            || constraints[variables] <- new ArithCons(x, \"<=\", mid);
+            || constraints[domains] <- x.gt(mid);
+            || constraints[domains] <- x.lte(mid);
             end
           }
           pause;
@@ -333,16 +333,16 @@ mod test
       }
 
       fn model() {
-        let queen1 = variables <- new IntDomain(0,1);
-        let queen2 = variables <- new IntDomain(0,1);
+        let queen1: IntVar = domains <- new IntDomain(0,1);
+        let queen2: IntVar = domains <- new IntDomain(0,1);
 
-        constraints[variables] <- new ArithCons(queen1, \"!=\", queen2);
+        constraints[domains] <- queen1.ne(queen2);
         let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
       }
 
       fn propagation() {
         loop {
-          consistent <- Solver.propagate(constraints, variables);
+          consistent <- Solver.propagate(constraints, domains);
           pause;
         }
       }
@@ -366,10 +366,10 @@ mod test
         }
       }
 
-     par
-     || model();
-     || engine();
-     end
+      par
+      || model();
+      || engine();
+      end
      ".into_state());
     let result = state.into_result();
     println!("{:?}", result);
