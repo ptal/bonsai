@@ -24,7 +24,6 @@ package bonsai.chococubes.choco;
 //       Bottom
 
 public enum Consistent {
-  Bottom,
   Unknown,
   True,
   False;
