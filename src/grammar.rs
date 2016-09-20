@@ -57,7 +57,7 @@ grammar! bonsai {
     = PAR BARBAR? stmt_list (BARBAR stmt_list)* END > make_par
     / SPACE BARBAR? stmt_list (BARBAR stmt_list)* END > make_space
     / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON > make_let
-    / LET identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store
+    / LET identifier (COLON java_ty)? EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store
     / WHEN entailment block > make_when
     / PAUSE SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
@@ -75,20 +75,26 @@ grammar! bonsai {
   }
 
   fn make_let(transient: Option<()>, var_name: String,
-    java_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr) -> Stmt
+    var_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr) -> Stmt
   {
-    let let_decl = LetDecl {
+    let decl = LetDecl {
       transient: transient.is_some(),
       var: var_name,
-      java_ty: java_ty,
+      var_ty: var_ty,
       spacetime: spacetime,
       expr: expr
     };
-    Stmt::Let(let_decl)
+    Stmt::Let(decl)
   }
 
-  fn make_let_in_store(location: String, store: String, expr: Expr) -> Stmt {
-    Stmt::LetInStore(location, store, expr)
+  fn make_let_in_store(location: String, loc_ty: Option<JavaTy>, store: String, expr: Expr) -> Stmt {
+    let decl = LetInStoreDecl {
+      location: location,
+      loc_ty: loc_ty,
+      store: store,
+      expr: expr
+    };
+    Stmt::LetInStore(decl)
   }
 
   fn make_when(entailment: EntailmentRel, body: Block) -> Stmt {
@@ -126,17 +132,36 @@ grammar! bonsai {
   fn make_stream_var_expr(var: StreamVar) -> Expr { Expr::Variable(var) }
 
   java_ty
-    = identifier
+    = identifier java_generic_list > make_java_ty
+
+  fn make_java_ty(name: String, generics: Vec<JavaTy>) -> JavaTy {
+    JavaTy {
+      name: name,
+      generics: generics
+    }
+  }
+
+  java_generic_list
+    = LT java_ty (COMMA java_ty)* GT? > make_generic_list
+    / "" > empty_generic_list
+
+  fn make_generic_list(first: JavaTy, rest: Vec<JavaTy>) -> Vec<JavaTy> {
+    extend_front(first, rest)
+  }
+
+  fn empty_generic_list() -> Vec<JavaTy> {
+    vec![]
+  }
 
   // We consider single identifier to be part of bonsai language.
   java_expr
-    = NEW identifier LPAREN list_expr RPAREN > java_new
+    = NEW java_ty LPAREN list_expr RPAREN > java_new
     / identifier java_call+ > java_object_calls
     / number > make_number_expr
     / string_literal > make_string_literal
 
-  fn java_new(class_name: String, args: Vec<Expr>) -> Expr {
-    Expr::JavaNew(class_name, args)
+  fn java_new(class_ty: JavaTy, args: Vec<Expr>) -> Expr {
+    Expr::JavaNew(class_ty, args)
   }
 
   fn java_object_calls(object: String, calls: Vec<JavaCall>) -> Expr {
@@ -156,10 +181,10 @@ grammar! bonsai {
   }
 
   list_expr
-    = expr (COMMA expr)* > make_list_expr
+    = expr (COMMA expr)* > make_expr_list
     / "" > empty_expr_list
 
-  fn make_list_expr(first: Expr, rest: Vec<Expr>) -> Vec<Expr> {
+  fn make_expr_list(first: Expr, rest: Vec<Expr>) -> Vec<Expr> {
     extend_front(first, rest)
   }
 
@@ -271,6 +296,8 @@ grammar! bonsai {
   RBRACKET = "]" spacing
   LBRACE = "{" spacing
   RBRACE = "}" spacing
+  LT = "<" !"-" spacing
+  GT = ">" spacing
 
   spacing = [" \n\r\t"]* -> (^)
 
@@ -314,7 +341,7 @@ mod test
     let state = bonsai::recognize_program("
       let domains in world_line = VarStore.bottom();
       let constraints in world_line = ConstraintStore.bottom();
-      let consistent in single_time = ConsistentLattice.bottom();
+      let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
 
       fn first_fail_middle() {
         let var in single_space = new FirstFail();

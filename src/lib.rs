@@ -45,7 +45,7 @@ fn expand<'cx>(cx: &'cx mut rust::ExtCtxt, _sp: rust::Span,
 fn parse<'cx>(cx: &'cx rust::ExtCtxt,
   tts: Vec<rust::TokenTree>) -> Box<rust::MacResult + 'cx>
 {
-  unreachable!();
+  rust::DummyResult::any(rust::DUMMY_SP)
   // let mut compiler = code_gen::CodeGenerator::new(cx);
   // ama::compile_anonymous_macro(cx, tts, &mut compiler)
 }
