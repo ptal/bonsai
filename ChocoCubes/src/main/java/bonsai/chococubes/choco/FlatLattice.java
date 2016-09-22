@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// `FlatLattice` transforms any type `T` ranging over values into a lattice of the form:
+// `FlatLattice` transforms any type `T` ranging over values `E1...EN` into a lattice of the form:
 //       Top
 //   /  / |   \
 // E1 E2 E3 .. EN
@@ -47,7 +47,7 @@ public class FlatLattice<T> {
 
   public EntailmentResult entails(FlatLattice<T> other) {
     if (other.isBottom()) {
-      return EntailmentResult.True;
+      return EntailmentResult.TRUE;
     }
     else {
       return this.entails(other.value.get());
@@ -56,15 +56,15 @@ public class FlatLattice<T> {
 
   public EntailmentResult entails(T other) {
     if (this.isBottom()) {
-      return EntailmentResult.Unknown;
+      return EntailmentResult.UNKNOWN;
     }
     else {
       T this_value = value.get();
       if (this_value.equals(other)) {
-        return EntailmentResult.True;
+        return EntailmentResult.TRUE;
       }
       else {
-        return EntailmentResult.False;
+        return EntailmentResult.FALSE;
       }
     }
   }
@@ -78,7 +78,7 @@ public class FlatLattice<T> {
   public void tell(T other) {
     if (!this.isBottom()) {
       assert this.value.get().equals(other) :
-        "Reached TOP element in consistent lattice.";
+        "Reached TOP element in flat lattice.";
     }
     this.value = Optional.of(other);
   }
