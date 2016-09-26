@@ -12,19 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.chococubes.choco;
+package bonsai.chococubes.core;
 
-public class EntailmentResult extends FlatLattice<Boolean> {
+// A lattice-based variable must implement two operations over lattice: `join` for adding information and `entail` for asking if a piece of information can be deduced.
 
-  public static EntailmentResult TRUE = new EntailmentResult(new Boolean(true));
-  public static EntailmentResult FALSE = new EntailmentResult(new Boolean(false));
-  public static EntailmentResult UNKNOWN = new EntailmentResult();
-
-  public EntailmentResult() {
-    super();
-  }
-
-  public EntailmentResult(Boolean b) {
-    super(b);
-  }
+public interface LatticeVar {
+  void join(Object o);
+  EntailmentResult entail(Object o);
 }

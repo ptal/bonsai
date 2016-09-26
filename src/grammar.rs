@@ -348,7 +348,7 @@ mod test
         let val in single_space = new IntDomainMin();
         loop {
           when consistent |= Consistent.Unknown {
-            let x: IntVar in domains = var.getVariable(domains.vars());
+            let x: IntVar in single_time = var.getVariable(domains.vars());
             let mid: int in single_time = val.selectValue(domains[x]);
             space
             || constraints[domains] <- x.gt(mid);

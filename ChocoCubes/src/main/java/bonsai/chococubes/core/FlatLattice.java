@@ -21,7 +21,7 @@
 
 // The bottom element is represented with an empty optional and top should never happen (assertion).
 
-package bonsai.chococubes.choco;
+package bonsai.chococubes.core;
 
 import java.util.Optional;
 
