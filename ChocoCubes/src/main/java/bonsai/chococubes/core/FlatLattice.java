@@ -25,7 +25,7 @@ package bonsai.chococubes.core;
 
 import java.util.Optional;
 
-public class FlatLattice<T> {
+public class FlatLattice<T> extends LatticeVar {
 
   private Optional<T> value;
 
@@ -45,22 +45,29 @@ public class FlatLattice<T> {
     return !value.isPresent();
   }
 
-  public EntailmentResult entails(FlatLattice<T> other) {
+  private FlatLattice<T> castTo(Object obj) {
+    assert obj != null && this.getClass().isInstance(obj);
+    return (FlatLattice<T>) obj;
+  }
+
+  public EntailmentResult entail(Object obj) {
+    FlatLattice<T> other = this.castTo(obj);
     if (other.isBottom()) {
       return EntailmentResult.TRUE;
     }
     else {
-      return this.entails(other.value.get());
+      return this.entail_inner(other.value.get());
     }
   }
 
-  public EntailmentResult entails(T other) {
+  public EntailmentResult entail_inner(T other) {
+    assert other != null;
     if (this.isBottom()) {
       return EntailmentResult.UNKNOWN;
     }
     else {
-      T this_value = value.get();
-      if (this_value.equals(other)) {
+      T self = value.get();
+      if (self.equals(other)) {
         return EntailmentResult.TRUE;
       }
       else {
@@ -69,14 +76,17 @@ public class FlatLattice<T> {
     }
   }
 
-  public void tell(FlatLattice<T> other) {
+  public void join(Object obj) {
+    FlatLattice<T> other = this.castTo(obj);
     if (!other.isBottom()) {
-      this.tell(other.value.get());
+      T inner = other.value.get();
+      join_inner(inner);
     }
   }
 
-  public void tell(T other) {
-    if (!this.isBottom()) {
+  public void join_inner(T other) {
+    assert other != null;
+    if(!this.isBottom()) {
       assert this.value.get().equals(other) :
         "Reached TOP element in flat lattice.";
     }

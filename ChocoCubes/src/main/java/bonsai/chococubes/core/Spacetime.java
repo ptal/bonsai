@@ -14,24 +14,20 @@
 
 package bonsai.chococubes.core;
 
-// A lattice-based variable must implement two operations over lattice: `join` for adding information and `entail` for asking if a piece of information can be deduced.
+public enum Spacetime {
+  SingleTime,
+  SingleSpace,
+  WorldLine;
 
-public abstract class LatticeVar {
-  public abstract void join(Object o);
-  public abstract EntailmentResult entail(Object o);
-
-  public boolean equals (Object other) {
-    if (other == null) {
-      return false;
+  public String toString() {
+    if (this == SingleTime) {
+      return "single_time";
     }
-    else if (!LatticeVar.class.isInstance(other)) {
-      return false;
+    else if (this == SingleSpace) {
+      return "single_space";
     }
     else {
-      LatticeVar o = (LatticeVar) other;
-      return
-        this.entail(o) == EntailmentResult.TRUE &&
-        o.entail(this) == EntailmentResult.TRUE;
+      return "world_line";
     }
   }
 }
