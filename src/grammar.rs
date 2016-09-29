@@ -369,7 +369,7 @@ mod test
 
       fn propagation() {
         loop {
-          consistent <- Solver.propagate(constraints, domains);
+          consistent <- PropagatorEngine.propagate(domains, constraints);
           pause;
         }
       }
@@ -393,10 +393,8 @@ mod test
         }
       }
 
-      par
-      || model();
-      || engine();
-      end
+      model();
+      engine();
      ".into_state());
     let result = state.into_result();
     println!("{:?}", result);
