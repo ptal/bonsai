@@ -57,7 +57,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
     // Change happened on the domain of the variable `leftSide`.
     if(event.isGenerated(env)){
       SpaceEnvironment space_env = (SpaceEnvironment) env;
-      LatticeVar lhs = space_env.var(leftSide);
+      LatticeVar lhs = space_env.latticeVar(leftSide);
       Object rhs = rightSide.apply(space_env);
       EntailmentResult res = lhs.entail(rhs);
       if (res == EntailmentResult.TRUE) {

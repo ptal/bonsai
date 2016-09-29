@@ -34,7 +34,7 @@ public class Tell extends Emit
 
   public byte activate(Environment env) {
     SpaceEnvironment space_env = (SpaceEnvironment) env;
-    LatticeVar lhs = space_env.var(leftSide);
+    LatticeVar lhs = space_env.latticeVar(leftSide);
     Object rhs = rightSide.apply(space_env);
     lhs.join(rhs);
     return super.activate(space_env);

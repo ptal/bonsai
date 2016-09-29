@@ -69,13 +69,30 @@ public class SpacetimeVar extends UnaryInstruction
   public void lastActivation(SpaceEnvironment env, byte res) {
     if (TERM == res || EXCP == res) {
       firstActivation = true;
-      env.freeVar(name);
     }
   }
 
-  public LatticeVar latticeValue() {
-    assert value.getClass().isInstance(LatticeVar.class) :
-      "Try to use `v <- e` or `v |= e` on a variable that do not implement LatticeVar.";
-    return (LatticeVar) value;
+  public Object value() {
+    return value;
+  }
+
+  public void save(Snapshot snapshot) {
+    if (spacetime == Spacetime.WorldLine) {
+      snapshot.saveWorldLineVar(name, value);
+    }
+    else if (spacetime == Spacetime.SingleTime) {
+      snapshot.saveSingleTimeVar(name, value);
+    }
+  }
+
+  public void restore(SpaceEnvironment env, Snapshot snapshot) {
+    if (spacetime == Spacetime.WorldLine) {
+      snapshot.restoreWorldLineVar(name, value);
+    }
+    else if (spacetime == Spacetime.SingleTime) {
+      if (!firstActivation) {
+        value = initValue.apply(env);
+      }
+    }
   }
 }

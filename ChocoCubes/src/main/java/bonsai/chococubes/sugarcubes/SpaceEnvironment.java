@@ -21,9 +21,12 @@ import inria.meije.rc.sugarcubes.*;
 
 public class SpaceEnvironment extends Clock {
   private HashMap<String, SpacetimeVar> vars;
-
-  // private ArrayList<SpaceBranch> spaceBranches;
-  // private ArrayList<Snapshot> spaceQueue;
+  private ArrayDeque<Snapshot> futures;
+  private ArrayList<SpaceBranch> branches;
+  private HashSet<Integer> activatedBranches;
+  // When we enter a branch of `space`, we depend on the single time variables of the current instantiated snapshot and not the one of the current environment.
+  private Snapshot currentSnapshot;
+  private boolean inSnapshot;
 
   public SpaceEnvironment(ClockIdentifier clockID,
     InternalIdentifiers anInternalIdentifierGenerator,
@@ -31,25 +34,80 @@ public class SpaceEnvironment extends Clock {
   {
     super(clockID, anInternalIdentifierGenerator, body);
     vars = new HashMap();
-
-    // spaceBranches = new ArrayList();
-    // spaceQueue = new ArrayList();
+    futures = new ArrayDeque();
+    branches = new ArrayList();
+    activatedBranches = new HashSet();
+    currentSnapshot = null;
+    inSnapshot = false;
   }
 
   // Big step transition.
   public void newInstant() {
+    saveFutures();
     super.newInstant();
+    instantiateFuture();
+  }
+
+  public void saveFutures() {
+    for (Integer branchIdx: activatedBranches) {
+      Snapshot future = new Snapshot(branchIdx);
+      for (SpacetimeVar var : vars.values()) {
+        var.save(future);
+      }
+      futures.add(future);
+    }
+  }
+
+  public void instantiateFuture() {
+    currentSnapshot = futures.pop();
+    for(Map.Entry<String, SpacetimeVar> var : vars.entrySet()) {
+      var.getValue().restore(this, currentSnapshot);
+    }
+    int b = currentSnapshot.branch();
+    super.addProgram(branches.get(b));
+  }
+
+  // For shadowing the single time variables when executing a branch.
+  public void enterSpaceBranch() {
+    assert currentSnapshot != null :
+      "Cannot enter a space branch without a snapshot previously installed.";
+    inSnapshot = true;
+  }
+
+  public void exitSpaceBranch() {
+    inSnapshot = false;
+  }
+
+  public Integer registerSpaceBranch(SpaceBranch branch) {
+    branches.add(branch);
+    return branches.size() - 1;
+  }
+
+  // At the end of the current instant, the branches at `branchesIndexes` will be turned into `Snapshot` for future activation.
+  public void activateSpace(ArrayList<Integer> branchesIndexes) {
+    for (Integer idx : branchesIndexes) {
+      activatedBranches.add(idx);
+    }
   }
 
   public void declareVar(String name, SpacetimeVar v) {
     vars.put(name, v);
   }
 
-  public void freeVar(String name) {
-    vars.remove(name);
+  public LatticeVar latticeVar(String name) {
+    Object value = var(name);
+    assert value.getClass().isInstance(LatticeVar.class) :
+      "Try to use `v <- e` or `v |= e` on a variable that do not implement LatticeVar.";
+    return (LatticeVar) value;
   }
 
-  public LatticeVar var(String name) {
-    return vars.get(name).latticeValue();
+  public Object var(String name) {
+    if (inSnapshot) {
+      Optional<Object> value = currentSnapshot.getSingleTimeValue(name);
+      if (value.isPresent()) {
+        return value.get();
+      }
+    }
+    return vars.get(name).value();
   }
 }
