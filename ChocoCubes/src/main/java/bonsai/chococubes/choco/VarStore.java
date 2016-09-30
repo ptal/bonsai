@@ -14,10 +14,11 @@
 
 package bonsai.chococubes.choco;
 
+import bonsai.chococubes.core.*;
 import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
 
-public class VarStore {
+public class VarStore extends Store {
   Model model;
 
   static public VarStore bottom() {
@@ -40,7 +41,41 @@ public class VarStore {
     return model;
   }
 
-  public IntVar tell_store(IntDomain dom) {
+  public void join(Object value) {
+    assert value != null && value.getClass().isInstance(Entry.class) :
+      "Join is only defined between `VarStore` and an entry `VarStore.Entry`.";
+    assert false :
+      "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.";
+    throw new UnsupportedOperationException();
+  }
+
+  public EntailmentResult entail(Object value) {
+    assert false :
+      "Entailment is currently not defined for `VarStore`.";
+    throw new UnsupportedOperationException();
+  }
+
+  public Object alloc(Object value) {
+    assert value != null && value.getClass().isInstance(IntDomain.class) :
+      "Allocation in `VarStore` is only defined for integer domain `IntDomain`.";
+    IntDomain dom = (IntDomain) value;
     return model.intVar(dom.lb, dom.ub);
+  }
+
+  public Object index(Object location) {
+    assert location != null && location.getClass().isInstance(IntVar.class) :
+      "Location of `VarStore` must be of type `IntVar`";
+    // Note that the object in the store is actually the same as the location.
+    return location;
+  }
+
+  public class Entry {
+    private IntVar location;
+    private IntDomain value;
+
+    public Entry(IntVar location, IntDomain value) {
+      this.location = location;
+      this.value = value;
+    }
   }
 }

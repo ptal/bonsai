@@ -14,15 +14,25 @@
 
 package bonsai.chococubes.choco;
 
+import bonsai.chococubes.core.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
 
-public class ConstraintStore {
+public class ConstraintStore extends LatticeVar {
 
   public static ConstraintStore bottom() {
     return new ConstraintStore();
   }
 
-  public void tell(ReExpression constraint) {
+  public void join(Object value) {
+    assert value != null && value.getClass().isInstance(ReExpression.class) :
+      "Join in `ConstraintStore` is only defined for relational expression `ReExpression`.";
+    ReExpression constraint = (ReExpression) value;
     constraint.post();
+  }
+
+  public EntailmentResult entail(Object value) {
+    assert false :
+      "Entailment is currently not defined for `ConstraintStore`.";
+    throw new UnsupportedOperationException();
   }
 }
