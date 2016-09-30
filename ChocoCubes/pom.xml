@@ -18,7 +18,7 @@
      </dependency>
      <dependency>
         <groupId>inria.meije.rc</groupId>
-        <artifactId>SugarCubesv4.0.0a5</artifactId>
+        <artifactId>SugarCubes</artifactId>
         <version>4.0.0a5</version>
     </dependency>
     </dependencies>
