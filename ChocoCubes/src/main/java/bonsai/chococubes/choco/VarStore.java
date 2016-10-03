@@ -33,6 +33,7 @@ public class VarStore extends Store implements Restorable {
   VarStore(String problem_name) {
     model = new Model(problem_name);
     depth = 0;
+    frozen = false;
   }
 
   public IntVar[] vars() {
@@ -44,20 +45,17 @@ public class VarStore extends Store implements Restorable {
   }
 
   public Object label() {
-    model.getEnvironment().worldPush();
-    Integer currentLevel = new Integer(depth);
-    depth = depth + 1;
-    return currentLevel;
+    return new Integer(depth);
   }
 
+  // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
     assert label != null && label.getClass().isInstance(Integer.class) :
-      "Label of `VarStore` must be a `Integer` class.";
+      "Label of `VarStore` must be a `Integer` value.";
     Integer newDepth = (Integer) label;
-    assert depth - 1 == newDepth :
-      "Restoration strategy of `VarStore` only support depth-first search exploration.";
-    depth = depth - 1;
-    model.getEnvironment().worldPop();
+    model.getEnvironment().worldPopUntil(newDepth);
+    model.getEnvironment().worldPush();
+    depth = newDepth + 1;
   }
 
   public Object alloc(Object value) {

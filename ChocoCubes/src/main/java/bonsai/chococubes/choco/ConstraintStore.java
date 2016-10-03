@@ -14,28 +14,41 @@
 
 package bonsai.chococubes.choco;
 
+import java.util.*;
 import bonsai.chococubes.core.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
+import org.chocosolver.solver.constraints.*;
 
 public class ConstraintStore extends LatticeVar implements Restorable {
+
+  public ArrayDeque<Constraint> constraints;
 
   public static ConstraintStore bottom() {
     return new ConstraintStore();
   }
 
   public Object label() {
-    throw new UnsupportedOperationException();
+    return new Integer(constraints.size());
   }
 
+  // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
-    throw new UnsupportedOperationException();
+    assert label != null && label.getClass().isInstance(Integer.class) :
+      "Label of `ConstraintStore` must be a `Integer` value.";
+    Integer newSize = (Integer) label;
+    while (constraints.size() != newSize) {
+      Constraint c = constraints.pop();
+      c.getPropagator(0).getModel().unpost(c);
+    }
   }
 
   public void join(Object value) {
     assert value != null && value.getClass().isInstance(ReExpression.class) :
       "Join in `ConstraintStore` is only defined for relational expression `ReExpression`.";
-    ReExpression constraint = (ReExpression) value;
-    constraint.post();
+    ReExpression expr = (ReExpression) value;
+    Constraint c = expr.decompose();
+    constraints.add(c);
+    c.post();
   }
 
   public EntailmentResult entail(Object value) {

@@ -14,7 +14,8 @@
 
 package bonsai.chococubes.core;
 
-public interface Restorable {
+public interface Restorable
+{
   Object label();
   void restore(Object label);
 }
