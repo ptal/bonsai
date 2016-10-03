@@ -18,8 +18,9 @@ import bonsai.chococubes.core.*;
 import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
 
-public class VarStore extends Store {
-  Model model;
+public class VarStore extends Store implements Restorable {
+  private Model model;
+  private Integer depth;
 
   static public VarStore bottom() {
     return new VarStore();
@@ -31,6 +32,7 @@ public class VarStore extends Store {
 
   VarStore(String problem_name) {
     model = new Model(problem_name);
+    depth = 0;
   }
 
   public IntVar[] vars() {
@@ -41,18 +43,21 @@ public class VarStore extends Store {
     return model;
   }
 
-  public void join(Object value) {
-    assert value != null && value.getClass().isInstance(Entry.class) :
-      "Join is only defined between `VarStore` and an entry `VarStore.Entry`.";
-    assert false :
-      "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.";
-    throw new UnsupportedOperationException();
+  public Object label() {
+    model.getEnvironment().worldPush();
+    Integer currentLevel = new Integer(depth);
+    depth = depth + 1;
+    return currentLevel;
   }
 
-  public EntailmentResult entail(Object value) {
-    assert false :
-      "Entailment is currently not defined for `VarStore`.";
-    throw new UnsupportedOperationException();
+  public void restore(Object label) {
+    assert label != null && label.getClass().isInstance(Integer.class) :
+      "Label of `VarStore` must be a `Integer` class.";
+    Integer newDepth = (Integer) label;
+    assert depth - 1 == newDepth :
+      "Restoration strategy of `VarStore` only support depth-first search exploration.";
+    depth = depth - 1;
+    model.getEnvironment().worldPop();
   }
 
   public Object alloc(Object value) {
@@ -67,6 +72,20 @@ public class VarStore extends Store {
       "Location of `VarStore` must be of type `IntVar`";
     // Note that the object in the store is actually the same as the location.
     return location;
+  }
+
+  public void join(Object value) {
+    assert value != null && value.getClass().isInstance(Entry.class) :
+      "Join is only defined between `VarStore` and an entry `VarStore.Entry`.";
+    assert false :
+      "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.";
+    throw new UnsupportedOperationException();
+  }
+
+  public EntailmentResult entail(Object value) {
+    assert false :
+      "Entailment is currently not defined for `VarStore`.";
+    throw new UnsupportedOperationException();
   }
 
   public class Entry {

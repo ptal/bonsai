@@ -17,10 +17,18 @@ package bonsai.chococubes.choco;
 import bonsai.chococubes.core.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
 
-public class ConstraintStore extends LatticeVar {
+public class ConstraintStore extends LatticeVar implements Restorable {
 
   public static ConstraintStore bottom() {
     return new ConstraintStore();
+  }
+
+  public Object label() {
+    throw new UnsupportedOperationException();
+  }
+
+  public void restore(Object label) {
+    throw new UnsupportedOperationException();
   }
 
   public void join(Object value) {
