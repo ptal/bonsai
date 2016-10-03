@@ -110,4 +110,8 @@ public class SpaceEnvironment extends Clock {
     }
     return vars.get(name).value();
   }
+
+  public boolean isEmpty() {
+    return futures.isEmpty();
+  }
 }
