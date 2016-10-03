@@ -14,6 +14,7 @@
 
 package bonsai.chococubes.sugarcubes;
 
+import java.util.function.*;
 import bonsai.chococubes.core.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
@@ -22,12 +23,12 @@ public class SpacetimeVar extends UnaryInstruction
 {
   private String name;
   private Spacetime spacetime;
-  private SideEffect initValue;
+  private Function<SpaceEnvironment, Object> initValue;
   private Object value;
   private boolean firstActivation;
 
   public SpacetimeVar(String name, Spacetime spacetime,
-    SideEffect initValue, Program body)
+    Function<SpaceEnvironment, Object> initValue, Program body)
   {
     super(body);
     this.name = name;

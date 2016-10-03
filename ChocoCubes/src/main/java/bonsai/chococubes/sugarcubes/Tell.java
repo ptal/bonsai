@@ -14,19 +14,20 @@
 
 package bonsai.chococubes.sugarcubes;
 
+import java.util.function.*;
 import bonsai.chococubes.core.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 import inria.meije.rc.sugarcubes.*;
 
-// `v <- e` is converted into a closure of type `SideEffect` modifying the variable `v` with the expression `e`.
+// The right part of `v <- e` is converted into a closure of type `Function<SpaceEnvironment, Object>` returning a value based on the current environment.
 // It must be checked statically before that `e` do not depends on variable that could be modified after this operation. This would lead to non-determinism, take for example `v <- x || x <- [0..1]`.
 
 public class Tell extends Emit
 {
   private String leftSide;
-  private SideEffect rightSide;
+  private Function<SpaceEnvironment, Object> rightSide;
 
-  public Tell(ClockIdentifier clockID, String leftSide, SideEffect rightSide) {
+  public Tell(ClockIdentifier clockID, String leftSide, Function<SpaceEnvironment, Object> rightSide) {
     super(clockID, new StringID(leftSide), null, true);
     this.leftSide = leftSide;
     this.rightSide = rightSide;

@@ -33,7 +33,6 @@ public class VarStore extends Store implements Restorable {
   VarStore(String problem_name) {
     model = new Model(problem_name);
     depth = 0;
-    frozen = false;
   }
 
   public IntVar[] vars() {

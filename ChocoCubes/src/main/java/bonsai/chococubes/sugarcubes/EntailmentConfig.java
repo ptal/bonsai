@@ -14,6 +14,7 @@
 
 package bonsai.chococubes.sugarcubes;
 
+import java.util.function.*;
 import bonsai.chococubes.core.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
@@ -24,12 +25,12 @@ import inria.meije.rc.sugarcubes.implementation.*;
 public class EntailmentConfig extends ConfigImpl implements Precursor
 {
   private String leftSide;
-  private SideEffect rightSide;
+  private Function<SpaceEnvironment, Object> rightSide;
   private Event event;
   private Precursor parent;
   private boolean posted;
 
-  public EntailmentConfig(String leftSide, SideEffect rightSide) {
+  public EntailmentConfig(String leftSide, Function<SpaceEnvironment, Object> rightSide) {
     this.leftSide = leftSide;
     this.rightSide = rightSide;
     this.posted = false;
