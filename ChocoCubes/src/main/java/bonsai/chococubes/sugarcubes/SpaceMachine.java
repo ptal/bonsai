@@ -36,8 +36,12 @@ public class SpaceMachine extends StdMachine
 
   // Returns `true` if it stops because no more nodes are on the queue, otherwise `false` if the program terminated without consuming all nodes.
   public boolean execute() {
+    SpaceEnvironment env = (SpaceEnvironment) clock0;
     while (!react()) {
+      if (env.isEmpty()) {
+        break;
+      }
     }
-    return ((SpaceEnvironment) clock0).isEmpty();
+    return env.isEmpty();
   }
 }

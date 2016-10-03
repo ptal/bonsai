@@ -54,7 +54,7 @@ public class SpacetimeVar extends UnaryInstruction
   public byte activate(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
     firstActivation(env);
-    byte res = super.activate(env);
+    byte res = body.activate(env);
     lastActivation(env, res);
     return res;
   }

@@ -59,12 +59,14 @@ public class SpaceEnvironment extends Clock {
   }
 
   public void instantiateFuture() {
-    currentSnapshot = futures.pop();
-    for(Map.Entry<String, SpacetimeVar> var : vars.entrySet()) {
-      var.getValue().restore(this, currentSnapshot);
+    if (!futures.isEmpty()) {
+      currentSnapshot = futures.pop();
+      for(Map.Entry<String, SpacetimeVar> var : vars.entrySet()) {
+        var.getValue().restore(this, currentSnapshot);
+      }
+      int b = currentSnapshot.branch();
+      super.addProgram(branches.get(b));
     }
-    int b = currentSnapshot.branch();
-    super.addProgram(branches.get(b));
   }
 
   // For shadowing the single time variables when executing a branch.
