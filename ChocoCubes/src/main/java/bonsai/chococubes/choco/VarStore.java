@@ -49,40 +49,59 @@ public class VarStore extends Store implements Restorable {
 
   // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
-    assert label != null && label.getClass().isInstance(Integer.class) :
-      "Label of `VarStore` must be a `Integer` value.";
-    Integer newDepth = (Integer) label;
-    model.getEnvironment().worldPopUntil(newDepth);
-    model.getEnvironment().worldPush();
-    depth = newDepth + 1;
+    assert label != null;
+    if (label instanceof Integer) {
+      Integer newDepth = (Integer) label;
+      model.getEnvironment().worldPopUntil(newDepth);
+      model.getEnvironment().worldPush();
+      depth = newDepth + 1;
+    }
+    else {
+      throw new RuntimeException(
+        "Label of `VarStore` must be a `Integer` value.");
+    }
+
   }
 
   public Object alloc(Object value) {
-    assert value != null && value.getClass().isInstance(IntDomain.class) :
-      "Allocation in `VarStore` is only defined for integer domain `IntDomain`.";
-    IntDomain dom = (IntDomain) value;
-    return model.intVar(dom.lb, dom.ub);
+    assert value != null;
+    if (value instanceof IntDomain) {
+      IntDomain dom = (IntDomain) value;
+      return model.intVar(dom.lb, dom.ub);
+    }
+    else {
+      throw new RuntimeException(
+        "Allocation in `VarStore` is only defined for integer domain `IntDomain`.");
+    }
   }
 
   public Object index(Object location) {
-    assert location != null && location.getClass().isInstance(IntVar.class) :
-      "Location of `VarStore` must be of type `IntVar`";
-    // Note that the object in the store is actually the same as the location.
-    return location;
+    assert location != null;
+    if (location instanceof IntVar) {
+      // Note that the object in the store is actually the same as the location.
+      return location;
+    }
+    else {
+      throw new RuntimeException(
+        "Location of `VarStore` must be of type `IntVar`");
+    }
   }
 
   public void join(Object value) {
-    assert value != null && value.getClass().isInstance(Entry.class) :
-      "Join is only defined between `VarStore` and an entry `VarStore.Entry`.";
-    assert false :
-      "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.";
-    throw new UnsupportedOperationException();
+    assert value != null;
+    if (value instanceof Entry) {
+      throw new UnsupportedOperationException(
+        "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.");
+    }
+    else {
+      throw new RuntimeException(
+        "Join is only defined between `VarStore` and an entry `VarStore.Entry`.");
+    }
   }
 
   public EntailmentResult entail(Object value) {
-    assert false :
-      "Entailment is currently not defined for `VarStore`.";
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(
+      "Entailment is currently not defined for `VarStore`.");
   }
 
   public class Entry {

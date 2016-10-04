@@ -66,8 +66,7 @@ public class ConstraintStore extends LatticeVar implements Restorable {
   }
 
   public EntailmentResult entail(Object value) {
-    assert false :
-      "Entailment is currently not defined for `ConstraintStore`.";
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(
+      "Entailment is currently not defined for `ConstraintStore`.");
   }
 }

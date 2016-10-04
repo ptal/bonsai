@@ -60,8 +60,10 @@ public class Snapshot
   private void assertClass(String name, Object value,
     Class expectedTy, String spacetime)
   {
-    assert value.getClass().isInstance(expectedTy) :
-      "Variable `" + name + "` does not implement `" + expectedTy.getCanonicalName() +
-      "` which is required for variables in the `" + spacetime + "` spacetime.";
+    if (!expectedTy.isInstance(value)) {
+      throw new RuntimeException(
+        "Variable `" + name + "` does not implement `" + expectedTy.getCanonicalName() +
+        "` which is required for variables in the `" + spacetime + "` spacetime.");
+    }
   }
 }

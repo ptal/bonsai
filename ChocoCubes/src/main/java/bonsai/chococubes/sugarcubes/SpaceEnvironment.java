@@ -71,8 +71,10 @@ public class SpaceEnvironment extends Clock {
 
   // For shadowing the single time variables when executing a branch.
   public void enterSpaceBranch() {
-    assert currentSnapshot != null :
-      "Cannot enter a space branch without a snapshot previously installed.";
+    if (currentSnapshot == null) {
+      throw new RuntimeException(
+        "Cannot enter a space branch without a snapshot previously installed.");
+    }
     inSnapshot = true;
   }
 
@@ -98,8 +100,10 @@ public class SpaceEnvironment extends Clock {
 
   public LatticeVar latticeVar(String name) {
     Object value = var(name);
-    assert value.getClass().isInstance(LatticeVar.class) :
-      "Try to use `v <- e` or `v |= e` on a variable that do not implement LatticeVar.";
+    if (!(value instanceof LatticeVar)) {
+      throw new RuntimeException(
+        "Try to use `v <- e` or `v |= e` on a variable that do not implement LatticeVar.");
+    }
     return (LatticeVar) value;
   }
 

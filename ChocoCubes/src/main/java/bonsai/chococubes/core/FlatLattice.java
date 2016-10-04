@@ -86,9 +86,9 @@ public class FlatLattice<T> extends LatticeVar {
 
   public void join_inner(T other) {
     assert other != null;
-    if(!this.isBottom()) {
-      assert this.value.get().equals(other) :
-        "Reached TOP element in flat lattice.";
+    if(!this.isBottom() && this.value.get().equals(other)) {
+      throw new RuntimeException(
+        "Reached TOP element in flat lattice.");
     }
     this.value = Optional.of(other);
   }

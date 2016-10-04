@@ -24,7 +24,7 @@ public abstract class LatticeVar {
     if (other == null) {
       return false;
     }
-    else if (!LatticeVar.class.isInstance(other)) {
+    else if (!(other instanceof LatticeVar)) {
       return false;
     }
     else {
