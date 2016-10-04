@@ -19,7 +19,9 @@
 //   \ \  |   /
 //     Bottom
 
-// The bottom element is represented with an empty optional and top should never happen (assertion).
+// The bottom element is represented with an empty optional and top should never happen (exception otherwise).
+
+// The entailment and join operation are dynamically overload so `x |= y` and `x <- y` are defined such that `y` can be of type `FlatLattice<T>` or `T`.
 
 package bonsai.chococubes.core;
 
@@ -45,28 +47,22 @@ public class FlatLattice<T> extends LatticeVar {
     return !value.isPresent();
   }
 
-  private FlatLattice<T> castTo(Object obj) {
-    assert obj != null && this.getClass().isInstance(obj);
-    return (FlatLattice<T>) obj;
-  }
-
   public EntailmentResult entail(Object obj) {
-    FlatLattice<T> other = this.castTo(obj);
+    FlatLattice<T> other = flatLatticeOf(obj);
     if (other.isBottom()) {
       return EntailmentResult.TRUE;
     }
-    else {
-      return this.entail_inner(other.value.get());
-    }
+    T other_inner = other.value.get();
+    return entail_inner(other_inner);
   }
 
-  public EntailmentResult entail_inner(T other) {
-    assert other != null;
+  private EntailmentResult entail_inner(T other) {
     if (this.isBottom()) {
       return EntailmentResult.UNKNOWN;
     }
     else {
       T self = value.get();
+      assertSameInnerTypes(self, other);
       if (self.equals(other)) {
         return EntailmentResult.TRUE;
       }
@@ -77,19 +73,46 @@ public class FlatLattice<T> extends LatticeVar {
   }
 
   public void join(Object obj) {
-    FlatLattice<T> other = this.castTo(obj);
+    FlatLattice<T> other = flatLatticeOf(obj);
     if (!other.isBottom()) {
-      T inner = other.value.get();
-      join_inner(inner);
+      T other_inner = other.value.get();
+      join_inner(other_inner);
     }
   }
 
   public void join_inner(T other) {
     assert other != null;
-    if(!this.isBottom() && this.value.get().equals(other)) {
-      throw new RuntimeException(
-        "Reached TOP element in flat lattice.");
+    if (this.isBottom()) {
+      this.value = Optional.of(other);
     }
-    this.value = Optional.of(other);
+    else {
+      T self = this.value.get();
+      assertSameInnerTypes(self, other);
+      if(!self.equals(other)) {
+        throw new RuntimeException(
+          "Reached TOP element in flat lattice.");
+      }
+    }
+  }
+
+  private void assertSameInnerTypes(T self, Object other) {
+    assert self != null && other != null;
+    if (!self.getClass().isInstance(other)) {
+      throw new RuntimeException(
+        "Undefined entailment between `" +
+        this.getClass().getCanonicalName() +
+        "` and `" +
+        other.getClass().getCanonicalName() + "`");
+    }
+  }
+
+  private FlatLattice<T> flatLatticeOf(Object obj) {
+    assert obj != null;
+    if (obj instanceof FlatLattice) {
+      return (FlatLattice) obj;
+    }
+    else {
+      return new FlatLattice(obj);
+    }
   }
 }

@@ -338,7 +338,7 @@ mod test
   #[test]
   fn test_grammar()
   {
-    let state = bonsai::recognize_program("
+    let state = bonsai::recognize_program(r#"
       let domains in world_line = VarStore.bottom();
       let constraints in world_line = ConstraintStore.bottom();
       let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
@@ -362,6 +362,9 @@ mod test
       fn model() {
         let queen1: IntVar = domains <- new IntDomain(0,1);
         let queen2: IntVar = domains <- new IntDomain(0,1);
+
+        constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
+        printVariables(domains);
 
         constraints[domains] <- queen1.ne(queen2);
         let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
@@ -395,7 +398,7 @@ mod test
 
       model();
       engine();
-     ".into_state());
+     "#.into_state());
     let result = state.into_result();
     println!("{:?}", result);
     match result {
