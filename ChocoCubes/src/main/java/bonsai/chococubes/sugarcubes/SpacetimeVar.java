@@ -21,10 +21,10 @@ import inria.meije.rc.sugarcubes.implementation.*;
 
 public class SpacetimeVar extends UnaryInstruction
 {
-  private String name;
-  private Spacetime spacetime;
-  private Function<SpaceEnvironment, Object> initValue;
-  private Object value;
+  protected String name;
+  protected Spacetime spacetime;
+  protected Function<SpaceEnvironment, Object> initValue;
+  protected Object value;
   private boolean firstActivation;
 
   public SpacetimeVar(String name, Spacetime spacetime,

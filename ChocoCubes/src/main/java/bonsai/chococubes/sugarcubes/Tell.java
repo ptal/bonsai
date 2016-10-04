@@ -33,11 +33,11 @@ public class Tell extends Emit
     this.rightSide = rightSide;
   }
 
-  public byte activate(Environment env) {
-    SpaceEnvironment space_env = (SpaceEnvironment) env;
-    LatticeVar lhs = space_env.latticeVar(leftSide);
-    Object rhs = rightSide.apply(space_env);
+  public byte activate(Environment e) {
+    SpaceEnvironment env = (SpaceEnvironment) e;
+    LatticeVar lhs = env.latticeVar(leftSide);
+    Object rhs = rightSide.apply(env);
     lhs.join(rhs);
-    return super.activate(space_env);
+    return super.activate(env);
   }
 }

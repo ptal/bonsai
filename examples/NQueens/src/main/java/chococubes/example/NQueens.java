@@ -30,10 +30,8 @@ public class NQueens
       return body;
     }
     else {
-      return new SpacetimeVar("queen"+n, Spacetime.SingleSpace, (env) -> {
-          VarStore domains = (VarStore) env.var("domains");
-          return domains.alloc(new IntDomain(1, n));
-        },
+      return new LocationVar("queen"+n, "domains",
+        (env) -> new IntDomain(1, n),
         declareNQueensVars(x + 1, n, body));
     }
   }
