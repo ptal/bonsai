@@ -22,22 +22,36 @@ import inria.meije.rc.sugarcubes.*;
 // The right part of `v <- e` is converted into a closure of type `Function<SpaceEnvironment, Object>` returning a value based on the current environment.
 // It must be checked statically before that `e` do not depends on variable that could be modified after this operation. This would lead to non-determinism, take for example `v <- x || x <- [0..1]`.
 
-public class Tell extends Emit
+public class Tell extends PureGenerateIdentifier
 {
   private String leftSide;
   private Function<SpaceEnvironment, Object> rightSide;
 
-  public Tell(ClockIdentifier clockID, String leftSide, Function<SpaceEnvironment, Object> rightSide) {
-    super(clockID, new StringID(leftSide), null, true);
+  public Tell(String leftSide, Function<SpaceEnvironment, Object> rightSide) {
+    super(new StringID(leftSide));
     this.leftSide = leftSide;
     this.rightSide = rightSide;
   }
 
-  public byte activate(Environment e) {
+  public String actualToString(){
+    return leftSide + " <- <expression>";
+  }
+
+  public Instruction copy(){
+    return new Tell(leftSide, rightSide);
+  }
+
+  public Instruction prepareFor(final Environment env){
+    Tell copy = (Tell) this.copy();
+    copy.event = env.getDirectAccessToEvent(eventIdentifier);
+    return copy;
+  }
+
+  public boolean action(Environment e){
     SpaceEnvironment env = (SpaceEnvironment) e;
     LatticeVar lhs = env.latticeVar(leftSide);
     Object rhs = rightSide.apply(env);
     lhs.join(rhs);
-    return super.activate(env);
+    return super.action(env);
   }
 }

@@ -27,6 +27,10 @@ public class ConstraintStore extends LatticeVar implements Restorable {
     return new ConstraintStore();
   }
 
+  public ConstraintStore() {
+    constraints = new ArrayDeque();
+  }
+
   public Object label() {
     return new Integer(constraints.size());
   }
@@ -43,10 +47,20 @@ public class ConstraintStore extends LatticeVar implements Restorable {
   }
 
   public void join(Object value) {
-    assert value != null && value.getClass().isInstance(ReExpression.class) :
-      "Join in `ConstraintStore` is only defined for relational expression `ReExpression`.";
-    ReExpression expr = (ReExpression) value;
-    Constraint c = expr.decompose();
+    assert value != null;
+    Constraint c;
+    if (value instanceof ReExpression) {
+      ReExpression expr = (ReExpression) value;
+      c = expr.decompose();
+    }
+    else if (value instanceof Constraint) {
+      c = (Constraint) value;
+    }
+    else {
+      throw new RuntimeException(
+        "Join in `ConstraintStore` is not defined for `" + value.getClass().getName() +
+        "`.\nIt is defined for `Constraint` or relational expression `ReExpression`.");
+    }
     constraints.add(c);
     c.post();
   }

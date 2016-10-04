@@ -4,6 +4,7 @@ import java.lang.reflect.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 import org.chocosolver.solver.variables.*;
+import org.chocosolver.solver.constraints.nary.alldifferent.*;
 import bonsai.chococubes.*;
 import bonsai.chococubes.core.*;
 import bonsai.chococubes.choco.*;
@@ -16,7 +17,8 @@ public class NQueens
       new SpacetimeVar("domains", Spacetime.WorldLine, (env) -> VarStore.bottom(),
       new SpacetimeVar("constraints", Spacetime.WorldLine, (env) -> ConstraintStore.bottom(),
       declareNQueensVars(1, 4,
-      printVariables())));
+      declareNQueensConstraint(
+      printVariables()))));
     SpaceMachine machine = SpaceMachine.create(p);
     try {
       machine.execute();
@@ -34,6 +36,16 @@ public class NQueens
         (env) -> new IntDomain(1, n),
         declareNQueensVars(x + 1, n, body));
     }
+  }
+
+  private static Program declareNQueensConstraint(Program body) {
+    return SC.seq(
+      new Tell("constraints", (env) -> {
+        VarStore domains = (VarStore) env.var("domains");
+        return new AllDifferent(domains.vars(), "DEFAULT");
+      }),
+      body
+    );
   }
 
   private static Program printVariables() {
