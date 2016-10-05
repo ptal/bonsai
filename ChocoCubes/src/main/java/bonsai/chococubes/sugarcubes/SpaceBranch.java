@@ -42,7 +42,7 @@ public class SpaceBranch extends UnaryInstruction
   public byte activate(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
     env.enterSpaceBranch();
-    byte res = super.activate(env);
+    byte res = body.activate(env);
     env.exitSpaceBranch();
     return res;
   }

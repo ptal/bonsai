@@ -35,7 +35,7 @@ public class SpaceEnvironment extends Clock {
     super(clockID, anInternalIdentifierGenerator, body);
     vars = new HashMap();
     futures = new ArrayDeque();
-    branches = new ArrayList();
+    // branches = new ArrayList(); // FIXME, cf. registerSpaceBranch
     activatedBranches = new HashSet();
     currentSnapshot = null;
     inSnapshot = false;
@@ -83,6 +83,10 @@ public class SpaceEnvironment extends Clock {
   }
 
   public Integer registerSpaceBranch(SpaceBranch branch) {
+    // FIXME: branches can be null because `SpaceEnvironment` is used in prepareFor of instructions but prepareFor is called in the constructor of Clock.
+    if (branches == null) {
+      branches = new ArrayList();
+    }
     branches.add(branch);
     return branches.size() - 1;
   }
@@ -90,6 +94,10 @@ public class SpaceEnvironment extends Clock {
   // At the end of the current instant, the branches at `branchesIndexes` will be turned into `Snapshot` for future activation.
   public void activateSpace(ArrayList<Integer> branchesIndexes) {
     for (Integer idx : branchesIndexes) {
+      if (idx >= branches.size()) {
+        throw new RuntimeException(
+          "activateSpace: Try to activate a undeclared or not existing space.");
+      }
       activatedBranches.add(idx);
     }
   }

@@ -19,7 +19,7 @@ import bonsai.chococubes.core.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 
-public class Space extends UnaryInstruction
+public class Space extends Atom
 {
   private ArrayList<SpaceBranch> branches;
   private ArrayList<Integer> branchesIndexes;
@@ -55,9 +55,9 @@ public class Space extends UnaryInstruction
     return this;
   }
 
-  public byte activate(Environment e) {
+  public boolean action(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
     env.activateSpace(branchesIndexes);
-    return super.activate(env);
+    return false;
   }
 }

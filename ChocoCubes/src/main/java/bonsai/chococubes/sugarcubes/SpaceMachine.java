@@ -25,8 +25,11 @@ public class SpaceMachine extends StdMachine
     new InternalStringIdentifiers();
 
   public static SpaceMachine create(Program body) {
+    Program p = new LinkObject(null,
+      SC.shell(new StringID(".."), body),
+      SC.NO_ACTION, SC.NO_ACTION, SC.NO_ACTION);
     SpaceEnvironment env = new SpaceEnvironment(
-      ClockRegistry.noMultiClockMode(), INTERNAL_STRING_IDENTIFIERS, body);
+      ClockRegistry.noMultiClockMode(), INTERNAL_STRING_IDENTIFIERS, p);
     return new SpaceMachine(env);
   }
 

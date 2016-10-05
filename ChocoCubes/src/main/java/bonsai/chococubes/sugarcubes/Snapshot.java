@@ -42,7 +42,6 @@ public class Snapshot
   }
 
   public void saveSingleTimeVar(String name, Object value) {
-    assertClass(name, value, Cloneable.class, "single_time");
     singleTimeVars.put(name, value);
   }
 
