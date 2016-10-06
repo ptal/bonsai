@@ -38,7 +38,7 @@ public class SpacetimeVar extends UnaryInstruction
   }
 
   public String actualToString() {
-    return name + " in " + spacetime + " = " + value;
+    return name + " in " + spacetime + " = " + value + ";\n" + body;
   }
 
   public Instruction copy() {

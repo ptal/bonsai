@@ -20,8 +20,9 @@ public class NQueens
       new SpacetimeVar("constraints", Spacetime.WorldLine, (env) -> ConstraintStore.bottom(),
       SC.seq(
         model(),
-        engine())));
-    SpaceMachine machine = SpaceMachine.create(p);
+        engine(),
+        printVariables("After execution of the engine"))));
+    SpaceMachine machine = SpaceMachine.createDebug(p);
     try {
       machine.execute();
     } catch (Exception e) {
@@ -51,7 +52,7 @@ public class NQueens
 
   // fn first_fail_middle() {
   //   let var in single_space = new FirstFail(domains.model());
-  //   let val in single_space = new IntDomainMin();
+  //   let val in single_space = new IntDomainMiddle(IntDomainMiddle.FLOOR);
   //   loop {
   //     when consistent |= Consistent.Unknown {
   //       let x: IntVar in single_time = var.getVariable(domains.vars());
@@ -70,19 +71,20 @@ public class NQueens
         VarStore domains = (VarStore) env.var("domains");
         return new FirstFail(domains.model());
       },
-      new SpacetimeVar("val", Spacetime.SingleSpace, (env) -> new IntDomainMin(),
+      new SpacetimeVar("val", Spacetime.SingleSpace, (env) -> new IntDomainMiddle(IntDomainMiddle.FLOOR),
       SC.loop(
         SC.seq(
         SC.when(new EntailmentConfig("consistent", (env) -> Consistent.Unknown),
+          // SC.seq(SC.print("space splitting.\n"),
           new SpacetimeVar("x", Spacetime.SingleTime, (env) -> {
             FirstFail var = (FirstFail) env.var("var");
-            IntDomainMin val = (IntDomainMin) env.var("val");
+            IntDomainMiddle val = (IntDomainMiddle) env.var("val");
             VarStore domains = (VarStore) env.var("domains");
             return var.getVariable(domains.vars());
           },
           new SpacetimeVar("mid", Spacetime.SingleTime, (env) -> {
             IntVar x = (IntVar) env.var("x");
-            IntDomainMin val = (IntDomainMin) env.var("val");
+            IntDomainMiddle val = (IntDomainMiddle) env.var("val");
             VarStore domains = (VarStore) env.var("domains");
             return new Integer(val.selectValue((IntVar) domains.index(x)));
           },
@@ -90,15 +92,17 @@ public class NQueens
             new SpaceBranch(new Tell("constraints", (env) -> {
               IntVar x = (IntVar) env.var("x");
               Integer mid = (Integer) env.var("mid");
+              // System.out.println("[ENTER Branch A]");
               return x.gt(mid);
             })),
             new SpaceBranch(new Tell("constraints", (env) -> {
               IntVar x = (IntVar) env.var("x");
               Integer mid = (Integer) env.var("mid");
+              // System.out.println("[ENTER Branch B]");
               return x.le(mid);
             }))
           ))))),
-          SC.nothing()),
+          SC.print("No space split in this node.\n")),
         SC.stop())
       )));
   }
@@ -115,7 +119,9 @@ public class NQueens
     return SC.loop(
       SC.seq(
         SC.when(new EntailmentConfig("consistent", (env) -> Consistent.True),
-          SC.generate("FoundSolution"),
+          SC.seq(
+            SC.generate("FoundSolution"),
+            printVariables("When found a solution")),
           SC.nothing()),
         SC.stop()
     ));
@@ -130,12 +136,15 @@ public class NQueens
   private static Program propagation() {
     return SC.loop(
       SC.seq(
+        printModel("Before propagation"),
         new Tell("consistent", (env) -> {
           VarStore domains = (VarStore) env.var("domains");
           ConstraintStore constraints = (ConstraintStore) env.var("constraints");
           Consistent consistent = PropagatorEngine.propagate(domains, constraints);
+          System.out.println("consistent: " + consistent);
           return consistent;
         }),
+        printModel("After propagation"),
         SC.stop()
     ));
   }
@@ -152,7 +161,7 @@ public class NQueens
   private static Program model() {
     return declareNQueensVars(1, 4,
     declareNQueensConstraint(
-    printVariables()));
+    printVariables("After declaring variables")));
   }
 
   private static Program declareNQueensVars(int x, int n, Program body) {
@@ -160,7 +169,7 @@ public class NQueens
       return body;
     }
     else {
-      return new LocationVar("queen"+n, "domains",
+      return new LocationVar("queen"+x, "domains",
         (env) -> new IntDomain(1, n),
         declareNQueensVars(x + 1, n, body));
     }
@@ -176,14 +185,21 @@ public class NQueens
     );
   }
 
-  private static Program printVariables() {
+  private static Program printVariables(String message) {
     return new ClosureAtom((env) -> {
         VarStore domains = (VarStore) env.var("domains");
-        System.out.print("vars = [");
+        System.out.print("["+message+"] vars = [");
         for (IntVar v : domains.vars()) {
           System.out.print(v + ", ");
         }
         System.out.println("]");
       });
+  }
+
+  private static Program printModel(String message) {
+    return new ClosureAtom((env) -> {
+      VarStore domains = (VarStore) env.var("domains");
+      System.out.print("["+message+"]" + domains.model());
+    });
   }
 }

@@ -115,4 +115,13 @@ public class FlatLattice<T> extends LatticeVar {
       return new FlatLattice(obj);
     }
   }
+
+  public String toString() {
+    if (isBottom()) {
+      return "bottom";
+    }
+    else {
+      return value.get().toString();
+    }
+  }
 }

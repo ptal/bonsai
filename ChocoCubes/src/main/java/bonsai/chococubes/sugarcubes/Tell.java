@@ -34,7 +34,7 @@ public class Tell extends PureGenerateIdentifier
   }
 
   public String actualToString(){
-    return leftSide + " <- <expression>";
+    return leftSide + " <- <expression>;\n";
   }
 
   public Instruction copy(){

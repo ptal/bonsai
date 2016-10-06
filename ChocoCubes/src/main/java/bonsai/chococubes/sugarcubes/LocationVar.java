@@ -42,7 +42,7 @@ public class LocationVar extends SpacetimeVar
   }
 
   public String actualToString() {
-    return name + " = " + storeName + " <- <expression>";
+    return name + " = " + storeName + " <- <expression>;\n" + body;
   }
 
   public Instruction copy() {

@@ -27,4 +27,12 @@ public enum Consistent {
   Unknown,
   True,
   False;
+
+  public String toString() {
+    switch(this) {
+      case Unknown: return "unknown";
+      case True: return "true";
+      default: return "false";
+    }
+  }
 }

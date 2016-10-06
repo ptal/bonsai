@@ -33,8 +33,8 @@ public class Space extends Atom
   public String actualToString() {
     return branches.stream()
       .map((b) -> b.toString())
-      .reduce("space", (accu, b) -> new String(accu + " || " + b))
-      + " end";
+      .reduce("space\n", (accu, b) -> new String(accu + "|| " + b))
+      + " end\n";
   }
 
   public Instruction copy() {
