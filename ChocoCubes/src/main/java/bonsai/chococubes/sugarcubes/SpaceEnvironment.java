@@ -26,6 +26,7 @@ public class SpaceEnvironment extends Clock {
   private ArrayList<Integer> activatedBranches;
   // When we enter a branch of `space`, we depend on the single time variables of the current instantiated snapshot and not the one of the current environment.
   private Snapshot currentSnapshot;
+  private SpaceBranch currentBranch;
   private boolean inSnapshot;
 
   public SpaceEnvironment(ClockIdentifier clockID,
@@ -38,6 +39,8 @@ public class SpaceEnvironment extends Clock {
     // branches = new ArrayList(); // FIXME, cf. registerSpaceBranch
     activatedBranches = new ArrayList();
     currentSnapshot = null;
+    // FIXME, the current branch should be incorporated into the current running program. For example, one of the problem is that it does not call activateOnEOI.
+    currentBranch = null;
     inSnapshot = false;
   }
 
@@ -55,6 +58,9 @@ public class SpaceEnvironment extends Clock {
           instantiateFuture();
         }
       }
+    }
+    if (currentBranch != null) {
+      currentBranch.activate(this);
     }
     return super.activation(env);
   }
@@ -77,18 +83,15 @@ public class SpaceEnvironment extends Clock {
     activatedBranches.clear();
   }
 
+  // Precondition: !futures.isEmpty()
   public void instantiateFuture() {
-    if (!futures.isEmpty()) {
-      currentSnapshot = futures.pop();
-      for(Map.Entry<String, SpacetimeVar> var : vars.entrySet()) {
-        var.getValue().restore(this, currentSnapshot);
-      }
-      int b = currentSnapshot.branch();
-      // FIXME, INVESTIGATE: By doing so, a branch must execute immediatly and cannot depends on the rest of the program.
-      SpaceBranch branch = branches.get(b);
-      branch.prepareFor(this);
-      branch.activate(this);
+    currentSnapshot = futures.pop();
+    for(Map.Entry<String, SpacetimeVar> var : vars.entrySet()) {
+      var.getValue().restore(this, currentSnapshot);
     }
+    int b = currentSnapshot.branch();
+    currentBranch = branches.get(b);
+    currentBranch.prepareFor(this);
   }
 
   // For shadowing the single time variables when executing a branch.

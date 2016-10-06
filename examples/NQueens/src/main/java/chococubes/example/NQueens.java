@@ -1,7 +1,6 @@
 package chococubes.example;
 
 import java.util.*;
-import java.lang.reflect.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 import org.chocosolver.solver.variables.*;

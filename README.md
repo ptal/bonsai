@@ -7,24 +7,24 @@ This tutorial describe how to set up a project with ChocoCubes, a Java library f
 1. Download and install [Maven](https://maven.apache.org).
 2. Download the JAR file of [SugarCubes V4](http://jeanferdysusini.free.fr/v4.0/SugarCubesv4.0.0a5.jar).
 3. Copy the following line in your terminal for locally installing SugarCubes:
-```
-mvn install:install-file -DgroupId=inria.meije.rc -DartifactId=SugarCubes -Dversion=4.0.0a5 -Dpackaging=jar -Dfile=SugarCubesv4.0.0a5.jar
-```
+  ```
+  mvn install:install-file -DgroupId=inria.meije.rc -DartifactId=SugarCubes -Dversion=4.0.0a5 -Dpackaging=jar -Dfile=SugarCubesv4.0.0a5.jar
+  ```
 4. Build and package ChocoCubes (this library) as a .jar:
-```
-git clone https://github.com/ptal/bonsai.git
-cd bonsai/ChocoCubes/
-mvn package
-```
-The .jar is in the repository `target`. We can now install this version in our Maven repository so we can use it later in other project:
-```
-mvn install:install-file -DgroupId=bonsai -DartifactId=ChocoCubes -Dversion=1.0 -Dpackaging=jar -Dfile=target/ChocoCubes-1.0-SNAPSHOT.jar
-```
+  ```
+  git clone https://github.com/ptal/bonsai.git
+  cd bonsai/ChocoCubes/
+  mvn package
+  ```
+  The .jar is in the repository `target`. We can now install this version in our Maven repository so we can use it later in other project:
+  ```
+  mvn install:install-file -DgroupId=bonsai -DartifactId=ChocoCubes -Dversion=1.0 -Dpackaging=jar -Dfile=target/ChocoCubes-1.0-SNAPSHOT.jar
+  ```
 5. We run a simple example solving the NQueens problem in `bonsai/examples/NQueens`:
-```
-mvn compile
-mvn exec:java -Dexec.mainClass="chococubes.example.NQueens"
-```
+  ```
+  mvn compile
+  mvn exec:java -Dexec.mainClass="chococubes.example.NQueens"
+  ```
 6. Copy this project and use it as a template to start your own! If you already have a running project, don't forget to add to the `pom.xml` the following dependencies (note that Choco is available on the Maven central repository so you don't need to install it):
 
 ```
