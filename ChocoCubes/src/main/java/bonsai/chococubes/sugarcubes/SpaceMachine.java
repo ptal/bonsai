@@ -54,7 +54,7 @@ public class SpaceMachine extends StdMachine
     }
     for (int i = 1; true; i++) {
       if (debug) {
-        System.out.println("[Reaction " + i + "] Starting");
+        System.out.println("[Reaction " + i + "] Starting. Size of the reaction queue: " + env.queueSize());
       }
       if (react() || env.isEmpty()) {
         break;

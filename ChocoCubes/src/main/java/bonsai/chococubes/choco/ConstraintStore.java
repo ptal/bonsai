@@ -61,7 +61,7 @@ public class ConstraintStore extends LatticeVar implements Restorable {
         "Join in `ConstraintStore` is not defined for `" + value.getClass().getName() +
         "`.\nIt is defined for `Constraint` or relational expression `ReExpression`.");
     }
-    constraints.add(c);
+    constraints.push(c);
     c.post();
   }
 

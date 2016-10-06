@@ -20,8 +20,7 @@ public class NQueens
       new SpacetimeVar("constraints", Spacetime.WorldLine, (env) -> ConstraintStore.bottom(),
       SC.seq(
         model(),
-        engine(),
-        printVariables("After execution of the engine"))));
+        engine())));
     SpaceMachine machine = SpaceMachine.createDebug(p);
     try {
       machine.execute();
@@ -46,7 +45,8 @@ public class NQueens
         SC.merge(
           failFirstMiddle(),
           propagation(),
-          oneSolution()
+          // oneSolution(),
+          printSolution()
         )));
   }
 
@@ -75,7 +75,6 @@ public class NQueens
       SC.loop(
         SC.seq(
         SC.when(new EntailmentConfig("consistent", (env) -> Consistent.Unknown),
-          // SC.seq(SC.print("space splitting.\n"),
           new SpacetimeVar("x", Spacetime.SingleTime, (env) -> {
             FirstFail var = (FirstFail) env.var("var");
             IntDomainMiddle val = (IntDomainMiddle) env.var("val");
@@ -92,17 +91,15 @@ public class NQueens
             new SpaceBranch(new Tell("constraints", (env) -> {
               IntVar x = (IntVar) env.var("x");
               Integer mid = (Integer) env.var("mid");
-              // System.out.println("[ENTER Branch A]");
               return x.gt(mid);
             })),
             new SpaceBranch(new Tell("constraints", (env) -> {
               IntVar x = (IntVar) env.var("x");
               Integer mid = (Integer) env.var("mid");
-              // System.out.println("[ENTER Branch B]");
               return x.le(mid);
             }))
           ))))),
-          SC.print("No space split in this node.\n")),
+          SC.nothing()),
         SC.stop())
       )));
   }
@@ -119,9 +116,25 @@ public class NQueens
     return SC.loop(
       SC.seq(
         SC.when(new EntailmentConfig("consistent", (env) -> Consistent.True),
-          SC.seq(
-            SC.generate("FoundSolution"),
-            printVariables("When found a solution")),
+          SC.generate("FoundSolution"),
+          SC.nothing()),
+        SC.stop()
+    ));
+  }
+
+  // fn print_solution() {
+  //   loop {
+  //     when consistent |= Consistent.True {
+  //       print_model();
+  //     }
+  //     pause;
+  //   }
+  // }
+  private static Program printSolution() {
+    return SC.loop(
+      SC.seq(
+        SC.when(new EntailmentConfig("consistent", (env) -> Consistent.True),
+          printModel("Solution"),
           SC.nothing()),
         SC.stop()
     ));
@@ -136,15 +149,14 @@ public class NQueens
   private static Program propagation() {
     return SC.loop(
       SC.seq(
-        printModel("Before propagation"),
+        // printModel("Before propagation"),
         new Tell("consistent", (env) -> {
           VarStore domains = (VarStore) env.var("domains");
           ConstraintStore constraints = (ConstraintStore) env.var("constraints");
           Consistent consistent = PropagatorEngine.propagate(domains, constraints);
-          System.out.println("consistent: " + consistent);
           return consistent;
         }),
-        printModel("After propagation"),
+        // printModel("After propagation"),
         SC.stop()
     ));
   }
@@ -156,12 +168,11 @@ public class NQueens
   //   let queen4: IntVar = domains <- new IntDomain(1,4);
   //
   //   constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
-  //   printVariables(domains);
   // }
   private static Program model() {
     return declareNQueensVars(1, 4,
     declareNQueensConstraint(
-    printVariables("After declaring variables")));
+    SC.nothing()));
   }
 
   private static Program declareNQueensVars(int x, int n, Program body) {
@@ -183,17 +194,6 @@ public class NQueens
       }),
       body
     );
-  }
-
-  private static Program printVariables(String message) {
-    return new ClosureAtom((env) -> {
-        VarStore domains = (VarStore) env.var("domains");
-        System.out.print("["+message+"] vars = [");
-        for (IntVar v : domains.vars()) {
-          System.out.print(v + ", ");
-        }
-        System.out.println("]");
-      });
   }
 
   private static Program printModel(String message) {

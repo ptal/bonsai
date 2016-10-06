@@ -52,6 +52,8 @@ public class Space extends Atom
       branchesIndexes.add(branchIndex);
       branch.setParent(this);
     }
+    // We reverse the indexes so we explore from left to right the tree.
+    Collections.reverse(branchesIndexes);
     return this;
   }
 

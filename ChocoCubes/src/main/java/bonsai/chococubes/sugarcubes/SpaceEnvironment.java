@@ -23,7 +23,7 @@ public class SpaceEnvironment extends Clock {
   private HashMap<String, SpacetimeVar> vars;
   private ArrayDeque<Snapshot> futures;
   private ArrayList<SpaceBranch> branches;
-  private HashSet<Integer> activatedBranches;
+  private ArrayList<Integer> activatedBranches;
   // When we enter a branch of `space`, we depend on the single time variables of the current instantiated snapshot and not the one of the current environment.
   private Snapshot currentSnapshot;
   private boolean inSnapshot;
@@ -36,7 +36,7 @@ public class SpaceEnvironment extends Clock {
     vars = new HashMap();
     futures = new ArrayDeque();
     // branches = new ArrayList(); // FIXME, cf. registerSpaceBranch
-    activatedBranches = new HashSet();
+    activatedBranches = new ArrayList();
     currentSnapshot = null;
     inSnapshot = false;
   }
@@ -54,8 +54,9 @@ public class SpaceEnvironment extends Clock {
       for (SpacetimeVar var : vars.values()) {
         var.save(future);
       }
-      futures.add(future);
+      futures.push(future);
     }
+    activatedBranches.clear();
   }
 
   public void instantiateFuture() {
@@ -65,7 +66,10 @@ public class SpaceEnvironment extends Clock {
         var.getValue().restore(this, currentSnapshot);
       }
       int b = currentSnapshot.branch();
-      super.addProgram(branches.get(b));
+      // FIXME, INVESTIGATE: By doing so, a branch must execute immediatly and cannot depends on the rest of the program.
+      SpaceBranch branch = branches.get(b);
+      branch.prepareFor(this);
+      branch.activate(this);
     }
   }
 
@@ -127,5 +131,9 @@ public class SpaceEnvironment extends Clock {
 
   public boolean isEmpty() {
     return futures.isEmpty();
+  }
+
+  public int queueSize() {
+    return futures.size();
   }
 }
