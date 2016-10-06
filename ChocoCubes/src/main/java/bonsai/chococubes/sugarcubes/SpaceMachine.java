@@ -52,17 +52,18 @@ public class SpaceMachine extends StdMachine
     if (debug) {
       System.out.println("[Start of execution]");
     }
-    for (int i = 1; true; i++) {
+    int numReactions;
+    for (numReactions = 1; true; numReactions++) {
       if (debug) {
-        System.out.println("[Reaction " + i + "] Starting. Size of the reaction queue: " + env.queueSize());
+        System.out.println("[Reaction " + numReactions + "] Starting. Size of the reaction queue: " + env.queueSize());
       }
       if (react() || env.isEmpty()) {
         break;
       }
     }
     if (debug) {
-      System.out.println("[End of execution] Due to " +
-        ((env.isEmpty()) ? "empty environment.":"program termination."));
+      System.out.println("[End of execution] After " + numReactions + " reactions due to " +
+        ((env.isEmpty()) ? "empty reaction queue.":"program termination."));
     }
     return env.isEmpty();
   }

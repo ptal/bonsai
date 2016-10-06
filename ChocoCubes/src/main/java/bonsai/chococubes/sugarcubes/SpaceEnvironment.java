@@ -41,11 +41,29 @@ public class SpaceEnvironment extends Clock {
     inSnapshot = false;
   }
 
+  private boolean firstActivation = true;
+  public byte activation(Environment env) {
+    if (beginingOfInstant) {
+      if (firstActivation) {
+        firstActivation = false;
+      }
+      else {
+        if (futures.isEmpty()) {
+          return TERM;
+        }
+        else {
+          instantiateFuture();
+        }
+      }
+    }
+    return super.activation(env);
+  }
+
   // Big step transition.
   public void newInstant() {
     saveFutures();
     super.newInstant();
-    instantiateFuture();
+
   }
 
   public void saveFutures() {

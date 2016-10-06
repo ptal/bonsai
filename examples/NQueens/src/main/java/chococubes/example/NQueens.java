@@ -19,7 +19,7 @@ public class NQueens
       new SpacetimeVar("domains", Spacetime.WorldLine, (env) -> VarStore.bottom(),
       new SpacetimeVar("constraints", Spacetime.WorldLine, (env) -> ConstraintStore.bottom(),
       SC.seq(
-        model(),
+        model(4),
         engine())));
     SpaceMachine machine = SpaceMachine.createDebug(p);
     try {
@@ -58,8 +58,8 @@ public class NQueens
   //       let x: IntVar in single_time = var.getVariable(domains.vars());
   //       let mid: int in single_time = val.selectValue(domains[x]);
   //       space
+  //       || constraints[domains] <- x.le(mid);
   //       || constraints[domains] <- x.gt(mid);
-  //       || constraints[domains] <- x.lte(mid);
   //       end
   //     }
   //     pause;
@@ -91,12 +91,12 @@ public class NQueens
             new SpaceBranch(new Tell("constraints", (env) -> {
               IntVar x = (IntVar) env.var("x");
               Integer mid = (Integer) env.var("mid");
-              return x.gt(mid);
+              return x.le(mid);
             })),
             new SpaceBranch(new Tell("constraints", (env) -> {
               IntVar x = (IntVar) env.var("x");
               Integer mid = (Integer) env.var("mid");
-              return x.le(mid);
+              return x.gt(mid);
             }))
           ))))),
           SC.nothing()),
@@ -134,7 +134,7 @@ public class NQueens
     return SC.loop(
       SC.seq(
         SC.when(new EntailmentConfig("consistent", (env) -> Consistent.True),
-          printModel("Solution"),
+          printVariables("Solution"),
           SC.nothing()),
         SC.stop()
     ));
@@ -157,6 +157,7 @@ public class NQueens
           return consistent;
         }),
         // printModel("After propagation"),
+        // printVariables("After propagation"),
         SC.stop()
     ));
   }
@@ -167,11 +168,12 @@ public class NQueens
   //   let queen3: IntVar = domains <- new IntDomain(1,4);
   //   let queen4: IntVar = domains <- new IntDomain(1,4);
   //
-  //   constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
+  //   constraints[domains] <- new AllDifferent(domains.vars(), "BC");
+  //   addDiagonals(domains, constraints);
   // }
-  private static Program model() {
-    return declareNQueensVars(1, 4,
-    declareNQueensConstraint(
+  private static Program model(int n) {
+    return declareNQueensVars(1, n,
+    declareNQueensConstraint(n,
     SC.nothing()));
   }
 
@@ -186,20 +188,54 @@ public class NQueens
     }
   }
 
-  private static Program declareNQueensConstraint(Program body) {
+  private static Program declareNQueensConstraint(int n, Program body) {
     return SC.seq(
       new Tell("constraints", (env) -> {
         VarStore domains = (VarStore) env.var("domains");
-        return new AllDifferent(domains.vars(), "DEFAULT");
+        return new AllDifferent(domains.vars(), "BC");
+      }),
+      new Tell("constraints", (env) -> {
+        IntVar[] diag1 = new IntVar[n];
+        VarStore domains = (VarStore) env.var("domains");
+        for (int i = 0; i < n; i++) {
+            diag1[i] = domains.model().intOffsetView(domains.vars()[i], i);
+        }
+        return new AllDifferent(diag1, "BC");
+      }),
+      new Tell("constraints", (env) -> {
+        IntVar[] diag2 = new IntVar[n];
+        VarStore domains = (VarStore) env.var("domains");
+        for (int i = 0; i < n; i++) {
+            diag2[i] = domains.model().intOffsetView(domains.vars()[i], -i);
+        }
+        return new AllDifferent(diag2, "BC");
       }),
       body
     );
   }
 
+  private static void printHeader(String message, SpaceEnvironment env) {
+    LatticeVar consistent = env.latticeVar("consistent");
+    System.out.print("["+message+"][" + consistent + "]");
+  }
+
   private static Program printModel(String message) {
     return new ClosureAtom((env) -> {
+      printHeader(message, env);
       VarStore domains = (VarStore) env.var("domains");
-      System.out.print("["+message+"]" + domains.model());
+      System.out.print(domains.model());
+    });
+  }
+
+  private static Program printVariables(String message) {
+    return new ClosureAtom((env) -> {
+      printHeader(message, env);
+      VarStore domains = (VarStore) env.var("domains");
+      System.out.print(" Variables = [");
+      for (IntVar v : domains.vars()) {
+        System.out.print(v + ", ");
+      }
+      System.out.println("]");
     });
   }
 }
