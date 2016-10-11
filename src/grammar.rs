@@ -19,7 +19,21 @@ grammar! bonsai {
   use std::str::FromStr;
   use ast::*;
 
-  program = spacing item+
+  program = java_header java_class > make_java_program
+
+  fn make_java_program(header: String, class_name: String,
+    items: Vec<Item>) -> Program
+  {
+    Program {
+      header: header,
+      class_name: class_name,
+      items: items
+    }
+  }
+
+  java_header = (!PUBLIC .)* > to_string
+
+  java_class = PUBLIC CLASS identifier LBRACE item+ RBRACE
 
   item
     = stmt > make_stmt_item
@@ -314,6 +328,8 @@ grammar! bonsai {
   TOP = "top" kw_tail
 
   PRIVATE = "private" kw_tail
+  PUBLIC = "public" kw_tail
+  CLASS = "class" kw_tail
   STATIC = "static" kw_tail
 
   UNDERSCORE = "_"
@@ -379,108 +395,124 @@ mod test
   fn test_grammar()
   {
     let state = bonsai::recognize_program(r#"
-      let domains in world_line = VarStore.bottom();
-      let constraints in world_line = ConstraintStore.bottom();
-      let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
+      package chococubes.example;
 
-      private static void modelChoco(int n, VarStore domains, ConstraintStore constraints) {
-        IntVar[] vars = new IntVar[n];
-        IntVar[] diag1 = new IntVar[n];
-        IntVar[] diag2 = new IntVar[n];
-        for(int i = 0; i < n; i++) {
-          vars[i] = (IntVar) domains.alloc(new IntDomain(1, n));
-          diag1[i] = domains.model().intOffsetView(vars[i], i);
-          diag2[i] = domains.model().intOffsetView(vars[i], -i);
+      import java.util.*;
+      import inria.meije.rc.sugarcubes.*;
+      import inria.meije.rc.sugarcubes.implementation.*;
+      import org.chocosolver.solver.variables.*;
+      import org.chocosolver.solver.constraints.nary.alldifferent.*;
+      import org.chocosolver.solver.search.strategy.selectors.variables.*;
+      import org.chocosolver.solver.search.strategy.selectors.values.*;
+      import bonsai.chococubes.core.*;
+      import bonsai.chococubes.choco.*;
+      import bonsai.chococubes.sugarcubes.*;
+
+      public class NQueens
+      {
+        let domains in world_line = VarStore.bottom();
+        let constraints in world_line = ConstraintStore.bottom();
+        let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
+
+        private static void modelChoco(int n, VarStore domains, ConstraintStore constraints) {
+          IntVar[] vars = new IntVar[n];
+          IntVar[] diag1 = new IntVar[n];
+          IntVar[] diag2 = new IntVar[n];
+          for(int i = 0; i < n; i++) {
+            vars[i] = (IntVar) domains.alloc(new IntDomain(1, n));
+            diag1[i] = domains.model().intOffsetView(vars[i], i);
+            diag2[i] = domains.model().intOffsetView(vars[i], -i);
+          }
+          constraints.join(new AllDifferent(vars, "BC"));
+          constraints.join(new AllDifferent(diag1, "BC"));
+          constraints.join(new AllDifferent(diag2, "BC"));
         }
-        constraints.join(new AllDifferent(vars, "BC"));
-        constraints.join(new AllDifferent(diag1, "BC"));
-        constraints.join(new AllDifferent(diag2, "BC"));
-      }
 
-      private static void printHeader(String message,
-        FlatLattice<Consistent> consistent)
-      {
-        System.out.print("["+message+"][" + consistent + "]");
-      }
-
-      private static Program printModel(String message,
-        FlatLattice<Consistent> consistent, VarStore domains)
-      {
-        printHeader(message, consistent);
-        System.out.print(domains.model());
-      }
-
-      private static Program printVariables(String message
-        FlatLattice<Consistent> consistent, VarStore domains)
-      {
-        printHeader(message, consistent);
-        System.out.print(" Variables = [");
-        for (IntVar v : domains.vars()) {
-          System.out.print(v + ", ");
+        private static void printHeader(String message,
+          FlatLattice<Consistent> consistent)
+        {
+          System.out.print("["+message+"][" + consistent + "]");
         }
-        System.out.println("]");
-      }
 
-      fn first_fail_middle() {
-        let var in single_space = new FirstFail();
-        let val in single_space = new IntDomainMin();
-        loop {
-          when consistent |= Consistent.Unknown {
-            let x: IntVar in single_time = var.getVariable(domains.vars());
-            let mid: int in single_time = val.selectValue(domains[x]);
-            space
-            || constraints[domains] <- x.gt(mid);
-            || constraints[domains] <- x.lte(mid);
+        private static Program printModel(String message,
+          FlatLattice<Consistent> consistent, VarStore domains)
+        {
+          printHeader(message, consistent);
+          System.out.print(domains.model());
+        }
+
+        private static Program printVariables(String message
+          FlatLattice<Consistent> consistent, VarStore domains)
+        {
+          printHeader(message, consistent);
+          System.out.print(" Variables = [");
+          for (IntVar v : domains.vars()) {
+            System.out.print(v + ", ");
+          }
+          System.out.println("]");
+        }
+
+        fn first_fail_middle() {
+          let var in single_space = new FirstFail();
+          let val in single_space = new IntDomainMin();
+          loop {
+            when consistent |= Consistent.Unknown {
+              let x: IntVar in single_time = var.getVariable(domains.vars());
+              let mid: int in single_time = val.selectValue(domains[x]);
+              space
+              || constraints[domains] <- x.gt(mid);
+              || constraints[domains] <- x.lte(mid);
+              end
+            }
+            pause;
+          }
+        }
+
+        fn model() {
+          modelChoco(4, domains, constraints);
+          printModel("After initialization", consistent, domains);
+        }
+
+        fn propagation() {
+          loop {
+            consistent <- PropagatorEngine.propagate(domains, constraints);
+            pause;
+          }
+        }
+
+        fn one_solution() {
+          loop {
+            when consistent |= Consistent.True {
+              exit FoundSolution;
+            }
+            pause;
+          }
+        }
+
+        fn engine() {
+          trap FoundSolution {
+            par
+            || fail_first_middle();
+            || propagation();
+            || one_solution();
             end
           }
-          pause;
         }
-      }
 
-      fn model() {
-        modelChoco(4, domains, constraints);
-        printModel("After initialization", consistent, domains);
-      }
+        model();
+        engine();
+        printVariables();
 
-      fn propagation() {
-        loop {
-          consistent <- PropagatorEngine.propagate(domains, constraints);
-          pause;
+        fn test() {
+          let queen1: IntVar = domains <- new IntDomain(0,1);
+          let queen2: IntVar = domains <- new IntDomain(0,1);
+
+          constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
+          printVariables(domains);
+
+          constraints[domains] <- queen1.ne(queen2);
+          let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
         }
-      }
-
-      fn one_solution() {
-        loop {
-          when consistent |= Consistent.True {
-            exit FoundSolution;
-          }
-          pause;
-        }
-      }
-
-      fn engine() {
-        trap FoundSolution {
-          par
-          || fail_first_middle();
-          || propagation();
-          || one_solution();
-          end
-        }
-      }
-
-      model();
-      engine();
-      printVariables();
-
-      fn test() {
-        let queen1: IntVar = domains <- new IntDomain(0,1);
-        let queen2: IntVar = domains <- new IntDomain(0,1);
-
-        constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
-        printVariables(domains);
-
-        constraints[domains] <- queen1.ne(queen2);
-        let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
       }
      "#.into_state());
     let result = state.into_result();

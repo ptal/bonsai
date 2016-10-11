@@ -14,7 +14,11 @@
 
 use std::fmt::{Formatter, Display, Error};
 
-pub type Program = Vec<Item>;
+pub struct Program {
+  pub header: String,
+  pub class_name: String,
+  pub items: Vec<Item>
+}
 
 pub enum Item {
   Statement(Stmt),
