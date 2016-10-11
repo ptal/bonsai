@@ -24,6 +24,7 @@ grammar! bonsai {
   item
     = stmt > make_stmt_item
     / FN identifier LPAREN list_ident RPAREN block > make_function_item
+    / java_static_method > make_java_static_method
 
   fn make_stmt_item(stmt: Stmt) -> Item {
     Item::Statement(stmt)
@@ -37,6 +38,22 @@ grammar! bonsai {
     })
   }
 
+  fn make_java_static_method(return_ty: JavaTy, parameters: JavaParameters,
+    name: String, block: JavaBlock) -> Item
+  {
+    Item::JavaStaticMethod(name.clone(),
+      vec![
+        String::from("private static "),
+        format!("{}", return_ty),
+        name,
+        parameters,
+        block
+      ]
+      .iter()
+      .flat_map(|x| x.chars())
+      .collect())
+  }
+
   list_ident
     = identifier (COMMA identifier)* > make_list_ident
     / "" > empty_ident_list
@@ -47,6 +64,26 @@ grammar! bonsai {
 
   fn empty_ident_list() -> Vec<String> {
     vec![]
+  }
+
+  java_static_method
+    = PRIVATE STATIC java_ty identifier java_param_list java_block kw_tail
+
+  java_block = "{" java_inside_block "}" > make_java_block
+  java_inside_block = ((!"{" !"}" .)+ > to_string / java_block)*
+
+  java_param_list
+    = &LPAREN (!RPAREN .)* RPAREN > make_java_param_list
+
+  fn make_java_param_list(mut raw_list: Vec<char>) -> JavaParameters {
+    raw_list.push(')');
+    to_string(raw_list)
+  }
+
+  fn make_java_block(inner_blocks: Vec<JavaBlock>) -> JavaBlock {
+    let mut res = extend_front(String::from("{"), inner_blocks);
+    res.push(String::from("}"));
+    res.iter().flat_map(|e| e.chars()).collect()
   }
 
   stmt_list = stmt+
@@ -63,7 +100,7 @@ grammar! bonsai {
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
-    / identifier LPAREN list_ident RPAREN SEMI_COLON > make_fn_call
+    / identifier LPAREN list_expr RPAREN SEMI_COLON > make_fn_call
     / var LEFT_ARROW expr SEMI_COLON > make_tell
 
   fn make_par(first: Block, rest: Vec<Block>) -> Stmt {
@@ -117,7 +154,7 @@ grammar! bonsai {
     Stmt::Loop(block)
   }
 
-  fn make_fn_call(fn_name: String, args: Vec<String>) -> Stmt {
+  fn make_fn_call(fn_name: String, args: Vec<Expr>) -> Stmt {
     Stmt::FnCall(fn_name, args)
   }
 
@@ -156,7 +193,7 @@ grammar! bonsai {
   // We consider single identifier to be part of bonsai language.
   java_expr
     = NEW java_ty LPAREN list_expr RPAREN > java_new
-    / identifier java_call+ > java_object_calls
+    / identifier java_method_call+ > java_object_calls
     / number > make_number_expr
     / string_literal > make_string_literal
 
@@ -171,7 +208,7 @@ grammar! bonsai {
   fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
   fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
 
-  java_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_call
+  java_method_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_call
 
   fn make_java_call(property: String, args: Option<Vec<Expr>>) -> JavaCall {
     JavaCall {
@@ -276,6 +313,9 @@ grammar! bonsai {
   BOT = "bot" kw_tail
   TOP = "top" kw_tail
 
+  PRIVATE = "private" kw_tail
+  STATIC = "static" kw_tail
+
   UNDERSCORE = "_"
   DOTDOT = ".." spacing
   SEMI_COLON = ";" spacing
@@ -343,6 +383,44 @@ mod test
       let constraints in world_line = ConstraintStore.bottom();
       let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
 
+      private static void modelChoco(int n, VarStore domains, ConstraintStore constraints) {
+        IntVar[] vars = new IntVar[n];
+        IntVar[] diag1 = new IntVar[n];
+        IntVar[] diag2 = new IntVar[n];
+        for(int i = 0; i < n; i++) {
+          vars[i] = (IntVar) domains.alloc(new IntDomain(1, n));
+          diag1[i] = domains.model().intOffsetView(vars[i], i);
+          diag2[i] = domains.model().intOffsetView(vars[i], -i);
+        }
+        constraints.join(new AllDifferent(vars, "BC"));
+        constraints.join(new AllDifferent(diag1, "BC"));
+        constraints.join(new AllDifferent(diag2, "BC"));
+      }
+
+      private static void printHeader(String message,
+        FlatLattice<Consistent> consistent)
+      {
+        System.out.print("["+message+"][" + consistent + "]");
+      }
+
+      private static Program printModel(String message,
+        FlatLattice<Consistent> consistent, VarStore domains)
+      {
+        printHeader(message, consistent);
+        System.out.print(domains.model());
+      }
+
+      private static Program printVariables(String message
+        FlatLattice<Consistent> consistent, VarStore domains)
+      {
+        printHeader(message, consistent);
+        System.out.print(" Variables = [");
+        for (IntVar v : domains.vars()) {
+          System.out.print(v + ", ");
+        }
+        System.out.println("]");
+      }
+
       fn first_fail_middle() {
         let var in single_space = new FirstFail();
         let val in single_space = new IntDomainMin();
@@ -360,14 +438,8 @@ mod test
       }
 
       fn model() {
-        let queen1: IntVar = domains <- new IntDomain(0,1);
-        let queen2: IntVar = domains <- new IntDomain(0,1);
-
-        constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
-        printVariables(domains);
-
-        constraints[domains] <- queen1.ne(queen2);
-        let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
+        modelChoco(4, domains, constraints);
+        printModel("After initialization", consistent, domains);
       }
 
       fn propagation() {
@@ -398,6 +470,18 @@ mod test
 
       model();
       engine();
+      printVariables();
+
+      fn test() {
+        let queen1: IntVar = domains <- new IntDomain(0,1);
+        let queen2: IntVar = domains <- new IntDomain(0,1);
+
+        constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
+        printVariables(domains);
+
+        constraints[domains] <- queen1.ne(queen2);
+        let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
+      }
      "#.into_state());
     let result = state.into_result();
     println!("{:?}", result);

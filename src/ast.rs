@@ -12,18 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt::{Formatter, Display, Error};
+
 pub type Program = Vec<Item>;
 
 pub enum Item {
   Statement(Stmt),
-  Fn(Function)
+  Fn(Function),
+  JavaStaticMethod(String, String)
 }
 
 pub type Block = Vec<Stmt>;
 
+pub type JavaBlock = String;
+pub type JavaParameters = String;
+
 pub struct JavaTy {
   pub name: String,
   pub generics: Vec<JavaTy>
+}
+
+impl Display for JavaTy
+{
+  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
+    formatter.write_fmt(format_args!("{}", self.name))?;
+    if !self.generics.is_empty() {
+      let mut generics_str = String::from("<");
+      for generic in &self.generics {
+        generics_str.push_str(format!("{}, ", generic).as_str());
+      }
+      // Remove the extra ", " characters.
+      generics_str.pop();
+      generics_str.pop();
+      formatter.write_fmt(format_args!("{}>", generics_str))?;
+    }
+    Ok(())
+  }
 }
 
 pub struct Function {
@@ -42,7 +66,7 @@ pub enum Stmt {
   Trap(String, Block),
   Exit(String),
   Loop(Block),
-  FnCall(String, Vec<String>),
+  FnCall(String, Vec<Expr>),
   Tell(Var, Expr)
 }
 
