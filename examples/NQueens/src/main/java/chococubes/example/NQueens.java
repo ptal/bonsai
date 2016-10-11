@@ -18,7 +18,7 @@ public class NQueens
       new SpacetimeVar("domains", Spacetime.WorldLine, (env) -> VarStore.bottom(),
       new SpacetimeVar("constraints", Spacetime.WorldLine, (env) -> ConstraintStore.bottom(),
       SC.seq(
-        model(4),
+        model2(4),
         engine())));
     SpaceMachine machine = SpaceMachine.createDebug(p);
     try {
@@ -174,6 +174,32 @@ public class NQueens
     return declareNQueensVars(1, n,
     declareNQueensConstraint(n,
     SC.nothing()));
+  }
+
+  // fn model() {
+  //   modelChoco(4, domains, constraints);
+  // }
+  private static Program model2(int n) {
+    return new ClosureAtom((env) -> {
+      VarStore domains = (VarStore) env.var("domains");
+      ConstraintStore constraints = (ConstraintStore) env.var("constraints");
+      modelChoco(n, domains, constraints);
+    });
+  }
+
+  // From https://github.com/chocoteam/samples/blob/master/src/main/java/org/chocosolver/samples/nqueen/NQueenGlobal.java
+  private static void modelChoco(int n, VarStore domains, ConstraintStore constraints) {
+    IntVar[] vars = new IntVar[n];
+    IntVar[] diag1 = new IntVar[n];
+    IntVar[] diag2 = new IntVar[n];
+    for(int i = 0; i < n; i++) {
+      vars[i] = (IntVar) domains.alloc(new IntDomain(1, n));
+      diag1[i] = domains.model().intOffsetView(vars[i], i);
+      diag2[i] = domains.model().intOffsetView(vars[i], -i);
+    }
+    constraints.join(new AllDifferent(vars, "BC"));
+    constraints.join(new AllDifferent(diag1, "BC"));
+    constraints.join(new AllDifferent(diag2, "BC"));
   }
 
   private static Program declareNQueensVars(int x, int n, Program body) {

@@ -6,7 +6,7 @@ The bonsai compiler is in development. We are currently working on the target Ja
 
 ## Building and executing a first example
 
-This tutorial describe how to set up a project with ChocoCubes, a Java library for synchronous programming based on SugarCubes and the [Choco constraint library](http://www.choco-solver.org). Here the steps:
+This tutorial describe how to set up a project with ChocoCubes, a Java library for synchronous programming based on SugarCubes and the Choco constraint library. Here the steps:
 
 1. Download and install [Maven](https://maven.apache.org).
 2. Download the JAR file of [SugarCubes V4](http://jeanferdysusini.free.fr/v4.0/SugarCubesv4.0.0a5.jar).
