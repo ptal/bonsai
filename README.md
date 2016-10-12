@@ -1,5 +1,10 @@
 # bonsai
 
+[![ptal on Travis CI][travis-image]][travis]
+
+[travis-image]: https://travis-ci.org/ptal/bonsai.png
+[travis]: https://travis-ci.org/ptal/bonsai
+
 Bonsai is a programming language inspired by synchronous programming and aims at be used to solve Constraint Satisfaction Problems (CSP).
 
 The bonsai compiler is in development. We are currently working on the target Java library, named ChocoCubes, using [SugarCubes](http://jeanferdysusini.free.fr/index.php?action=SC) for the reactive part and [Choco](http://www.choco-solver.org) for the constraint programming part. An example can be find [here](https://github.com/ptal/bonsai/blob/master/examples/NQueens/src/main/java/chococubes/example/NQueens.java), the code in comment the bonsai programming language that should be compiled to the code in Java.
