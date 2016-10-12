@@ -12,27 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(question_mark, plugin)]
-#![plugin(oak)]
+pub mod grammar;
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-
-mod config;
-mod ast;
-mod front;
-mod middle;
-mod back;
-
-use config::*;
+use self::grammar::*;
+use ast::Program;
 use partial::*;
+use oak_runtime::*;
 
-fn main() {
-  let config = Config::new();
-  Partial::Value(config.input_as_string())
-  .and_then(front::parse_bonsai)
-  .and_then(middle::analyse_bonsai)
-  .and_then(back::generate_chococubes)
-  .map(|output| config.write_output(output));
+pub fn parse_bonsai(input: String) -> Partial<Program> {
+  let state = bonsai::parse_program(input.into_state());
+  match state.into_result() {
+    ParseResult::Success(program) => Partial::Value(program),
+    ParseResult::Partial(_, expectation)
+  | ParseResult::Failure(expectation) => {
+      println!("{:?}", expectation);
+      Partial::Nothing
+    }
+  }
 }

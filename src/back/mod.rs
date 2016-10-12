@@ -12,27 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(question_mark, plugin)]
-#![plugin(oak)]
-
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-
-mod config;
-mod ast;
-mod front;
-mod middle;
-mod back;
-
-use config::*;
+use ast::Program;
 use partial::*;
 
-fn main() {
-  let config = Config::new();
-  Partial::Value(config.input_as_string())
-  .and_then(front::parse_bonsai)
-  .and_then(middle::analyse_bonsai)
-  .and_then(back::generate_chococubes)
-  .map(|output| config.write_output(output));
+pub fn generate_chococubes(ast: Program) -> Partial<String> {
+  Partial::Value(String::from("program ChocoCubes"))
 }

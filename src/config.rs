@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use std::path::PathBuf;
-use clap::{Arg, App};
+use std::fs::{File, OpenOptions};
+use std::io::prelude::*;
+use clap::App;
 
 pub struct Config
 {
@@ -45,5 +47,21 @@ impl Config
 
   fn default_output(input: &PathBuf) -> PathBuf {
     input.with_extension("java")
+  }
+
+  pub fn input_as_string(&self) -> String {
+    let mut file = File::open(self.input.clone()).unwrap();
+    let mut res = String::new();
+    file.read_to_string(&mut res).unwrap();
+    res
+  }
+
+  pub fn write_output(&self, output: String) {
+    let mut file = OpenOptions::new()
+     .write(true)
+     .create_new(true)
+     .open(self.output.clone())
+     .unwrap();
+    file.write_fmt(format_args!("{}", output)).unwrap();
   }
 }
