@@ -37,7 +37,7 @@ grammar! bonsai {
 
   item
     = stmt > make_stmt_item
-    / FN identifier LPAREN list_ident RPAREN block > make_function_item
+    / PROC identifier LPAREN list_ident RPAREN block > make_function_item
     / java_static_method > make_java_static_method
 
   fn make_stmt_item(stmt: Stmt) -> Item {
@@ -45,7 +45,7 @@ grammar! bonsai {
   }
 
   fn make_function_item(name: String, params: Vec<String>, body: Block) -> Item {
-    Item::Fn(Function {
+    Item::Proc(Processus {
       name: name,
       params: params,
       body: body
@@ -309,7 +309,7 @@ grammar! bonsai {
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
-  FN = "fn" kw_tail
+  PROC = "proc" kw_tail
   PAR = "par" kw_tail
   SPACE = "space" kw_tail
   END = "end" kw_tail
@@ -452,7 +452,7 @@ mod test
           System.out.println("]");
         }
 
-        fn first_fail_middle() {
+        proc first_fail_middle() {
           let var in single_space = new FirstFail();
           let val in single_space = new IntDomainMin();
           loop {
@@ -468,19 +468,19 @@ mod test
           }
         }
 
-        fn model() {
+        proc model() {
           modelChoco(4, domains, constraints);
           printModel("After initialization", consistent, domains);
         }
 
-        fn propagation() {
+        proc propagation() {
           loop {
             consistent <- PropagatorEngine.propagate(domains, constraints);
             pause;
           }
         }
 
-        fn one_solution() {
+        proc one_solution() {
           loop {
             when consistent |= Consistent.True {
               exit FoundSolution;
@@ -489,7 +489,7 @@ mod test
           }
         }
 
-        fn engine() {
+        proc engine() {
           trap FoundSolution {
             par
             || fail_first_middle();
@@ -503,7 +503,7 @@ mod test
         engine();
         printVariables();
 
-        fn test() {
+        proc test() {
           let queen1: IntVar = domains <- new IntDomain(0,1);
           let queen2: IntVar = domains <- new IntDomain(0,1);
 

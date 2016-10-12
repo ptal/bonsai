@@ -22,7 +22,7 @@ pub struct Program {
 
 pub enum Item {
   Statement(Stmt),
-  Fn(Function),
+  Proc(Processus),
   JavaStaticMethod(String, String)
 }
 
@@ -54,7 +54,7 @@ impl Display for JavaTy
   }
 }
 
-pub struct Function {
+pub struct Processus {
   pub name: String,
   pub params: Vec<String>,
   pub body: Block
