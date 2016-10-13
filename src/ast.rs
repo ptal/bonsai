@@ -26,8 +26,6 @@ pub enum Item {
   JavaStaticMethod(String, String)
 }
 
-pub type Block = Vec<Stmt>;
-
 pub type JavaBlock = String;
 pub type JavaParameters = String;
 
@@ -57,11 +55,11 @@ impl Display for JavaTy
 pub struct Process {
   pub name: String,
   pub params: JavaParameters,
-  pub body: Block
+  pub body: Stmt
 }
 
 impl Process {
-  pub fn new(name: String, params: JavaParameters, body: Block) -> Self {
+  pub fn new(name: String, params: JavaParameters, body: Stmt) -> Self {
     Process {
       name: name,
       params: params,
@@ -71,15 +69,16 @@ impl Process {
 }
 
 pub enum Stmt {
-  Par(Vec<Block>),
-  Space(Vec<Block>),
+  Seq(Vec<Stmt>),
+  Par(Vec<Stmt>),
+  Space(Vec<Stmt>),
   Let(LetDecl),
   LetInStore(LetInStoreDecl),
-  When(EntailmentRel, Block),
+  When(EntailmentRel, Box<Stmt>),
   Pause,
-  Trap(String, Block),
+  Trap(String, Box<Stmt>),
   Exit(String),
-  Loop(Block),
+  Loop(Box<Stmt>),
   FnCall(String, Vec<Expr>),
   Tell(Var, Expr)
 }

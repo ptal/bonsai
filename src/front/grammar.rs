@@ -44,12 +44,12 @@ grammar! bonsai {
     Item::Statement(stmt)
   }
 
-  fn make_process_item(name: String, params: JavaParameters, body: Block) -> Item {
+  fn make_process_item(name: String, params: JavaParameters, body: Stmt) -> Item {
     Item::Proc(Process::new(name, params, body))
   }
 
   fn make_java_static_method(return_ty: JavaTy, name: String,
-    parameters: JavaParameters, block: JavaBlock) -> Item
+    parameters: JavaParameters, body: JavaBlock) -> Item
   {
     Item::JavaStaticMethod(name.clone(),
       vec![
@@ -57,7 +57,7 @@ grammar! bonsai {
         format!("{} ", return_ty),
         name,
         parameters,
-        block
+        body
       ]
       .iter()
       .flat_map(|x| x.chars())
@@ -101,11 +101,11 @@ grammar! bonsai {
 
   stmt_list = stmt+
 
-  block = LBRACE stmt_list RBRACE
+  block = LBRACE stmt_list RBRACE > make_seq
 
   stmt
-    = PAR BARBAR? stmt_list (BARBAR stmt_list)* END > make_par
-    / SPACE BARBAR? stmt_list (BARBAR stmt_list)* END > make_space
+    = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
+    / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON > make_let
     / LET identifier (COLON java_ty)? EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store
     / WHEN entailment block > make_when
@@ -115,12 +115,17 @@ grammar! bonsai {
     / LOOP block > make_loop
     / identifier LPAREN list_expr RPAREN SEMI_COLON > make_fn_call
     / var LEFT_ARROW expr SEMI_COLON > make_tell
+    / block
 
-  fn make_par(first: Block, rest: Vec<Block>) -> Stmt {
+  fn make_seq(stmts: Vec<Stmt>) -> Stmt {
+    Stmt::Seq(stmts)
+  }
+
+  fn make_par(first: Stmt, rest: Vec<Stmt>) -> Stmt {
     Stmt::Par(extend_front(first, rest))
   }
 
-  fn make_space(first: Block, rest: Vec<Block>) -> Stmt {
+  fn make_space(first: Stmt, rest: Vec<Stmt>) -> Stmt {
     Stmt::Space(extend_front(first, rest))
   }
 
@@ -147,24 +152,24 @@ grammar! bonsai {
     Stmt::LetInStore(decl)
   }
 
-  fn make_when(entailment: EntailmentRel, body: Block) -> Stmt {
-    Stmt::When(entailment, body)
+  fn make_when(entailment: EntailmentRel, body: Stmt) -> Stmt {
+    Stmt::When(entailment, Box::new(body))
   }
 
   fn make_pause() -> Stmt {
     Stmt::Pause
   }
 
-  fn make_trap(name: String, block: Block) -> Stmt {
-    Stmt::Trap(name, block)
+  fn make_trap(name: String, body: Stmt) -> Stmt {
+    Stmt::Trap(name, Box::new(body))
   }
 
   fn make_exit(name: String) -> Stmt {
     Stmt::Exit(name)
   }
 
-  fn make_loop(block: Block) -> Stmt {
-    Stmt::Loop(block)
+  fn make_loop(body: Stmt) -> Stmt {
+    Stmt::Loop(Box::new(body))
   }
 
   fn make_fn_call(fn_name: String, args: Vec<Expr>) -> Stmt {

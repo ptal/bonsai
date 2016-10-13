@@ -46,6 +46,7 @@ fn generate_execute_process(gen: &mut CodeGenerator) {
     SpaceMachine machine = SpaceMachine.create(program);\n\
     machine.execute();"));
   gen.close_block();
+  gen.newline();
 }
 
 fn generate_init_proc(gen: &mut CodeGenerator, items: Vec<Item>) -> Vec<Item> {
@@ -58,7 +59,7 @@ fn generate_init_proc(gen: &mut CodeGenerator, items: Vec<Item>) -> Vec<Item> {
     }
   }
   let init_proc = Process::new(String::from("init"),
-    String::from("()"), body);
+    String::from("()"), Stmt::Seq(body));
   generate_process(gen, init_proc);
   remaining
 }
@@ -69,26 +70,41 @@ fn generate_process(gen: &mut CodeGenerator, process: Process) {
   gen.open_block();
   gen.push_line("return");
   gen.indent();
-  generate_program(gen, process.body);
+  generate_statement(gen, process.body);
   gen.unindent();
   gen.continue_line(";");
   gen.close_block();
+  gen.newline();
 }
 
-fn generate_program(gen: &mut CodeGenerator, body: Block) {
-  generate_sequence(gen, body);
+fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
+  use ast::Stmt::*;
+  match stmt {
+    Seq(branches) => generate_sequence(gen, branches),
+    Par(branches) => generate_parallel(gen, branches),
+    Space(branches) => generate_space(gen, branches),
+    Let(let_decl) => generate_let(gen, let_decl),
+    LetInStore(let_in_store) => generate_let_in_store(gen, let_in_store),
+    When(entailment, body) => generate_when(gen, entailment, body),
+    Pause => generate_pause(gen),
+    Trap(name, body) => generate_trap(gen, name, body),
+    Exit(name) => generate_exit(gen, name),
+    Loop(body) => generate_loop(gen, body),
+    FnCall(name, args) => generate_fn_call(gen, name, args),
+    Tell(var, expr) => generate_tell(gen, var, expr),
+  }
 }
 
-fn generate_sequence(gen: &mut CodeGenerator, mut body: Block) {
-  if body.len() == 1 {
-    generate_statement(gen, body.pop().unwrap());
+fn generate_nary_operator(gen: &mut CodeGenerator, op_name: &str, mut branches: Vec<Stmt>) {
+  if branches.len() == 1 {
+    generate_statement(gen, branches.pop().unwrap());
   }
   else {
-    let mid = body.len() / 2;
-    let right = body.split_off(mid);
-    gen.push_line("SC.seq(");
+    let mid = branches.len() / 2;
+    let right = branches.split_off(mid);
+    gen.push_line(&format!("SC.{}(", op_name));
     gen.indent();
-    generate_sequence(gen, body);
+    generate_sequence(gen, branches);
     gen.continue_line(",");
     generate_sequence(gen, right);
     gen.push(")");
@@ -96,8 +112,52 @@ fn generate_sequence(gen: &mut CodeGenerator, mut body: Block) {
   }
 }
 
-fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
-  gen.push("_");
+fn generate_sequence(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
+  generate_nary_operator(gen, "seq", branches);
+}
+
+fn generate_parallel(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
+  generate_nary_operator(gen, "merge", branches);
+}
+
+fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
+  gen.push("space");
+}
+
+fn generate_let(gen: &mut CodeGenerator, let_decl: LetDecl) {
+  gen.push("let");
+}
+
+fn generate_let_in_store(gen: &mut CodeGenerator, let_in_store: LetInStoreDecl) {
+  gen.push("let in store");
+}
+
+fn generate_when(gen: &mut CodeGenerator, entailment: EntailmentRel, body: Box<Stmt>) {
+  gen.push("when");
+}
+
+fn generate_pause(gen: &mut CodeGenerator) {
+  gen.push("pause");
+}
+
+fn generate_trap(gen: &mut CodeGenerator, name: String, body: Box<Stmt>) {
+  gen.push("trap");
+}
+
+fn generate_exit(gen: &mut CodeGenerator, name: String) {
+  gen.push("exit");
+}
+
+fn generate_loop(gen: &mut CodeGenerator, body: Box<Stmt>) {
+  gen.push("loop");
+}
+
+fn generate_fn_call(gen: &mut CodeGenerator, name: String, args: Vec<Expr>) {
+  gen.push("fn_call");
+}
+
+fn generate_tell(gen: &mut CodeGenerator, var: Var, expr: Expr) {
+  gen.push("tell");
 }
 
 struct CodeGenerator {
