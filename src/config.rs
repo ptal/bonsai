@@ -59,7 +59,7 @@ impl Config
   pub fn write_output(&self, output: String) {
     let mut file = OpenOptions::new()
      .write(true)
-     .create_new(true)
+     .truncate(true)
      .open(self.output.clone())
      .unwrap();
     file.write_fmt(format_args!("{}", output)).unwrap();

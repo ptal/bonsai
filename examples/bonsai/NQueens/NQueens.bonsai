@@ -21,7 +21,56 @@ public class NQueens
   engine();
   printVariables();
 
-  private static void modelChoco(int n, VarStore domains, ConstraintStore constraints) {
+  proc model() {
+    modelChoco(4, domains, constraints);
+    printModel("After initialization", consistent, domains);
+  }
+
+  proc engine() {
+    trap FoundSolution {
+      par
+      || fail_first_middle();
+      || propagation();
+      || one_solution();
+      end
+    }
+  }
+
+  proc first_fail_middle() {
+    let var in single_space = new FirstFail();
+    let val in single_space = new IntDomainMin();
+    loop {
+      when consistent |= Consistent.Unknown {
+        let x: IntVar in single_time = var.getVariable(domains.vars());
+        let mid: int in single_time = val.selectValue(domains[x]);
+        space
+        || constraints[domains] <- x.gt(mid);
+        || constraints[domains] <- x.lte(mid);
+        end
+      }
+      pause;
+    }
+  }
+
+  proc propagation() {
+    loop {
+      consistent <- PropagatorEngine.propagate(domains, constraints);
+      pause;
+    }
+  }
+
+  proc one_solution() {
+    loop {
+      when consistent |= Consistent.True {
+        exit FoundSolution;
+      }
+      pause;
+    }
+  }
+
+  private static void modelChoco(int n, VarStore domains,
+    ConstraintStore constraints)
+  {
     IntVar[] vars = new IntVar[n];
     IntVar[] diag1 = new IntVar[n];
     IntVar[] diag2 = new IntVar[n];
@@ -57,52 +106,5 @@ public class NQueens
       System.out.print(v + ", ");
     }
     System.out.println("]");
-  }
-
-  proc first_fail_middle() {
-    let var in single_space = new FirstFail();
-    let val in single_space = new IntDomainMin();
-    loop {
-      when consistent |= Consistent.Unknown {
-        let x: IntVar in single_time = var.getVariable(domains.vars());
-        let mid: int in single_time = val.selectValue(domains[x]);
-        space
-        || constraints[domains] <- x.gt(mid);
-        || constraints[domains] <- x.lte(mid);
-        end
-      }
-      pause;
-    }
-  }
-
-  proc model() {
-    modelChoco(4, domains, constraints);
-    printModel("After initialization", consistent, domains);
-  }
-
-  proc propagation() {
-    loop {
-      consistent <- PropagatorEngine.propagate(domains, constraints);
-      pause;
-    }
-  }
-
-  proc one_solution() {
-    loop {
-      when consistent |= Consistent.True {
-        exit FoundSolution;
-      }
-      pause;
-    }
-  }
-
-  proc engine() {
-    trap FoundSolution {
-      par
-      || fail_first_middle();
-      || propagation();
-      || one_solution();
-      end
-    }
   }
 }

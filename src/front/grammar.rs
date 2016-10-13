@@ -37,28 +37,28 @@ grammar! bonsai {
 
   item
     = stmt > make_stmt_item
-    / PROC identifier LPAREN list_ident RPAREN block > make_function_item
+    / PROC identifier LPAREN list_ident RPAREN block > make_process_item
     / java_static_method > make_java_static_method
 
   fn make_stmt_item(stmt: Stmt) -> Item {
     Item::Statement(stmt)
   }
 
-  fn make_function_item(name: String, params: Vec<String>, body: Block) -> Item {
-    Item::Proc(Processus {
+  fn make_process_item(name: String, params: Vec<String>, body: Block) -> Item {
+    Item::Proc(Process {
       name: name,
       params: params,
       body: body
     })
   }
 
-  fn make_java_static_method(return_ty: JavaTy, parameters: JavaParameters,
-    name: String, block: JavaBlock) -> Item
+  fn make_java_static_method(return_ty: JavaTy, name: String,
+    parameters: JavaParameters, block: JavaBlock) -> Item
   {
     Item::JavaStaticMethod(name.clone(),
       vec![
         String::from("private static "),
-        format!("{}", return_ty),
+        format!("{} ", return_ty),
         name,
         parameters,
         block
@@ -83,19 +83,20 @@ grammar! bonsai {
   java_static_method
     = PRIVATE STATIC java_ty identifier java_param_list java_block kw_tail
 
-  java_block = "{" java_inside_block "}" > make_java_block
+  java_block = blanks "{" java_inside_block "}" > make_java_block
   java_inside_block = ((!"{" !"}" .)+ > to_string / java_block)*
 
   java_param_list
-    = &LPAREN (!RPAREN .)* RPAREN > make_java_param_list
+    = &LPAREN (!")" .)* ")" > make_java_param_list
 
   fn make_java_param_list(mut raw_list: Vec<char>) -> JavaParameters {
     raw_list.push(')');
     to_string(raw_list)
   }
 
-  fn make_java_block(inner_blocks: Vec<JavaBlock>) -> JavaBlock {
-    let mut res = extend_front(String::from("{"), inner_blocks);
+  fn make_java_block(mut blanks: Vec<char>, inner_blocks: Vec<JavaBlock>) -> JavaBlock {
+    blanks.push('{');
+    let mut res = extend_front(to_string(blanks), inner_blocks);
     res.push(String::from("}"));
     res.iter().flat_map(|e| e.chars()).collect()
   }
@@ -355,7 +356,8 @@ grammar! bonsai {
   LT = "<" !"-" spacing
   GT = ">" spacing
 
-  spacing = [" \n\r\t"]* -> (^)
+  spacing = blanks -> (^)
+  blanks = [" \n\r\t"]*
 
   // Java keyword
   java_kw = "new"
