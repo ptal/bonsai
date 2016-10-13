@@ -27,9 +27,11 @@ pub fn generate_chococubes(ast: Program) -> Partial<String> {
 }
 
 fn generate_items(gen: &mut CodeGenerator, items: Vec<Item>) {
+  let items = generate_init_proc(gen, items);
   for item in items {
     match item {
-      Item::Statement(stmt) => unreachable!("Should have been moved into the init process."),
+      Item::Statement(_) =>
+        unreachable!("Should have been moved into the init process."),
       Item::Proc(process) => generate_process(gen, process),
       Item::JavaStaticMethod(_, method) => gen.push_java_method(method)
     }
@@ -41,13 +43,40 @@ fn generate_execute_process(gen: &mut CodeGenerator) {
   gen.open_block();
   gen.push_block(String::from("\
     Program program = init();\n\
-    SpaceMachine machine = SpaceMachine.create(p);\n\
+    SpaceMachine machine = SpaceMachine.create(program);\n\
     machine.execute();"));
   gen.close_block();
 }
 
-fn generate_process(gen: &mut CodeGenerator, process: Process) {
+fn generate_init_proc(gen: &mut CodeGenerator, items: Vec<Item>) -> Vec<Item> {
+  let mut body = vec![];
+  let mut remaining = vec![];
+  for item in items {
+    match item {
+      Item::Statement(stmt) => body.push(stmt),
+      item => remaining.push(item)
+    }
+  }
+  let init_proc = Process::new(String::from("init"),
+    String::from("()"), body);
+  generate_process(gen, init_proc);
+  remaining
+}
 
+fn generate_process(gen: &mut CodeGenerator, process: Process) {
+  gen.push_line(&format!(
+    "public Program {}{}", process.name, process.params));
+  gen.open_block();
+  gen.push_line("return");
+  gen.indent();
+  generate_program(gen, process.body);
+  gen.unindent();
+  gen.push_line(";");
+  gen.close_block();
+}
+
+
+fn generate_program(gen: &mut CodeGenerator, body: Block) {
 }
 
 struct CodeGenerator {

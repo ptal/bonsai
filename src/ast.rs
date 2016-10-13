@@ -56,8 +56,18 @@ impl Display for JavaTy
 
 pub struct Process {
   pub name: String,
-  pub params: Vec<String>,
+  pub params: JavaParameters,
   pub body: Block
+}
+
+impl Process {
+  pub fn new(name: String, params: JavaParameters, body: Block) -> Self {
+    Process {
+      name: name,
+      params: params,
+      body: body
+    }
+  }
 }
 
 pub enum Stmt {
