@@ -20,23 +20,30 @@ pub fn generate_chococubes(ast: Program) -> Partial<String> {
   gen.push_block(ast.header);
   gen.push_line(&format!("public class {}", ast.class_name));
   gen.open_block();
+  generate_execute_process(&mut gen);
   generate_items(&mut gen, ast.items);
   gen.close_block();
-
   Partial::Value(gen.code)
 }
 
 fn generate_items(gen: &mut CodeGenerator, items: Vec<Item>) {
   for item in items {
     match item {
-      Item::Statement(stmt) => generate_statement(gen, stmt),
+      Item::Statement(stmt) => unreachable!("Should have been moved into the init process."),
       Item::Proc(process) => generate_process(gen, process),
       Item::JavaStaticMethod(_, method) => gen.push_java_method(method)
     }
   }
 }
 
-fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
+fn generate_execute_process(gen: &mut CodeGenerator) {
+  gen.push_line("public void execute()");
+  gen.open_block();
+  gen.push_block(String::from("\
+    Program program = init();\n\
+    SpaceMachine machine = SpaceMachine.create(p);\n\
+    machine.execute();"));
+  gen.close_block();
 }
 
 fn generate_process(gen: &mut CodeGenerator, process: Process) {
@@ -56,22 +63,30 @@ impl CodeGenerator {
     }
   }
 
-  pub fn open_block(&mut self) {
-    self.push_line("{");
+  pub fn indent(&mut self) {
     self.indent += 2;
   }
 
-  pub fn close_block(&mut self) {
+  pub fn unindent(&mut self) {
     self.indent -= 2;
+  }
+
+  pub fn open_block(&mut self) {
+    self.push_line("{");
+    self.indent();
+  }
+
+  pub fn close_block(&mut self) {
+    self.unindent();
     self.push_line("}");
   }
 
   pub fn push_line(&mut self, code_line: &str) {
     self.code += &self.indent_spaces();
-    self.push_unindented_line(code_line);
+    self.raw_push_line(code_line);
   }
 
-  pub fn push_unindented_line(&mut self, code_line: &str) {
+  pub fn raw_push_line(&mut self, code_line: &str) {
     self.code += code_line;
     self.newline();
   }
@@ -80,7 +95,7 @@ impl CodeGenerator {
     let mut lines_iter = code_block.lines();
     self.push_line(lines_iter.next().unwrap());
     for line in lines_iter {
-      self.push_unindented_line(line);
+      self.raw_push_line(line);
     }
     self.newline();
   }
