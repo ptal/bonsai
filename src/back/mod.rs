@@ -71,12 +71,33 @@ fn generate_process(gen: &mut CodeGenerator, process: Process) {
   gen.indent();
   generate_program(gen, process.body);
   gen.unindent();
-  gen.push_line(";");
+  gen.continue_line(";");
   gen.close_block();
 }
 
-
 fn generate_program(gen: &mut CodeGenerator, body: Block) {
+  generate_sequence(gen, body);
+}
+
+fn generate_sequence(gen: &mut CodeGenerator, mut body: Block) {
+  if body.len() == 1 {
+    generate_statement(gen, body.pop().unwrap());
+  }
+  else {
+    let mid = body.len() / 2;
+    let right = body.split_off(mid);
+    gen.push_line("SC.seq(");
+    gen.indent();
+    generate_sequence(gen, body);
+    gen.continue_line(",");
+    generate_sequence(gen, right);
+    gen.push(")");
+    gen.unindent();
+  }
+}
+
+fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
+  gen.push("_");
 }
 
 struct CodeGenerator {
@@ -110,12 +131,19 @@ impl CodeGenerator {
     self.push_line("}");
   }
 
-  pub fn push_line(&mut self, code_line: &str) {
-    self.code += &self.indent_spaces();
-    self.raw_push_line(code_line);
+  pub fn push(&mut self, code: &str) {
+    if self.code.ends_with("\n") {
+      self.push_indent();
+    }
+    self.code += code;
   }
 
-  pub fn raw_push_line(&mut self, code_line: &str) {
+  pub fn push_line(&mut self, code_line: &str) {
+    self.push_indent();
+    self.continue_line(code_line);
+  }
+
+  pub fn continue_line(&mut self, code_line: &str) {
     self.code += code_line;
     self.newline();
   }
@@ -124,7 +152,7 @@ impl CodeGenerator {
     let mut lines_iter = code_block.lines();
     self.push_line(lines_iter.next().unwrap());
     for line in lines_iter {
-      self.raw_push_line(line);
+      self.continue_line(line);
     }
     self.newline();
   }
@@ -139,11 +167,9 @@ impl CodeGenerator {
     self.code += "\n";
   }
 
-  fn indent_spaces(&self) -> String {
-    let mut res = String::new();
+  fn push_indent(&mut self) {
     for _ in 0..self.indent {
-      res.push(' ');
+      self.code.push(' ');
     }
-    res
   }
 }
