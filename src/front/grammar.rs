@@ -115,8 +115,9 @@ grammar! bonsai {
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
-    / identifier LPAREN list_expr RPAREN SEMI_COLON > make_fn_call
+    / java_call_expr SEMI_COLON > make_java_call_stmt
     / var LEFT_ARROW expr SEMI_COLON > make_tell
+    / identifier SEMI_COLON > make_proc_call
     / block
 
   fn make_seq(stmts: Vec<Stmt>) -> Stmt {
@@ -178,12 +179,16 @@ grammar! bonsai {
     Stmt::Loop(Box::new(body))
   }
 
-  fn make_fn_call(fn_name: String, args: Vec<Expr>) -> Stmt {
-    Stmt::FnCall(fn_name, args)
+  fn make_java_call_stmt(java_call: Expr) -> Stmt {
+    Stmt::FnCall(java_call)
   }
 
   fn make_tell(var: Var, expr: Expr) -> Stmt {
     Stmt::Tell(var, expr)
+  }
+
+  fn make_proc_call(process: String) -> Stmt {
+    Stmt::ProcCall(process)
   }
 
   expr
@@ -214,12 +219,15 @@ grammar! bonsai {
     vec![]
   }
 
-  // We consider single identifier to be part of bonsai language.
   java_expr
     = NEW java_ty LPAREN list_expr RPAREN > java_new
-    / identifier java_method_call+ > java_object_calls
+    / java_call_expr
     / number > make_number_expr
     / string_literal > make_string_literal
+
+  java_call_expr
+    = identifier java_method_call+ > java_object_calls
+    / java_call > java_this_call
 
   fn java_new(class_ty: JavaTy, args: Vec<Expr>) -> Expr {
     Expr::JavaNew(class_ty, args)
@@ -229,15 +237,24 @@ grammar! bonsai {
     Expr::JavaObjectCall(object, calls)
   }
 
+  fn java_this_call(java_call: JavaCall) -> Expr {
+    Expr::JavaThisCall(java_call)
+  }
+
   fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
   fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
 
-  java_method_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_call
+  java_call = identifier LPAREN list_expr RPAREN > make_java_call
+  java_method_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_method
 
-  fn make_java_call(property: String, args: Option<Vec<Expr>>) -> JavaCall {
+  fn make_java_method(name: String, args: Option<Vec<Expr>>) -> JavaCall {
+    make_java_call(name, args.unwrap_or(vec![]))
+  }
+
+  fn make_java_call(property: String, args: Vec<Expr>) -> JavaCall {
     JavaCall {
       property: property,
-      args: args.unwrap_or(vec![])
+      args: args
     }
   }
 

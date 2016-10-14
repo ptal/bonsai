@@ -77,8 +77,8 @@ fn generate_process(gen: &mut CodeGenerator, process: Process) {
   gen.newline();
 }
 
-fn generate_expr(gen: &mut CodeGenerator, expr: Expr) {
-  gen.push("expr");
+fn generate_closure(gen: &mut CodeGenerator, expr: Expr) {
+  gen.push("(env) -> expr");
 }
 
 fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
@@ -94,7 +94,8 @@ fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
     Trap(name, body) => generate_trap(gen, name, body),
     Exit(name) => generate_exit(gen, name),
     Loop(body) => generate_loop(gen, body),
-    FnCall(name, args) => generate_fn_call(gen, name, args),
+    FnCall(java_call) => generate_java_call(gen, java_call),
+    ProcCall(process) => generate_proc_call(gen, process),
     Tell(var, expr) => generate_tell(gen, var, expr),
   }
 }
@@ -127,6 +128,7 @@ fn generate_parallel(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
 fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
   let last_branch = branches.len()-1;
   gen.push_line("new Space(new ArrayList<>(Arrays.asList(");
+  gen.indent();
   for (i, stmt) in branches.into_iter().enumerate() {
     gen.push_line("new SpaceBranch(");
     gen.indent();
@@ -139,14 +141,15 @@ fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
       gen.push(")")
     }
   }
+  gen.unindent();
   gen.push(")))");
 }
 
 fn generate_let(gen: &mut CodeGenerator, let_decl: LetDecl) {
   let spacetime = generate_spacetime(let_decl.spacetime);
-  gen.push(&format!("new SpacetimeVar(\"{}\", {}, (env) -> ",
+  gen.push(&format!("new SpacetimeVar(\"{}\", {}, ",
     let_decl.var, spacetime));
-  generate_expr(gen, let_decl.expr);
+  generate_closure(gen, let_decl.expr);
   gen.terminate_line(",");
   generate_statement(gen, *let_decl.body);
   gen.push(")");
@@ -163,40 +166,70 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
 }
 
 fn generate_let_in_store(gen: &mut CodeGenerator, let_in_store: LetInStoreDecl) {
-  gen.push(&format!("new LocationVar(\"{}\", \"{}\", (env) -> ",
+  gen.push(&format!("new LocationVar(\"{}\", \"{}\", ",
     let_in_store.location, let_in_store.store));
-  generate_expr(gen, let_in_store.expr);
+  generate_closure(gen, let_in_store.expr);
   gen.terminate_line(",");
   generate_statement(gen, *let_in_store.body);
   gen.push(")");
 }
 
+fn generate_entailment(gen: &mut CodeGenerator, entailment: EntailmentRel) {
+  gen.push(&format!("new EntailmentConfig(\"{}\", ",
+    entailment.left.name));
+  generate_closure(gen, entailment.right);
+  gen.push(")");
+}
+
 fn generate_when(gen: &mut CodeGenerator, entailment: EntailmentRel, body: Box<Stmt>) {
-  gen.push("when");
-}
-
-fn generate_pause(gen: &mut CodeGenerator) {
-  gen.push("pause");
-}
-
-fn generate_trap(gen: &mut CodeGenerator, name: String, body: Box<Stmt>) {
-  gen.push("trap");
-}
-
-fn generate_exit(gen: &mut CodeGenerator, name: String) {
-  gen.push("exit");
-}
-
-fn generate_loop(gen: &mut CodeGenerator, body: Box<Stmt>) {
-  gen.push("loop");
-}
-
-fn generate_fn_call(gen: &mut CodeGenerator, name: String, args: Vec<Expr>) {
-  gen.push("fn_call");
+  gen.push("SC.when(");
+  generate_entailment(gen, entailment);
+  gen.terminate_line(",");
+  gen.indent();
+  generate_statement(gen, *body);
+  gen.terminate_line(",");
+  gen.push("SC.nothing())");
+  gen.unindent();
 }
 
 fn generate_tell(gen: &mut CodeGenerator, var: Var, expr: Expr) {
-  gen.push("tell");
+  gen.push(&format!("new Tell(\"{}\", ", var.name));
+  generate_closure(gen, expr);
+  gen.push(")");
+}
+
+fn generate_pause(gen: &mut CodeGenerator) {
+  gen.push("SC.stop()");
+}
+
+fn generate_loop(gen: &mut CodeGenerator, body: Box<Stmt>) {
+  gen.push_line("SC.loop(");
+  gen.indent();
+  generate_statement(gen, *body);
+  gen.unindent();
+  gen.push(")");
+}
+
+fn generate_java_call(gen: &mut CodeGenerator, java_call: Expr) {
+  gen.push("new ClosureAtom(");
+  generate_closure(gen, java_call);
+  gen.push(")");
+}
+
+fn generate_proc_call(gen: &mut CodeGenerator, process: String) {
+  gen.push(&format!("{}()", process));
+}
+
+fn generate_trap(gen: &mut CodeGenerator, name: String, body: Box<Stmt>) {
+  gen.push_line(&format!("SC.until(\"{}\",", name));
+  gen.indent();
+  generate_statement(gen, *body);
+  gen.unindent();
+  gen.push(")");
+}
+
+fn generate_exit(gen: &mut CodeGenerator, name: String) {
+  gen.push(&format!("SC.generate(\"{}\")", name));
 }
 
 struct CodeGenerator {

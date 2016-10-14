@@ -17,9 +17,9 @@ public class NQueens
   let constraints in world_line = ConstraintStore.bottom();
   let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
 
-  model();
-  engine();
-  printVariables();
+  model;
+  engine;
+  printVariables;
 
   proc model() {
     modelChoco(4, domains, constraints);
@@ -29,9 +29,9 @@ public class NQueens
   proc engine() {
     trap FoundSolution {
       par
-      || fail_first_middle();
-      || propagation();
-      || one_solution();
+      || fail_first_middle;
+      || propagation;
+      || one_solution;
       end
     }
   }

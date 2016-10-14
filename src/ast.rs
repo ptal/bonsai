@@ -75,12 +75,13 @@ pub enum Stmt {
   Let(LetDecl),
   LetInStore(LetInStoreDecl),
   When(EntailmentRel, Box<Stmt>),
+  Tell(Var, Expr),
   Pause,
   Trap(String, Box<Stmt>),
   Exit(String),
   Loop(Box<Stmt>),
-  FnCall(String, Vec<Expr>),
-  Tell(Var, Expr)
+  ProcCall(String),
+  FnCall(Expr)
 }
 
 pub struct LetDecl {
@@ -126,6 +127,7 @@ pub enum Spacetime {
 pub enum Expr {
   JavaNew(JavaTy, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
+  JavaThisCall(JavaCall),
   Number(u64),
   StringLiteral(String),
   Variable(StreamVar)
