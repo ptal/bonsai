@@ -88,14 +88,16 @@ pub struct LetDecl {
   pub var: String,
   pub var_ty: Option<JavaTy>,
   pub spacetime: Spacetime,
-  pub expr: Expr
+  pub expr: Expr,
+  pub body: Box<Stmt>
 }
 
 pub struct LetInStoreDecl {
   pub location: String,
   pub loc_ty: Option<JavaTy>,
   pub store: String,
-  pub expr: Expr
+  pub expr: Expr,
+  pub body: Box<Stmt>
 }
 
 pub struct EntailmentRel {

@@ -72,9 +72,13 @@ fn generate_process(gen: &mut CodeGenerator, process: Process) {
   gen.indent();
   generate_statement(gen, process.body);
   gen.unindent();
-  gen.continue_line(";");
+  gen.terminate_line(";");
   gen.close_block();
   gen.newline();
+}
+
+fn generate_expr(gen: &mut CodeGenerator, expr: Expr) {
+  gen.push("expr");
 }
 
 fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
@@ -105,7 +109,7 @@ fn generate_nary_operator(gen: &mut CodeGenerator, op_name: &str, mut branches: 
     gen.push_line(&format!("SC.{}(", op_name));
     gen.indent();
     generate_sequence(gen, branches);
-    gen.continue_line(",");
+    gen.terminate_line(",");
     generate_sequence(gen, right);
     gen.push(")");
     gen.unindent();
@@ -121,15 +125,50 @@ fn generate_parallel(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
 }
 
 fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
-  gen.push("space");
+  let last_branch = branches.len()-1;
+  gen.push_line("new Space(new ArrayList<>(Arrays.asList(");
+  for (i, stmt) in branches.into_iter().enumerate() {
+    gen.push_line("new SpaceBranch(");
+    gen.indent();
+    generate_statement(gen, stmt);
+    gen.unindent();
+    if i != last_branch {
+      gen.terminate_line("),");
+    }
+    else {
+      gen.push(")")
+    }
+  }
+  gen.push(")))");
 }
 
 fn generate_let(gen: &mut CodeGenerator, let_decl: LetDecl) {
-  gen.push("let");
+  let spacetime = generate_spacetime(let_decl.spacetime);
+  gen.push(&format!("new SpacetimeVar(\"{}\", {}, (env) -> ",
+    let_decl.var, spacetime));
+  generate_expr(gen, let_decl.expr);
+  gen.terminate_line(",");
+  generate_statement(gen, *let_decl.body);
+  gen.push(")");
+}
+
+fn generate_spacetime(spacetime: Spacetime) -> String {
+  use ast::Spacetime::*;
+  match spacetime {
+    SingleSpace => String::from("Spacetime.SingleSpace"),
+    SingleTime => String::from("Spacetime.SingleTime"),
+    WorldLine => String::from("Spacetime.WorldLine"),
+    Location(_) => unreachable!("location is not a translatable spacetime.")
+  }
 }
 
 fn generate_let_in_store(gen: &mut CodeGenerator, let_in_store: LetInStoreDecl) {
-  gen.push("let in store");
+  gen.push(&format!("new LocationVar(\"{}\", \"{}\", (env) -> ",
+    let_in_store.location, let_in_store.store));
+  generate_expr(gen, let_in_store.expr);
+  gen.terminate_line(",");
+  generate_statement(gen, *let_in_store.body);
+  gen.push(")");
 }
 
 fn generate_when(gen: &mut CodeGenerator, entailment: EntailmentRel, body: Box<Stmt>) {
@@ -200,10 +239,10 @@ impl CodeGenerator {
 
   pub fn push_line(&mut self, code_line: &str) {
     self.push_indent();
-    self.continue_line(code_line);
+    self.terminate_line(code_line);
   }
 
-  pub fn continue_line(&mut self, code_line: &str) {
+  pub fn terminate_line(&mut self, code_line: &str) {
     self.code += code_line;
     self.newline();
   }
@@ -212,7 +251,7 @@ impl CodeGenerator {
     let mut lines_iter = code_block.lines();
     self.push_line(lines_iter.next().unwrap());
     for line in lines_iter {
-      self.continue_line(line);
+      self.terminate_line(line);
     }
     self.newline();
   }

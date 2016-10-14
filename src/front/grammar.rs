@@ -101,13 +101,15 @@ grammar! bonsai {
 
   stmt_list = stmt+
 
-  block = LBRACE stmt_list RBRACE > make_seq
+  sequence = stmt_list > make_seq
+
+  block = LBRACE sequence RBRACE
 
   stmt
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON > make_let
-    / LET identifier (COLON java_ty)? EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store
+    / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON sequence > make_let
+    / LET identifier (COLON java_ty)? EQ identifier LEFT_ARROW expr SEMI_COLON sequence > make_let_in_store
     / WHEN entailment block > make_when
     / PAUSE SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
@@ -130,24 +132,28 @@ grammar! bonsai {
   }
 
   fn make_let(transient: Option<()>, var_name: String,
-    var_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr) -> Stmt
+    var_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr, body: Stmt) -> Stmt
   {
     let decl = LetDecl {
       transient: transient.is_some(),
       var: var_name,
       var_ty: var_ty,
       spacetime: spacetime,
-      expr: expr
+      expr: expr,
+      body: Box::new(body)
     };
     Stmt::Let(decl)
   }
 
-  fn make_let_in_store(location: String, loc_ty: Option<JavaTy>, store: String, expr: Expr) -> Stmt {
+  fn make_let_in_store(location: String, loc_ty: Option<JavaTy>,
+    store: String, expr: Expr, body: Stmt) -> Stmt
+  {
     let decl = LetInStoreDecl {
       location: location,
       loc_ty: loc_ty,
       store: store,
-      expr: expr
+      expr: expr,
+      body: Box::new(body)
     };
     Stmt::LetInStore(decl)
   }
