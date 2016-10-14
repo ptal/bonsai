@@ -78,7 +78,71 @@ fn generate_process(gen: &mut CodeGenerator, process: Process) {
 }
 
 fn generate_closure(gen: &mut CodeGenerator, expr: Expr) {
-  gen.push("(env) -> expr");
+  gen.push("(env) -> ");
+  generate_expr(gen, expr);
+}
+
+fn generate_expr(gen: &mut CodeGenerator, expr: Expr) {
+  use ast::Expr::*;
+  match expr {
+    JavaNew(ty, args) => generate_java_new(gen, ty, args),
+    JavaObjectCall(object, methods) => generate_java_object_call(gen, object, methods),
+    JavaThisCall(method) => generate_java_this_call(gen, method),
+    Number(n) => generate_number(gen, n),
+    StringLiteral(lit) => generate_literal(gen, lit),
+    Variable(var) => generate_stream_var(gen, var)
+  }
+}
+
+fn generate_fun_call(gen: &mut CodeGenerator, name: String, args: Vec<Expr>) {
+  let args_len = args.len();
+  gen.push(&format!("{}(", name));
+  for (i, arg) in args.into_iter().enumerate() {
+    generate_expr(gen, arg);
+    if i != args_len - 1 {
+      gen.push(", ");
+    }
+  }
+  gen.push(")");
+}
+
+fn generate_java_new(gen: &mut CodeGenerator, ty: JavaTy, args: Vec<Expr>) {
+  gen.push("new ");
+  generate_fun_call(gen, format!("{}", ty), args);
+}
+
+fn generate_java_object_call(gen: &mut CodeGenerator, object: String,
+  methods: Vec<JavaCall>)
+{
+  let methods_len = methods.len();
+  gen.push(&format!("{}.", object));
+  for (i, method) in methods.into_iter().enumerate() {
+    generate_java_this_call(gen, method);
+    if i != methods_len - 1 {
+      gen.push(".");
+    }
+  }
+}
+
+fn generate_java_this_call(gen: &mut CodeGenerator, method: JavaCall) {
+  if method.is_attribute {
+    gen.push(&method.property);
+  }
+  else {
+    generate_fun_call(gen, method.property, method.args);
+  }
+}
+
+fn generate_number(gen: &mut CodeGenerator, n: u64) {
+  gen.push(&format!("{}", n));
+}
+
+fn generate_literal(gen: &mut CodeGenerator, lit: String) {
+  gen.push(&format!("\"{}\"", lit));
+}
+
+fn generate_stream_var(gen: &mut CodeGenerator, var: StreamVar) {
+  gen.push(&var.name);
 }
 
 fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
@@ -126,7 +190,7 @@ fn generate_parallel(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
 }
 
 fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
-  let last_branch = branches.len()-1;
+  let branches_len = branches.len();
   gen.push_line("new Space(new ArrayList<>(Arrays.asList(");
   gen.indent();
   for (i, stmt) in branches.into_iter().enumerate() {
@@ -134,7 +198,7 @@ fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
     gen.indent();
     generate_statement(gen, stmt);
     gen.unindent();
-    if i != last_branch {
+    if i != branches_len - 1 {
       gen.terminate_line("),");
     }
     else {

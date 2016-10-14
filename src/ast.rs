@@ -135,5 +135,6 @@ pub enum Expr {
 
 pub struct JavaCall {
   pub property: String, // can be an attribute or a method.
+  pub is_attribute: bool,
   pub args: Vec<Expr>
 }

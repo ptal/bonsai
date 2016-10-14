@@ -244,16 +244,21 @@ grammar! bonsai {
   fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
   fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
 
-  java_call = identifier LPAREN list_expr RPAREN > make_java_call
-  java_method_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_method
+  java_call = identifier LPAREN list_expr RPAREN > make_java_method_call
+  java_method_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_property
 
-  fn make_java_method(name: String, args: Option<Vec<Expr>>) -> JavaCall {
-    make_java_call(name, args.unwrap_or(vec![]))
+  fn make_java_method_call(name: String, args: Vec<Expr>) -> JavaCall {
+    make_java_call(name, false, args)
   }
 
-  fn make_java_call(property: String, args: Vec<Expr>) -> JavaCall {
+  fn make_java_property(name: String, args: Option<Vec<Expr>>) -> JavaCall {
+    make_java_call(name, args.is_none(), args.unwrap_or(vec![]))
+  }
+
+  fn make_java_call(property: String, is_attribute: bool, args: Vec<Expr>) -> JavaCall {
     JavaCall {
       property: property,
+      is_attribute: is_attribute,
       args: args
     }
   }
