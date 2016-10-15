@@ -11,6 +11,8 @@ import bonsai.chococubes.core.*;
 import bonsai.chococubes.choco.*;
 import bonsai.chococubes.sugarcubes.*;
 
+// domains.index(x)); SEE below.
+
 public class NQueens
 {
   let domains in world_line = VarStore.bottom();
@@ -19,7 +21,7 @@ public class NQueens
 
   model;
   engine;
-  printVariables;
+  printVariables("Solution", consistent, domains);
 
   proc model() {
     modelChoco(4, domains, constraints);
@@ -29,7 +31,7 @@ public class NQueens
   proc engine() {
     trap FoundSolution {
       par
-      || fail_first_middle;
+      || first_fail_middle;
       || propagation;
       || one_solution;
       end
@@ -37,15 +39,15 @@ public class NQueens
   }
 
   proc first_fail_middle() {
-    let var in single_space = new FirstFail();
-    let val in single_space = new IntDomainMin();
+    let var in single_space = new FirstFail(domains.model());
+    let val in single_space = new IntDomainMiddle(IntDomainMiddle.FLOOR);
     loop {
       when consistent |= Consistent.Unknown {
         let x: IntVar in single_time = var.getVariable(domains.vars());
-        let mid: int in single_time = val.selectValue(domains[x]);
+        let mid: Integer in single_time = val.selectValue(x);
         space
-        || constraints[domains] <- x.gt(mid);
-        || constraints[domains] <- x.lte(mid);
+        || constraints <- x.le(mid);
+        || constraints <- x.gt(mid);
         end
       }
       pause;
@@ -90,14 +92,14 @@ public class NQueens
     System.out.print("["+message+"][" + consistent + "]");
   }
 
-  private static Program printModel(String message,
+  private static void printModel(String message,
     FlatLattice<Consistent> consistent, VarStore domains)
   {
     printHeader(message, consistent);
     System.out.print(domains.model());
   }
 
-  private static Program printVariables(String message
+  private static void printVariables(String message,
     FlatLattice<Consistent> consistent, VarStore domains)
   {
     printHeader(message, consistent);

@@ -14,25 +14,127 @@
 
 use ast::*;
 use partial::*;
+use std::collections::{HashMap, HashSet};
+
+pub struct SpacetimeVar {
+  pub name: String,
+  pub ty: JavaTy
+}
+
+impl SpacetimeVar {
+  pub fn new(name: String, ty: JavaTy) -> Self {
+    SpacetimeVar {
+      name: name,
+      ty: ty
+    }
+  }
+}
+
+pub struct Context {
+  spacetime_vars: HashMap<String, SpacetimeVar>
+}
+
+impl Context {
+  pub fn new(ast: Program) -> Self {
+    let mut context = Context {
+      spacetime_vars: HashMap::new()
+    };
+    context.initialize_program(ast);
+    context
+  }
+
+  fn initialize_program(&mut self, ast: Program) {
+    for item in ast.items {
+      match item {
+        Item::Statement(stmt) => self.initialize_stmt(stmt),
+        Item::Proc(process) => self.initialize_stmt(process.body),
+        _ => ()
+      }
+    }
+  }
+
+  fn java_type_of(&self, var: String, java_ty: Option<JavaTy>, expr: Expr) -> JavaTy {
+    match java_ty {
+      Some(ty) => ty,
+      None => self.infer_ty(var, expr)
+    }
+  }
+
+  fn infer_ty(&self, var: String, expr: Expr) -> JavaTy {
+    use ast::Expr::*;
+    match expr {
+      JavaNew(object_ty, _) => object_ty,
+      JavaObjectCall(object, _) => JavaTy::simple(object),
+      _ => panic!(format!("We could not give a type to the variable `{}`.", var))
+    }
+  }
+
+  fn insert_var(&mut self, var: String, ty: Option<JavaTy>, expr: Expr) {
+    let spacetime_var = SpacetimeVar::new(var.clone(),
+      self.java_type_of(var.clone(), ty, expr));
+    self.spacetime_vars.insert(
+      var,
+      spacetime_var);
+  }
+
+  fn initialize_stmts(&mut self, stmts: Vec<Stmt>) {
+    for stmt in stmts {
+      self.initialize_stmt(stmt);
+    }
+  }
+
+  fn initialize_stmt(&mut self, stmt: Stmt) {
+    use ast::Stmt::*;
+    match stmt {
+      Let(decl) => {
+        self.insert_var(decl.var, decl.var_ty, decl.expr);
+        self.initialize_stmt(*decl.body);
+      }
+      LetInStore(decl) => {
+        // Use a dummy expr because the type of the location cannot be infered with the expr.
+        self.insert_var(decl.location, decl.loc_ty, Expr::Number(0u64));
+        self.initialize_stmt(*decl.body);
+      }
+      Seq(branches)
+    | Par(branches)
+    | Space(branches) => self.initialize_stmts(branches),
+      When(_, stmt)
+    | Trap(_, stmt)
+    | Loop(stmt) => self.initialize_stmt(*stmt),
+      _ => ()
+    }
+  }
+
+  pub fn type_of_var(&self, var: &StreamVar) -> JavaTy {
+    self.spacetime_vars.get(&var.name)
+      .expect(&format!("Undeclared variable `{}`.", var.name))
+      .ty.clone()
+  }
+
+  pub fn is_spacetime_var(&self, name: &String) -> bool {
+    self.spacetime_vars.contains_key(name)
+  }
+}
 
 pub fn generate_chococubes(ast: Program) -> Partial<String> {
+  let context = Context::new(ast.clone());
   let mut gen = CodeGenerator::new();
   gen.push_block(ast.header);
   gen.push_line(&format!("public class {}", ast.class_name));
   gen.open_block();
   generate_execute_process(&mut gen);
-  generate_items(&mut gen, ast.items);
+  generate_items(&mut gen, &context, ast.items);
   gen.close_block();
   Partial::Value(gen.code)
 }
 
-fn generate_items(gen: &mut CodeGenerator, items: Vec<Item>) {
-  let items = generate_init_proc(gen, items);
+fn generate_items(gen: &mut CodeGenerator, context: &Context, items: Vec<Item>) {
+  let items = generate_init_proc(gen, context, items);
   for item in items {
     match item {
       Item::Statement(_) =>
         unreachable!("Should have been moved into the init process."),
-      Item::Proc(process) => generate_process(gen, process),
+      Item::Proc(process) => generate_process(gen, context, process),
       Item::JavaStaticMethod(_, method) => gen.push_java_method(method)
     }
   }
@@ -43,13 +145,13 @@ fn generate_execute_process(gen: &mut CodeGenerator) {
   gen.open_block();
   gen.push_block(String::from("\
     Program program = init();\n\
-    SpaceMachine machine = SpaceMachine.create(program);\n\
+    SpaceMachine machine = SpaceMachine.createDebug(program);\n\
     machine.execute();"));
   gen.close_block();
   gen.newline();
 }
 
-fn generate_init_proc(gen: &mut CodeGenerator, items: Vec<Item>) -> Vec<Item> {
+fn generate_init_proc(gen: &mut CodeGenerator, context: &Context, items: Vec<Item>) -> Vec<Item> {
   let mut body = vec![];
   let mut remaining = vec![];
   for item in items {
@@ -60,26 +162,74 @@ fn generate_init_proc(gen: &mut CodeGenerator, items: Vec<Item>) -> Vec<Item> {
   }
   let init_proc = Process::new(String::from("init"),
     String::from("()"), Stmt::Seq(body));
-  generate_process(gen, init_proc);
+  generate_process(gen, context, init_proc);
   remaining
 }
 
-fn generate_process(gen: &mut CodeGenerator, process: Process) {
+fn generate_process(gen: &mut CodeGenerator, context: &Context, process: Process) {
   gen.push_line(&format!(
     "public Program {}{}", process.name, process.params));
   gen.open_block();
   gen.push_line("return");
   gen.indent();
-  generate_statement(gen, process.body);
+  generate_statement(gen, context, process.body);
   gen.unindent();
   gen.terminate_line(";");
   gen.close_block();
   gen.newline();
 }
 
-fn generate_closure(gen: &mut CodeGenerator, expr: Expr) {
+fn generate_closure(gen: &mut CodeGenerator, context: &Context, return_expr: bool, expr: Expr) {
   gen.push("(env) -> ");
-  generate_expr(gen, expr);
+  let mut variables = HashSet::new();
+  collect_variable(context, &mut variables, expr.clone());
+  if !variables.is_empty() {
+    gen.terminate_line("{");
+    gen.indent();
+    for var in variables {
+      let ty = context.type_of_var(&var);
+      gen.push_line(&format!(
+        "{} {} = ({}) env.var(\"{}\");",
+        ty, var.name, ty, var.name));
+    }
+    if return_expr {
+      gen.push("return ");
+    }
+    generate_expr(gen, expr);
+    gen.unindent();
+    gen.push(";}");
+  }
+  else {
+    generate_expr(gen, expr);
+  }
+}
+
+fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr: Expr) {
+  use ast::Expr::*;
+  match expr {
+    JavaNew(_, args) => {
+      for arg in args {
+        collect_variable(context, variables, arg);
+      }
+    }
+    JavaObjectCall(object, methods) => {
+      if context.is_spacetime_var(&object) {
+        variables.insert(StreamVar::simple(object));
+      }
+      for method in methods {
+        for arg in method.args {
+          collect_variable(context, variables, arg);
+        }
+      }
+    }
+    JavaThisCall(method) => {
+      for arg in method.args {
+        collect_variable(context, variables, arg);
+      }
+    }
+    Variable(var) => { variables.insert(var); }
+    _ => ()
+  }
 }
 
 fn generate_expr(gen: &mut CodeGenerator, expr: Expr) {
@@ -145,58 +295,60 @@ fn generate_stream_var(gen: &mut CodeGenerator, var: StreamVar) {
   gen.push(&var.name);
 }
 
-fn generate_statement(gen: &mut CodeGenerator, stmt: Stmt) {
+fn generate_statement(gen: &mut CodeGenerator, context: &Context, stmt: Stmt) {
   use ast::Stmt::*;
   match stmt {
-    Seq(branches) => generate_sequence(gen, branches),
-    Par(branches) => generate_parallel(gen, branches),
-    Space(branches) => generate_space(gen, branches),
-    Let(let_decl) => generate_let(gen, let_decl),
-    LetInStore(let_in_store) => generate_let_in_store(gen, let_in_store),
-    When(entailment, body) => generate_when(gen, entailment, body),
+    Seq(branches) => generate_sequence(gen, context, branches),
+    Par(branches) => generate_parallel(gen, context, branches),
+    Space(branches) => generate_space(gen, context, branches),
+    Let(let_decl) => generate_let(gen, context, let_decl),
+    LetInStore(let_in_store) => generate_let_in_store(gen, context, let_in_store),
+    When(entailment, body) => generate_when(gen, context, entailment, body),
     Pause => generate_pause(gen),
-    Trap(name, body) => generate_trap(gen, name, body),
+    Trap(name, body) => generate_trap(gen, context, name, body),
     Exit(name) => generate_exit(gen, name),
-    Loop(body) => generate_loop(gen, body),
-    FnCall(java_call) => generate_java_call(gen, java_call),
+    Loop(body) => generate_loop(gen, context, body),
+    FnCall(java_call) => generate_java_call(gen, context, java_call),
     ProcCall(process) => generate_proc_call(gen, process),
-    Tell(var, expr) => generate_tell(gen, var, expr),
+    Tell(var, expr) => generate_tell(gen, context, var, expr),
   }
 }
 
-fn generate_nary_operator(gen: &mut CodeGenerator, op_name: &str, mut branches: Vec<Stmt>) {
+fn generate_nary_operator(gen: &mut CodeGenerator, context: &Context,
+  op_name: &str, mut branches: Vec<Stmt>)
+{
   if branches.len() == 1 {
-    generate_statement(gen, branches.pop().unwrap());
+    generate_statement(gen, context, branches.pop().unwrap());
   }
   else {
     let mid = branches.len() / 2;
     let right = branches.split_off(mid);
     gen.push_line(&format!("SC.{}(", op_name));
     gen.indent();
-    generate_sequence(gen, branches);
+    generate_nary_operator(gen, context, op_name, branches);
     gen.terminate_line(",");
-    generate_sequence(gen, right);
+    generate_nary_operator(gen, context, op_name, right);
     gen.push(")");
     gen.unindent();
   }
 }
 
-fn generate_sequence(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
-  generate_nary_operator(gen, "seq", branches);
+fn generate_sequence(gen: &mut CodeGenerator, context: &Context, branches: Vec<Stmt>) {
+  generate_nary_operator(gen, context, "seq", branches);
 }
 
-fn generate_parallel(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
-  generate_nary_operator(gen, "merge", branches);
+fn generate_parallel(gen: &mut CodeGenerator, context: &Context, branches: Vec<Stmt>) {
+  generate_nary_operator(gen, context, "merge", branches);
 }
 
-fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
+fn generate_space(gen: &mut CodeGenerator, context: &Context, branches: Vec<Stmt>) {
   let branches_len = branches.len();
   gen.push_line("new Space(new ArrayList<>(Arrays.asList(");
   gen.indent();
   for (i, stmt) in branches.into_iter().enumerate() {
     gen.push_line("new SpaceBranch(");
     gen.indent();
-    generate_statement(gen, stmt);
+    generate_statement(gen, context, stmt);
     gen.unindent();
     if i != branches_len - 1 {
       gen.terminate_line("),");
@@ -209,13 +361,13 @@ fn generate_space(gen: &mut CodeGenerator, branches: Vec<Stmt>) {
   gen.push(")))");
 }
 
-fn generate_let(gen: &mut CodeGenerator, let_decl: LetDecl) {
+fn generate_let(gen: &mut CodeGenerator, context: &Context, let_decl: LetDecl) {
   let spacetime = generate_spacetime(let_decl.spacetime);
   gen.push(&format!("new SpacetimeVar(\"{}\", {}, ",
     let_decl.var, spacetime));
-  generate_closure(gen, let_decl.expr);
+  generate_closure(gen, context, true, let_decl.expr);
   gen.terminate_line(",");
-  generate_statement(gen, *let_decl.body);
+  generate_statement(gen, context, *let_decl.body);
   gen.push(")");
 }
 
@@ -229,36 +381,38 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
   }
 }
 
-fn generate_let_in_store(gen: &mut CodeGenerator, let_in_store: LetInStoreDecl) {
+fn generate_let_in_store(gen: &mut CodeGenerator, context: &Context, let_in_store: LetInStoreDecl) {
   gen.push(&format!("new LocationVar(\"{}\", \"{}\", ",
     let_in_store.location, let_in_store.store));
-  generate_closure(gen, let_in_store.expr);
+  generate_closure(gen, context, true, let_in_store.expr);
   gen.terminate_line(",");
-  generate_statement(gen, *let_in_store.body);
+  generate_statement(gen, context, *let_in_store.body);
   gen.push(")");
 }
 
-fn generate_entailment(gen: &mut CodeGenerator, entailment: EntailmentRel) {
+fn generate_entailment(gen: &mut CodeGenerator, context: &Context, entailment: EntailmentRel) {
   gen.push(&format!("new EntailmentConfig(\"{}\", ",
     entailment.left.name));
-  generate_closure(gen, entailment.right);
+  generate_closure(gen, context, true, entailment.right);
   gen.push(")");
 }
 
-fn generate_when(gen: &mut CodeGenerator, entailment: EntailmentRel, body: Box<Stmt>) {
+fn generate_when(gen: &mut CodeGenerator, context: &Context,
+  entailment: EntailmentRel, body: Box<Stmt>)
+{
   gen.push("SC.when(");
-  generate_entailment(gen, entailment);
+  generate_entailment(gen, context, entailment);
   gen.terminate_line(",");
   gen.indent();
-  generate_statement(gen, *body);
+  generate_statement(gen, context, *body);
   gen.terminate_line(",");
   gen.push("SC.nothing())");
   gen.unindent();
 }
 
-fn generate_tell(gen: &mut CodeGenerator, var: Var, expr: Expr) {
+fn generate_tell(gen: &mut CodeGenerator, context: &Context, var: Var, expr: Expr) {
   gen.push(&format!("new Tell(\"{}\", ", var.name));
-  generate_closure(gen, expr);
+  generate_closure(gen, context, true, expr);
   gen.push(")");
 }
 
@@ -266,17 +420,17 @@ fn generate_pause(gen: &mut CodeGenerator) {
   gen.push("SC.stop()");
 }
 
-fn generate_loop(gen: &mut CodeGenerator, body: Box<Stmt>) {
+fn generate_loop(gen: &mut CodeGenerator, context: &Context, body: Box<Stmt>) {
   gen.push_line("SC.loop(");
   gen.indent();
-  generate_statement(gen, *body);
+  generate_statement(gen, context, *body);
   gen.unindent();
   gen.push(")");
 }
 
-fn generate_java_call(gen: &mut CodeGenerator, java_call: Expr) {
+fn generate_java_call(gen: &mut CodeGenerator, context: &Context, java_call: Expr) {
   gen.push("new ClosureAtom(");
-  generate_closure(gen, java_call);
+  generate_closure(gen, context, false, java_call);
   gen.push(")");
 }
 
@@ -284,10 +438,12 @@ fn generate_proc_call(gen: &mut CodeGenerator, process: String) {
   gen.push(&format!("{}()", process));
 }
 
-fn generate_trap(gen: &mut CodeGenerator, name: String, body: Box<Stmt>) {
+fn generate_trap(gen: &mut CodeGenerator, context: &Context,
+  name: String, body: Box<Stmt>)
+{
   gen.push_line(&format!("SC.until(\"{}\",", name));
   gen.indent();
-  generate_statement(gen, *body);
+  generate_statement(gen, context, *body);
   gen.unindent();
   gen.push(")");
 }

@@ -14,12 +14,14 @@
 
 use std::fmt::{Formatter, Display, Error};
 
+#[derive(Clone)]
 pub struct Program {
   pub header: String,
   pub class_name: String,
   pub items: Vec<Item>
 }
 
+#[derive(Clone)]
 pub enum Item {
   Statement(Stmt),
   Proc(Process),
@@ -29,9 +31,19 @@ pub enum Item {
 pub type JavaBlock = String;
 pub type JavaParameters = String;
 
+#[derive(Clone)]
 pub struct JavaTy {
   pub name: String,
   pub generics: Vec<JavaTy>
+}
+
+impl JavaTy {
+  pub fn simple(name: String) -> Self {
+    JavaTy {
+      name: name,
+      generics: vec![]
+    }
+  }
 }
 
 impl Display for JavaTy
@@ -52,6 +64,7 @@ impl Display for JavaTy
   }
 }
 
+#[derive(Clone)]
 pub struct Process {
   pub name: String,
   pub params: JavaParameters,
@@ -68,6 +81,7 @@ impl Process {
   }
 }
 
+#[derive(Clone)]
 pub enum Stmt {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
@@ -84,6 +98,7 @@ pub enum Stmt {
   FnCall(Expr)
 }
 
+#[derive(Clone)]
 pub struct LetDecl {
   pub transient: bool,
   pub var: String,
@@ -93,6 +108,7 @@ pub struct LetDecl {
   pub body: Box<Stmt>
 }
 
+#[derive(Clone)]
 pub struct LetInStoreDecl {
   pub location: String,
   pub loc_ty: Option<JavaTy>,
@@ -101,22 +117,36 @@ pub struct LetInStoreDecl {
   pub body: Box<Stmt>
 }
 
+#[derive(Clone)]
 pub struct EntailmentRel {
   pub left: StreamVar,
   pub right: Expr
 }
 
+#[derive(Clone)]
 pub struct Var {
   pub name: String,
   pub args: Vec<Var>
 }
 
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct StreamVar {
   pub name: String,
   pub past: usize,
   pub args: Vec<StreamVar>
 }
 
+impl StreamVar {
+  pub fn simple(name: String) -> Self {
+    StreamVar {
+      name: name,
+      past: 0,
+      args: vec![]
+    }
+  }
+}
+
+#[derive(Clone)]
 pub enum Spacetime {
   SingleSpace,
   SingleTime,
@@ -124,6 +154,7 @@ pub enum Spacetime {
   Location(String)
 }
 
+#[derive(Clone)]
 pub enum Expr {
   JavaNew(JavaTy, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
@@ -133,6 +164,7 @@ pub enum Expr {
   Variable(StreamVar)
 }
 
+#[derive(Clone)]
 pub struct JavaCall {
   pub property: String, // can be an attribute or a method.
   pub is_attribute: bool,
