@@ -33,12 +33,26 @@ grammar! bonsai {
 
   java_header = (!PUBLIC .)* > to_string
 
-  java_class = PUBLIC CLASS identifier LBRACE item+ RBRACE
+  java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE LBRACE item+ RBRACE
 
   item
-    = stmt > make_stmt_item
+    = spacetime_var > make_stmt_item
     / PROC identifier java_param_list block > make_process_item
-    / java_static_method > make_java_static_method
+    / java_method
+
+  spacetime_var = spacetime java_ty identifier EQ expr SEMI_COLON > make_spacetime_var
+
+  fn make_spacetime_var(spacetime: Spacetime, var_ty: JavaTy,
+    var_name: String, expr: Expr) -> Stmt
+  {
+    let decl = LetDecl {
+      var: var_name,
+      var_ty: var_ty,
+      spacetime: spacetime,
+      expr: expr
+    };
+    Stmt::Let(decl)
+  }
 
   fn make_stmt_item(stmt: Stmt) -> Item {
     Item::Statement(stmt)
@@ -48,20 +62,31 @@ grammar! bonsai {
     Item::Proc(Process::new(name, params, body))
   }
 
-  fn make_java_static_method(return_ty: JavaTy, name: String,
+  java_method
+    = PRIVATE (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
+
+  fn make_java_method(is_static: Option<()>, return_ty: JavaTy, name: String,
     parameters: JavaParameters, body: JavaBlock) -> Item
   {
-    Item::JavaStaticMethod(name.clone(),
-      vec![
-        String::from("private static "),
-        format!("{} ", return_ty),
-        name,
-        parameters,
-        body
-      ]
-      .iter()
-      .flat_map(|x| x.chars())
-      .collect())
+    let decl = JavaMethodDecl {
+      is_static: is_static.is_some(),
+      return_ty: return_ty,
+      name: name,
+      parameters: parameters,
+      body: body
+    };
+    Item::JavaMethod(decl)
+  }
+
+  java_param_list
+    = &LPAREN (!")" .)* ")" blanks > make_java_param_list
+
+  fn make_java_param_list(mut raw_list: Vec<char>,
+    blanks: Vec<char>) -> JavaParameters
+  {
+    raw_list.push(')');
+    raw_list.extend(blanks.into_iter());
+    to_string(raw_list)
   }
 
   list_ident
@@ -76,22 +101,8 @@ grammar! bonsai {
     vec![]
   }
 
-  java_static_method
-    = PRIVATE STATIC java_ty identifier java_param_list java_block kw_tail
-
   java_block = "{" java_inside_block "}" > make_java_block
   java_inside_block = ((!"{" !"}" .)+ > to_string / java_block)*
-
-  java_param_list
-    = &LPAREN (!")" .)* ")" blanks > make_java_param_list
-
-  fn make_java_param_list(mut raw_list: Vec<char>,
-    blanks: Vec<char>) -> JavaParameters
-  {
-    raw_list.push(')');
-    raw_list.extend(blanks.into_iter());
-    to_string(raw_list)
-  }
 
   fn make_java_block(inner_blocks: Vec<JavaBlock>) -> JavaBlock {
     let mut res = extend_front(String::from("{"), inner_blocks);
@@ -99,30 +110,28 @@ grammar! bonsai {
     res.iter().flat_map(|e| e.chars()).collect()
   }
 
-  stmt_list = stmt+
+  sequence = stmt+ > make_seq
 
-  sequence = stmt_list > make_seq
+  fn make_seq(stmts: Vec<Stmt>) -> Stmt {
+    Stmt::Seq(stmts)
+  }
 
   block = LBRACE sequence RBRACE
 
   stmt
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / LET TRANSIENT? identifier (COLON java_ty)? IN spacetime EQ expr SEMI_COLON sequence > make_let
-    / LET identifier (COLON java_ty)? EQ identifier LEFT_ARROW expr SEMI_COLON sequence > make_let_in_store
+    / spacetime_var
+    / spacetime_var_in_store
     / WHEN entailment block > make_when
     / PAUSE SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
-    / java_call_expr SEMI_COLON > make_java_call_stmt
+    / TILDE java_call_expr SEMI_COLON > make_java_call_stmt
     / var LEFT_ARROW expr SEMI_COLON > make_tell
-    / identifier SEMI_COLON > make_proc_call
+    / identifier list_args SEMI_COLON > make_proc_call
     / block
-
-  fn make_seq(stmts: Vec<Stmt>) -> Stmt {
-    Stmt::Seq(stmts)
-  }
 
   fn make_par(first: Stmt, rest: Vec<Stmt>) -> Stmt {
     Stmt::Par(extend_front(first, rest))
@@ -132,29 +141,17 @@ grammar! bonsai {
     Stmt::Space(extend_front(first, rest))
   }
 
-  fn make_let(transient: Option<()>, var_name: String,
-    var_ty: Option<JavaTy>, spacetime: Spacetime, expr: Expr, body: Stmt) -> Stmt
-  {
-    let decl = LetDecl {
-      transient: transient.is_some(),
-      var: var_name,
-      var_ty: var_ty,
-      spacetime: spacetime,
-      expr: expr,
-      body: Box::new(body)
-    };
-    Stmt::Let(decl)
-  }
+  spacetime_var_in_store =
+    java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_spacetime_store
 
-  fn make_let_in_store(location: String, loc_ty: Option<JavaTy>,
-    store: String, expr: Expr, body: Stmt) -> Stmt
+  fn make_spacetime_store(loc_ty: JavaTy, location: String,
+    store: String, expr: Expr) -> Stmt
   {
     let decl = LetInStoreDecl {
       location: location,
       loc_ty: loc_ty,
       store: store,
-      expr: expr,
-      body: Box::new(body)
+      expr: expr
     };
     Stmt::LetInStore(decl)
   }
@@ -187,15 +184,17 @@ grammar! bonsai {
     Stmt::Tell(var, expr)
   }
 
-  fn make_proc_call(process: String) -> Stmt {
-    Stmt::ProcCall(process)
+  fn make_proc_call(process: String, args: Vec<Expr>) -> Stmt {
+    Stmt::ProcCall(process, args)
   }
 
   expr
     = java_expr
     / stream_var > make_stream_var_expr
+    / BOT > make_bottom_expr
 
   fn make_stream_var_expr(var: StreamVar) -> Expr { Expr::Variable(var) }
+  fn make_bottom_expr() -> Expr { Expr::Bottom }
 
   java_ty
     = identifier java_generic_list > make_java_ty
@@ -219,8 +218,10 @@ grammar! bonsai {
     vec![]
   }
 
+  list_args = LPAREN list_expr RPAREN
+
   java_expr
-    = NEW java_ty LPAREN list_expr RPAREN > java_new
+    = NEW java_ty list_args > java_new
     / java_call_expr
     / number > make_number_expr
     / string_literal > make_string_literal
@@ -244,8 +245,8 @@ grammar! bonsai {
   fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
   fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
 
-  java_call = identifier LPAREN list_expr RPAREN > make_java_method_call
-  java_method_call = DOT identifier (LPAREN list_expr RPAREN)? > make_java_property
+  java_call = identifier list_args > make_java_method_call
+  java_method_call = DOT identifier (list_args)? > make_java_property
 
   fn make_java_method_call(name: String, args: Vec<Expr>) -> JavaCall {
     make_java_call(name, false, args)
@@ -317,12 +318,10 @@ grammar! bonsai {
     = WORLD_LINE > world_line
     / SINGLE_TIME > single_time
     / SINGLE_SPACE > single_space
-    / identifier > location_spacetime
 
   fn world_line() -> Spacetime { Spacetime::WorldLine }
   fn single_time() -> Spacetime { Spacetime::SingleTime }
   fn single_space() -> Spacetime { Spacetime::SingleSpace }
-  fn location_spacetime(loc: String) -> Spacetime { Spacetime::Location(loc) }
 
   identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
@@ -359,12 +358,20 @@ grammar! bonsai {
   BOT = "bot" kw_tail
   TOP = "top" kw_tail
 
+  // Java keyword
+  java_kw
+    = "new" / "private" / "public" / "class"
+    / "implements" / "Executable" / "static"
+  NEW = "new" kw_tail
   PRIVATE = "private" kw_tail
   PUBLIC = "public" kw_tail
   CLASS = "class" kw_tail
+  IMPLEMENTS = "implements" kw_tail
+  EXECUTABLE = "Executable" kw_tail
   STATIC = "static" kw_tail
 
   UNDERSCORE = "_"
+  TILDE = "~"
   DOTDOT = ".." spacing
   SEMI_COLON = ";" spacing
   COLON = ":" spacing
@@ -389,10 +396,6 @@ grammar! bonsai {
 
   spacing = blanks -> (^)
   blanks = [" \n\r\t"]*
-
-  // Java keyword
-  java_kw = "new"
-  NEW = "new" kw_tail
 
   fn to_string(raw_text: Vec<char>) -> String {
     raw_text.into_iter().collect()
@@ -428,122 +431,16 @@ mod test
   fn test_grammar()
   {
     let state = bonsai::recognize_program(r#"
-      package chococubes.example;
-
-      import java.util.*;
-      import inria.meije.rc.sugarcubes.*;
-      import inria.meije.rc.sugarcubes.implementation.*;
-      import org.chocosolver.solver.variables.*;
-      import org.chocosolver.solver.constraints.nary.alldifferent.*;
-      import org.chocosolver.solver.search.strategy.selectors.variables.*;
-      import org.chocosolver.solver.search.strategy.selectors.values.*;
-      import bonsai.chococubes.core.*;
-      import bonsai.chococubes.choco.*;
-      import bonsai.chococubes.sugarcubes.*;
-
-      public class NQueens
+      public class Test implements Executable
       {
-        let domains in world_line = VarStore.bottom();
-        let constraints in world_line = ConstraintStore.bottom();
-        let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
-
-        private static void modelChoco(int n, VarStore domains, ConstraintStore constraints) {
-          IntVar[] vars = new IntVar[n];
-          IntVar[] diag1 = new IntVar[n];
-          IntVar[] diag2 = new IntVar[n];
-          for(int i = 0; i < n; i++) {
-            vars[i] = (IntVar) domains.alloc(new IntDomain(1, n));
-            diag1[i] = domains.model().intOffsetView(vars[i], i);
-            diag2[i] = domains.model().intOffsetView(vars[i], -i);
-          }
-          constraints.join(new AllDifferent(vars, "BC"));
-          constraints.join(new AllDifferent(diag1, "BC"));
-          constraints.join(new AllDifferent(diag2, "BC"));
-        }
-
-        private static void printHeader(String message,
-          FlatLattice<Consistent> consistent)
-        {
-          System.out.print("["+message+"][" + consistent + "]");
-        }
-
-        private static Program printModel(String message,
-          FlatLattice<Consistent> consistent, VarStore domains)
-        {
-          printHeader(message, consistent);
-          System.out.print(domains.model());
-        }
-
-        private static Program printVariables(String message
-          FlatLattice<Consistent> consistent, VarStore domains)
-        {
-          printHeader(message, consistent);
-          System.out.print(" Variables = [");
-          for (IntVar v : domains.vars()) {
-            System.out.print(v + ", ");
-          }
-          System.out.println("]");
-        }
-
-        proc first_fail_middle() {
-          let var in single_space = new FirstFail();
-          let val in single_space = new IntDomainMin();
-          loop {
-            when consistent |= Consistent.Unknown {
-              let x: IntVar in single_time = var.getVariable(domains.vars());
-              let mid: int in single_time = val.selectValue(domains[x]);
-              space
-              || constraints[domains] <- x.gt(mid);
-              || constraints[domains] <- x.lte(mid);
-              end
-            }
-            pause;
-          }
-        }
-
-        proc model() {
-          modelChoco(4, domains, constraints);
-          printModel("After initialization", consistent, domains);
-        }
-
-        proc propagation() {
-          loop {
-            consistent <- PropagatorEngine.propagate(domains, constraints);
-            pause;
-          }
-        }
-
-        proc one_solution() {
-          loop {
-            when consistent |= Consistent.True {
-              exit FoundSolution;
-            }
-            pause;
-          }
-        }
-
-        proc engine() {
-          trap FoundSolution {
-            par
-            || fail_first_middle();
-            || propagation();
-            || one_solution();
-            end
-          }
-        }
-
-        model();
-        engine();
-        printVariables();
-
         proc test() {
-          let queen1: IntVar = domains <- new IntDomain(0,1);
-          let queen2: IntVar = domains <- new IntDomain(0,1);
+          IntVar queen1 = domains <- new IntDomain(0,1);
+          IntVar queen2 = domains <- new IntDomain(0,1);
 
-          constraints[domains] <- new AllDifferent(domains.vars(), "DEFAULT");
+          constraints <- new AllDifferent(domains.vars(), "DEFAULT");
           printVariables(domains);
 
-          constraints[domains] <- queen1.ne(queen2);
+          constraints <- queen1.ne(queen2);
           let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
         }
       }

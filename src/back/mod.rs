@@ -120,7 +120,7 @@ pub fn generate_chococubes(ast: Program) -> Partial<String> {
   let context = Context::new(ast.clone());
   let mut gen = CodeGenerator::new();
   gen.push_block(ast.header);
-  gen.push_line(&format!("public class {}", ast.class_name));
+  gen.push_line(&format!("public class implements Executable {}", ast.class_name));
   gen.open_block();
   generate_execute_process(&mut gen);
   generate_items(&mut gen, &context, ast.items);

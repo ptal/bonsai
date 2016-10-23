@@ -13,38 +13,40 @@ import bonsai.chococubes.sugarcubes.*;
 
 // domains.index(x)); SEE below.
 
-public class NQueens
+public class NQueens implements Executable
 {
-  let domains in world_line = VarStore.bottom();
-  let constraints in world_line = ConstraintStore.bottom();
-  let consistent: FlatLattice<Consistent> in single_time = FlatLattice.bottom();
+  world_line VarStore domains = bot;
+  world_line ConstraintStore constraints = bot;
+  singe_time FlatLattice<Consistent> consistent = bot;
 
-  model;
-  engine;
-  printVariables("Solution", consistent, domains);
+  proc execute() {
+    model();
+    engine();
+    ~printVariables("Solution", consistent, domains);
+  }
 
   proc model() {
-    modelChoco(4, domains, constraints);
-    printModel("After initialization", consistent, domains);
+    ~modelChoco(4, domains, constraints);
+    ~printModel("After initialization", consistent, domains);
   }
 
   proc engine() {
     trap FoundSolution {
       par
-      || first_fail_middle;
-      || propagation;
-      || one_solution;
+      || first_fail_middle();
+      || propagation();
+      || one_solution();
       end
     }
   }
 
   proc first_fail_middle() {
-    let var in single_space = new FirstFail(domains.model());
-    let val in single_space = new IntDomainMiddle(IntDomainMiddle.FLOOR);
+    single_space FirstFail var = new FirstFail(domains.model());
+    single_space IntDomainMiddle val = new IntDomainMiddle(IntDomainMiddle.FLOOR);
     loop {
       when consistent |= Consistent.Unknown {
-        let x: IntVar in single_time = var.getVariable(domains.vars());
-        let mid: Integer in single_time = val.selectValue(x);
+        single_time IntVar x = var.getVariable(domains.vars());
+        single_time Integer mid = val.selectValue(x);
         space
         || constraints <- x.le(mid);
         || constraints <- x.gt(mid);

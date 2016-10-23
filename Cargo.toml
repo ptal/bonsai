@@ -9,7 +9,7 @@ keywords = ["constraint", "language", "strategy"]
 license = "Apache-2.0"
 
 [dependencies]
-oak = "^0.4.1"
+oak = "^0.4.3"
 oak_runtime = "^0.4.0"
 partial = "^0.1.0"
 clap = "^2"

@@ -25,7 +25,16 @@ pub struct Program {
 pub enum Item {
   Statement(Stmt),
   Proc(Process),
-  JavaStaticMethod(String, String)
+  JavaMethod(JavaMethodDecl)
+}
+
+#[derive(Clone)]
+pub struct JavaMethodDecl {
+  is_static: bool,
+  return_ty: JavaTy,
+  name: String,
+  parameters: JavaParameters,
+  body: JavaBlock
 }
 
 pub type JavaBlock = String;
@@ -94,27 +103,24 @@ pub enum Stmt {
   Trap(String, Box<Stmt>),
   Exit(String),
   Loop(Box<Stmt>),
-  ProcCall(String),
+  ProcCall(String, Vec<Expr>),
   FnCall(Expr)
 }
 
 #[derive(Clone)]
 pub struct LetDecl {
-  pub transient: bool,
   pub var: String,
-  pub var_ty: Option<JavaTy>,
+  pub var_ty: JavaTy,
   pub spacetime: Spacetime,
-  pub expr: Expr,
-  pub body: Box<Stmt>
+  pub expr: Expr
 }
 
 #[derive(Clone)]
 pub struct LetInStoreDecl {
   pub location: String,
-  pub loc_ty: Option<JavaTy>,
+  pub loc_ty: JavaTy,
   pub store: String,
-  pub expr: Expr,
-  pub body: Box<Stmt>
+  pub expr: Expr
 }
 
 #[derive(Clone)]
@@ -150,8 +156,7 @@ impl StreamVar {
 pub enum Spacetime {
   SingleSpace,
   SingleTime,
-  WorldLine,
-  Location(String)
+  WorldLine
 }
 
 #[derive(Clone)]
@@ -161,7 +166,8 @@ pub enum Expr {
   JavaThisCall(JavaCall),
   Number(u64),
   StringLiteral(String),
-  Variable(StreamVar)
+  Variable(StreamVar),
+  Bottom
 }
 
 #[derive(Clone)]
