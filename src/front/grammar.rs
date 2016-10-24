@@ -40,16 +40,26 @@ grammar! bonsai {
     / PROC identifier java_param_list block > make_process_item
     / java_method
 
-  spacetime_var = spacetime java_ty identifier EQ expr SEMI_COLON > make_spacetime_var
+  spacetime_var = spacetime java_ty identifier EQ bottom_expr SEMI_COLON > make_spacetime_var
+
+  bottom_expr = expr > some_expr
+              / BOT > make_bottom_expr
+  fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
+  fn make_bottom_expr() -> Option<Expr> { None }
 
   fn make_spacetime_var(spacetime: Spacetime, var_ty: JavaTy,
-    var_name: String, expr: Expr) -> Stmt
+    var_name: String, expr: Option<Expr>) -> Stmt
   {
+    let expr = match expr {
+      Some(expr) => expr,
+      None => Expr::Bottom(var_ty.clone())
+    };
     let decl = LetDecl {
       var: var_name,
       var_ty: var_ty,
       spacetime: spacetime,
-      expr: expr
+      expr: expr,
+      body: Box::new(Stmt::Pause) // Placeholder waiting for the variable folding.
     };
     Stmt::Let(decl)
   }
@@ -151,7 +161,8 @@ grammar! bonsai {
       location: location,
       loc_ty: loc_ty,
       store: store,
-      expr: expr
+      expr: expr,
+      body: Box::new(Stmt::Pause) // Placeholder waiting for the variable folding.
     };
     Stmt::LetInStore(decl)
   }
@@ -191,10 +202,8 @@ grammar! bonsai {
   expr
     = java_expr
     / stream_var > make_stream_var_expr
-    / BOT > make_bottom_expr
 
   fn make_stream_var_expr(var: StreamVar) -> Expr { Expr::Variable(var) }
-  fn make_bottom_expr() -> Expr { Expr::Bottom }
 
   java_ty
     = identifier java_generic_list > make_java_ty
@@ -438,10 +447,10 @@ mod test
           IntVar queen2 = domains <- new IntDomain(0,1);
 
           constraints <- new AllDifferent(domains.vars(), "DEFAULT");
-          printVariables(domains);
+          ~printVariables(domains);
 
           constraints <- queen1.ne(queen2);
-          let fake in single_time = new Fake(pre pre queens1[pre queens, queen2], new Object());
+          single_time Fake fake = new Fake(pre pre queens1[pre queens, queen2], new Object());
         }
       }
      "#.into_state());

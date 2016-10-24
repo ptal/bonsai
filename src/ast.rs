@@ -14,45 +14,45 @@
 
 use std::fmt::{Formatter, Display, Error};
 
-#[derive(Clone)]
+
+#[derive(Clone, Debug)]
+pub struct Module {
+  pub header: String,
+  pub class_name: String,
+  pub processes: Vec<Process>,
+  pub java_methods: Vec<JavaMethodDecl>
+}
+
+#[derive(Clone, Debug)]
 pub struct Program {
   pub header: String,
   pub class_name: String,
   pub items: Vec<Item>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Item {
   Statement(Stmt),
   Proc(Process),
   JavaMethod(JavaMethodDecl)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct JavaMethodDecl {
-  is_static: bool,
-  return_ty: JavaTy,
-  name: String,
-  parameters: JavaParameters,
-  body: JavaBlock
+  pub is_static: bool,
+  pub return_ty: JavaTy,
+  pub name: String,
+  pub parameters: JavaParameters,
+  pub body: JavaBlock
 }
 
 pub type JavaBlock = String;
 pub type JavaParameters = String;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct JavaTy {
   pub name: String,
   pub generics: Vec<JavaTy>
-}
-
-impl JavaTy {
-  pub fn simple(name: String) -> Self {
-    JavaTy {
-      name: name,
-      generics: vec![]
-    }
-  }
 }
 
 impl Display for JavaTy
@@ -73,7 +73,7 @@ impl Display for JavaTy
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Process {
   pub name: String,
   pub params: JavaParameters,
@@ -90,7 +90,7 @@ impl Process {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Stmt {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
@@ -107,35 +107,37 @@ pub enum Stmt {
   FnCall(Expr)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LetDecl {
   pub var: String,
   pub var_ty: JavaTy,
   pub spacetime: Spacetime,
-  pub expr: Expr
+  pub expr: Expr,
+  pub body: Box<Stmt>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LetInStoreDecl {
   pub location: String,
   pub loc_ty: JavaTy,
   pub store: String,
-  pub expr: Expr
+  pub expr: Expr,
+  pub body: Box<Stmt>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EntailmentRel {
   pub left: StreamVar,
   pub right: Expr
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Var {
   pub name: String,
   pub args: Vec<Var>
 }
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct StreamVar {
   pub name: String,
   pub past: usize,
@@ -152,14 +154,14 @@ impl StreamVar {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Spacetime {
   SingleSpace,
   SingleTime,
   WorldLine
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr {
   JavaNew(JavaTy, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
@@ -167,10 +169,10 @@ pub enum Expr {
   Number(u64),
   StringLiteral(String),
   Variable(StreamVar),
-  Bottom
+  Bottom(JavaTy)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct JavaCall {
   pub property: String, // can be an attribute or a method.
   pub is_attribute: bool,

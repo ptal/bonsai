@@ -35,43 +35,22 @@ pub struct Context {
 }
 
 impl Context {
-  pub fn new(ast: Program) -> Self {
+  pub fn new(module: Module) -> Self {
     let mut context = Context {
       spacetime_vars: HashMap::new()
     };
-    context.initialize_program(ast);
+    context.initialize_program(module);
     context
   }
 
-  fn initialize_program(&mut self, ast: Program) {
-    for item in ast.items {
-      match item {
-        Item::Statement(stmt) => self.initialize_stmt(stmt),
-        Item::Proc(process) => self.initialize_stmt(process.body),
-        _ => ()
-      }
+  fn initialize_program(&mut self, module: Module) {
+    for process in module.processes {
+      self.initialize_stmt(process.body);
     }
   }
 
-  fn java_type_of(&self, var: String, java_ty: Option<JavaTy>, expr: Expr) -> JavaTy {
-    match java_ty {
-      Some(ty) => ty,
-      None => self.infer_ty(var, expr)
-    }
-  }
-
-  fn infer_ty(&self, var: String, expr: Expr) -> JavaTy {
-    use ast::Expr::*;
-    match expr {
-      JavaNew(object_ty, _) => object_ty,
-      JavaObjectCall(object, _) => JavaTy::simple(object),
-      _ => panic!(format!("We could not give a type to the variable `{}`.", var))
-    }
-  }
-
-  fn insert_var(&mut self, var: String, ty: Option<JavaTy>, expr: Expr) {
-    let spacetime_var = SpacetimeVar::new(var.clone(),
-      self.java_type_of(var.clone(), ty, expr));
+  fn insert_var(&mut self, var: String, ty: JavaTy) {
+    let spacetime_var = SpacetimeVar::new(var.clone(), ty);
     self.spacetime_vars.insert(
       var,
       spacetime_var);
@@ -87,12 +66,12 @@ impl Context {
     use ast::Stmt::*;
     match stmt {
       Let(decl) => {
-        self.insert_var(decl.var, decl.var_ty, decl.expr);
+        self.insert_var(decl.var, decl.var_ty);
         self.initialize_stmt(*decl.body);
       }
       LetInStore(decl) => {
         // Use a dummy expr because the type of the location cannot be infered with the expr.
-        self.insert_var(decl.location, decl.loc_ty, Expr::Number(0u64));
+        self.insert_var(decl.location, decl.loc_ty);
         self.initialize_stmt(*decl.body);
       }
       Seq(branches)
@@ -116,54 +95,44 @@ impl Context {
   }
 }
 
-pub fn generate_chococubes(ast: Program) -> Partial<String> {
-  let context = Context::new(ast.clone());
+pub fn generate_chococubes(module: Module) -> Partial<String> {
+  let context = Context::new(module.clone());
   let mut gen = CodeGenerator::new();
-  gen.push_block(ast.header);
-  gen.push_line(&format!("public class implements Executable {}", ast.class_name));
+  gen.push_block(module.header);
+  gen.push_line(&format!("public class implements Executable {}", module.class_name));
   gen.open_block();
-  generate_execute_process(&mut gen);
-  generate_items(&mut gen, &context, ast.items);
+  for process in module.processes {
+    generate_process(&mut gen, &context, process);
+  }
+  for method in module.java_methods {
+    generate_java_method(&mut gen, method);
+  }
   gen.close_block();
   Partial::Value(gen.code)
 }
 
-fn generate_items(gen: &mut CodeGenerator, context: &Context, items: Vec<Item>) {
-  let items = generate_init_proc(gen, context, items);
-  for item in items {
-    match item {
-      Item::Statement(_) =>
-        unreachable!("Should have been moved into the init process."),
-      Item::Proc(process) => generate_process(gen, context, process),
-      Item::JavaStaticMethod(_, method) => gen.push_java_method(method)
-    }
-  }
-}
+// fn generate_main_function(gen: &mut CodeGenerator, class_name: String) {
+//   gen.push_line("public static void main(String[] args)");
+//   gen.open_block();
+//   gen.push_block(format!("\
+//     {} current = new {}();
+//     Program program = current.execute();\n\
+//     SpaceMachine machine = SpaceMachine.createDebug(program);\n\
+//     machine.execute();", class_name.clone(), class_name));
+//   gen.close_block();
+//   gen.newline();
+// }
 
-fn generate_execute_process(gen: &mut CodeGenerator) {
-  gen.push_line("public void execute()");
-  gen.open_block();
-  gen.push_block(String::from("\
-    Program program = init();\n\
-    SpaceMachine machine = SpaceMachine.createDebug(program);\n\
-    machine.execute();"));
-  gen.close_block();
-  gen.newline();
-}
-
-fn generate_init_proc(gen: &mut CodeGenerator, context: &Context, items: Vec<Item>) -> Vec<Item> {
-  let mut body = vec![];
-  let mut remaining = vec![];
-  for item in items {
-    match item {
-      Item::Statement(stmt) => body.push(stmt),
-      item => remaining.push(item)
-    }
-  }
-  let init_proc = Process::new(String::from("init"),
-    String::from("()"), Stmt::Seq(body));
-  generate_process(gen, context, init_proc);
-  remaining
+fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
+  let code = vec![
+    String::from("public "),
+    if method.is_static { String::from("static ") } else { String::new() },
+    format!("{} ", method.return_ty),
+    method.name,
+    method.parameters,
+    method.body
+  ].iter().flat_map(|x| x.chars()).collect();
+  gen.push_java_method(code);
 }
 
 fn generate_process(gen: &mut CodeGenerator, context: &Context, process: Process) {
@@ -240,7 +209,8 @@ fn generate_expr(gen: &mut CodeGenerator, expr: Expr) {
     JavaThisCall(method) => generate_java_this_call(gen, method),
     Number(n) => generate_number(gen, n),
     StringLiteral(lit) => generate_literal(gen, lit),
-    Variable(var) => generate_stream_var(gen, var)
+    Variable(var) => generate_stream_var(gen, var),
+    Bottom(ty) => generate_bottom(gen, ty)
   }
 }
 
@@ -295,6 +265,10 @@ fn generate_stream_var(gen: &mut CodeGenerator, var: StreamVar) {
   gen.push(&var.name);
 }
 
+fn generate_bottom(gen: &mut CodeGenerator, ty: JavaTy) {
+  gen.push(&format!("{}.bottom()", ty));
+}
+
 fn generate_statement(gen: &mut CodeGenerator, context: &Context, stmt: Stmt) {
   use ast::Stmt::*;
   match stmt {
@@ -309,7 +283,7 @@ fn generate_statement(gen: &mut CodeGenerator, context: &Context, stmt: Stmt) {
     Exit(name) => generate_exit(gen, name),
     Loop(body) => generate_loop(gen, context, body),
     FnCall(java_call) => generate_java_call(gen, context, java_call),
-    ProcCall(process) => generate_proc_call(gen, process),
+    ProcCall(process, args) => generate_fun_call(gen, process, args),
     Tell(var, expr) => generate_tell(gen, context, var, expr),
   }
 }
@@ -376,8 +350,7 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
   match spacetime {
     SingleSpace => String::from("Spacetime.SingleSpace"),
     SingleTime => String::from("Spacetime.SingleTime"),
-    WorldLine => String::from("Spacetime.WorldLine"),
-    Location(_) => unreachable!("location is not a translatable spacetime.")
+    WorldLine => String::from("Spacetime.WorldLine")
   }
 }
 
@@ -432,10 +405,6 @@ fn generate_java_call(gen: &mut CodeGenerator, context: &Context, java_call: Exp
   gen.push("new ClosureAtom(");
   generate_closure(gen, context, false, java_call);
   gen.push(")");
-}
-
-fn generate_proc_call(gen: &mut CodeGenerator, process: String) {
-  gen.push(&format!("{}()", process));
 }
 
 fn generate_trap(gen: &mut CodeGenerator, context: &Context,
