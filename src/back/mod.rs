@@ -99,7 +99,7 @@ pub fn generate_chococubes(module: Module) -> Partial<String> {
   let context = Context::new(module.clone());
   let mut gen = CodeGenerator::new();
   gen.push_block(module.header);
-  gen.push_line(&format!("public class implements Executable {}", module.class_name));
+  gen.push_line(&format!("public class {} implements Executable", module.class_name));
   gen.open_block();
   for process in module.processes {
     generate_process(&mut gen, &context, process);
@@ -266,7 +266,7 @@ fn generate_stream_var(gen: &mut CodeGenerator, var: StreamVar) {
 }
 
 fn generate_bottom(gen: &mut CodeGenerator, ty: JavaTy) {
-  gen.push(&format!("{}.bottom()", ty));
+  gen.push(&format!("{}.bottom()", ty.name));
 }
 
 fn generate_statement(gen: &mut CodeGenerator, context: &Context, stmt: Stmt) {

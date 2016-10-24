@@ -17,7 +17,7 @@ public class NQueens implements Executable
 {
   world_line VarStore domains = bot;
   world_line ConstraintStore constraints = bot;
-  singe_time FlatLattice<Consistent> consistent = bot;
+  single_time FlatLattice<Consistent> consistent = bot;
 
   proc execute() {
     model();

@@ -46,7 +46,7 @@ pub fn analyse_bonsai(ast: Program) -> Partial<Module> {
     "Missing process `execute`. It is the entry point of the reactive module.");
   body.push(exec_proc.body);
   exec_proc.body = fold_var_sequence(body);
-  module.processes.push(exec_proc);
+  module.processes.insert(0, exec_proc);
   Partial::Value(module)
 }
 
@@ -59,9 +59,14 @@ fn fold_stmt(stmt: Stmt) -> Stmt {
     When(entailment, body) => When(entailment, Box::new(fold_stmt(*body))),
     Trap(name, body) => Trap(name, Box::new(fold_stmt(*body))),
     Loop(body) => Loop(Box::new(fold_stmt(*body))),
-    Let(_)
-  | LetInStore(_) => panic!(
-      "Every variable declaration must be followed by some instructions."),
+    Let(mut decl) => {
+      decl.body = Box::new(fold_stmt(*decl.body));
+      Let(decl)
+    },
+    LetInStore(mut decl) => {
+      decl.body = Box::new(fold_stmt(*decl.body));
+      LetInStore(decl)
+    },
     x => x
   }
 }
