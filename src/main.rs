@@ -33,6 +33,6 @@ fn main() {
   Partial::Value(config.input_as_string())
   .and_then(front::parse_bonsai)
   .and_then(middle::analyse_bonsai)
-  .and_then(back::generate_chococubes)
+  .and_then(|m| back::generate_chococubes(m, config.main_method))
   .map(|output| config.write_output(output));
 }

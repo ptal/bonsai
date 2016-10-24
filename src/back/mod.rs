@@ -95,12 +95,15 @@ impl Context {
   }
 }
 
-pub fn generate_chococubes(module: Module) -> Partial<String> {
+pub fn generate_chococubes(module: Module, main_method: bool) -> Partial<String> {
   let context = Context::new(module.clone());
   let mut gen = CodeGenerator::new();
   gen.push_block(module.header);
   gen.push_line(&format!("public class {} implements Executable", module.class_name));
   gen.open_block();
+  if main_method {
+    generate_main_method(&mut gen, module.class_name);
+  }
   for process in module.processes {
     generate_process(&mut gen, &context, process);
   }
@@ -111,17 +114,17 @@ pub fn generate_chococubes(module: Module) -> Partial<String> {
   Partial::Value(gen.code)
 }
 
-// fn generate_main_function(gen: &mut CodeGenerator, class_name: String) {
-//   gen.push_line("public static void main(String[] args)");
-//   gen.open_block();
-//   gen.push_block(format!("\
-//     {} current = new {}();
-//     Program program = current.execute();\n\
-//     SpaceMachine machine = SpaceMachine.createDebug(program);\n\
-//     machine.execute();", class_name.clone(), class_name));
-//   gen.close_block();
-//   gen.newline();
-// }
+fn generate_main_method(gen: &mut CodeGenerator, class_name: String) {
+  gen.push_line("public static void main(String[] args)");
+  gen.open_block();
+  gen.push_block(format!("\
+    {} current = new {}();\n\
+    Program program = current.execute();\n\
+    SpaceMachine machine = SpaceMachine.createDebug(program);\n\
+    machine.execute();", class_name.clone(), class_name));
+  gen.close_block();
+  gen.newline();
+}
 
 fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
   let code = vec![

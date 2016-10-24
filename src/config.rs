@@ -20,7 +20,8 @@ use clap::App;
 pub struct Config
 {
   pub input: PathBuf,
-  pub output: PathBuf
+  pub output: PathBuf,
+  pub main_method: bool
 }
 
 impl Config
@@ -32,6 +33,7 @@ impl Config
       .about("Compiler of the Bonsai programming language.")
       .args_from_usage(
         "-o, --output=[filename] 'Write output to [filename]'
+        --main                   'Generate a method main for immediate testing'
         <input>                  'Bonsai file to compile'")
       .get_matches();
 
@@ -41,7 +43,8 @@ impl Config
       .unwrap_or(Config::default_output(&input));
     Config {
       input: input,
-      output: output
+      output: output,
+      main_method: matches.is_present("main")
     }
   }
 
