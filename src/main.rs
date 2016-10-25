@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(question_mark, plugin)]
+#![feature(plugin)]
 #![plugin(oak)]
 
 extern crate oak_runtime;

@@ -12,14 +12,13 @@ lib_path = "unknown"
 ending_message = "\nSuccesfully installed bonsai, SugarCubes and ChocoCubes.\n"
 
 if platform.system() == 'Darwin':
-  startup_script = "~/.profile"
+  startup_script = "~/.bash_profile"
   lib_path = "DYLD_LIBRARY_PATH"
 elif platform.system() == 'Linux':
   startup_script = "~/.bashrc"
   lib_path = "LD_LIBRARY_PATH"
 
-install_rustup_cmd = ["curl", "https://sh.rustup.rs", "-sSf"]
-install_rust_cmd = ["rustup", "override", "add", rust_nightly_version]
+install_rust_cmd = ["rustup", "override", "set", rust_nightly_version]
 list_target_rustup_cmd = ["rustup", "target", "list"]
 clone_bonsai_cmd = ["git", "clone", "https://github.com/ptal/bonsai.git"]
 install_bonsai_cmd = ["cargo", "install"]
@@ -50,21 +49,18 @@ def install_rust():
   except OSError as e:
     if e.errno == os.errno.ENOENT:
       install_rustup()
-      install_rust_nightly()
     else:
       print("`rustup` call failed.")
       raise
 
 def install_rustup():
-  print("Installing rustup now...")
-  curl_script = subprocess.Popen(install_rustup_cmd, stdout=subprocess.PIPE)
-  subprocess.run(['sh'], stdin=curl_script.stdout, stdout=subprocess.DEVNULL).check_returncode()
-  curl_script.wait()
-  print("`rustup` has been installed.")
+  print("Please install `rustup` with the following command and come back:\n")
+  print("  curl https://sh.rustup.rs -sSf | sh\n")
+  exit()
 
 def install_rust_nightly():
   print("Installing rust compiler (nightly channel)...")
-  subprocess.run(install_rust_cmd, stdout=subprocess.DEVNULL)
+  subprocess.run(install_rust_cmd)
   print("rust compiler (nightly channel) has been installed.")
 
 class cd:
@@ -112,13 +108,13 @@ def install_bonsai():
 
 def install_sugarcubes():
   print("Installing SugarCubes Java libary...")
-  subprocess.run(download_sugarcubes_cmd, stdout=subprocess.DEVNULL)
+  subprocess.run(download_sugarcubes_cmd)
   try:
     subprocess.run(install_sugarcubes_cmd).check_returncode()
     print("`SugarCubes` has been installed.")
   except OSError as e:
     if e.errno == os.errno.ENOENT:
-      print("Please install Maven (see maven.apache.org/)")
+      print("Please install Maven and come back! (see our `README.md` or `http://maven.apache.org`)\n")
       exit()
 
 def install_chococubes():

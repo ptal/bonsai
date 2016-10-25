@@ -11,8 +11,6 @@ import bonsai.chococubes.core.*;
 import bonsai.chococubes.choco.*;
 import bonsai.chococubes.sugarcubes.*;
 
-// domains.index(x)); SEE below.
-
 public class NQueens implements Executable
 {
   world_line VarStore domains = bot;
