@@ -31,7 +31,7 @@ python3 setup.py
 
 We provide a [manual installation procedure](manual-installation.md) in case the script did not work.
 
-## Update
+### Update
 
 We only update the compiler and runtime (and not the dependencies):
 
@@ -39,7 +39,7 @@ We only update the compiler and runtime (and not the dependencies):
 .\update.sh
 ```
 
-## Uninstallation
+### Uninstallation
 
 ```sh
 cargo uninstall bonsai
@@ -49,6 +49,7 @@ rm ~/.m2/repository/bonsai
 ```
 
 Remove the following export line in your profile:
+
 1. Linux in `~/.bashrc`: `export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:~/.multirust/toolchains/nightly-x86_64-unknown-linux-gnu/lib`
 2. MacOSX in `~/.bash_profile`: `export DYLD_LIBRARY_PATH=\$DYLD_LIBRARY_PATH:~/.multirust/toolchains/x86_64-apple-darwin/lib`
 
