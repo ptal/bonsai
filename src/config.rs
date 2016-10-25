@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::PathBuf;
-use std::fs::{File, OpenOptions};
+use std::path::{PathBuf};
+use std::fs::{File, OpenOptions, DirBuilder};
 use std::io::prelude::*;
 use clap::App;
 
@@ -39,6 +39,7 @@ impl Config
 
     let input = PathBuf::from(matches.value_of("input").unwrap());
     let output = matches.value_of("output")
+      .map(|s| s.trim())
       .map(PathBuf::from)
       .unwrap_or(Config::default_output(&input));
     Config {
@@ -53,18 +54,30 @@ impl Config
   }
 
   pub fn input_as_string(&self) -> String {
-    let mut file = File::open(self.input.clone()).unwrap();
+    let mut file = File::open(self.input.clone())
+      .expect(&format!("Input file ({})", self.input.to_str().unwrap_or("<invalid UTF8>")));
     let mut res = String::new();
     file.read_to_string(&mut res).unwrap();
     res
   }
 
   pub fn write_output(&self, output: String) {
+    self.build_output_directory();
     let mut file = OpenOptions::new()
      .write(true)
      .truncate(true)
+     .create(true)
      .open(self.output.clone())
-     .unwrap();
+     .expect(&format!("Output file ({})", self.output.to_str().unwrap_or("<invalid UTF8>")));
     file.write_fmt(format_args!("{}", output)).unwrap();
+  }
+
+  fn build_output_directory(&self) {
+    if let Some(dir_path) = self.output.parent() {
+      DirBuilder::new()
+      .recursive(true)
+      .create(dir_path)
+      .expect("Recursive creation of directory for the output file.");
+    }
   }
 }
