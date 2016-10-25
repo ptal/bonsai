@@ -55,30 +55,43 @@ Remove the following export line in your profile:
 
 # Example
 
+The following command will compile and execute the NQueens problem as described in the file [NQueens.bonsai.java](examples/bonsai/NQueens/src/main/java/chococubes/example/NQueens.bonsai.java):
+
 ```sh
-cd bonsai/examples/NQueens
+cd examples/bonsai/NQueens
 mvn compile
 mvn exec:java -Dexec.mainClass="chococubes.example.NQueens"
 ```
 
-## Into an existing project
+Copy this project and create as much bonsai file (`.bonsai.java`) as you want. For each file created add an `execution` section in your `pom.xml`:
 
-Copy this project and use it as a template to start your own! If you already have a running project, don't forget to add to the `pom.xml` the following dependencies (note that Choco is available on the Maven central repository so you don't need to install it):
+```xml
+<plugin>
+  <groupId>org.codehaus.mojo</groupId>
+  <artifactId>exec-maven-plugin</artifactId>
+  <version>1.5.0</version>
+  <executions>
+    <execution>
+      <id>SomeFile.bonsai.java</id>
+      ...
+    </execution>
+    <!-- Add an execution section as follow: -->
+    <execution>
+      <id>NQueens.bonsai.java</id>
+      <phase>generate-sources</phase>
+      <goals>
+        <goal>exec</goal>
+      </goals>
+      <configuration>
+        <executable>bonsai</executable>
+        <arguments>
+          <argument>--main</argument>
+          <argument>-o ${project.build.directory}/generated-sources/bonsai/NQueens.java</argument>
+          <argument>${project.build.sourceDirectory}/chococubes/example/NQueens.bonsai.java</argument>
+        </arguments>
+      </configuration>
+    </execution>
+  </executions>
+```
 
-```
-<dependency>
-  <groupId>org.choco-solver</groupId>
-  <artifactId>choco-solver</artifactId>
-  <version>4.0.0</version>
-</dependency>
-<dependency>
-  <groupId>inria.meije.rc</groupId>
-  <artifactId>SugarCubes</artifactId>
-  <version>4.0.0a5</version>
-</dependency>
-<dependency>
-  <groupId>bonsai</groupId>
-  <artifactId>ChocoCubes</artifactId>
-  <version>1.0</version>
-</dependency>
-```
+Do not forget to modify the `<id>` and the names of the files in the `<argument>`.

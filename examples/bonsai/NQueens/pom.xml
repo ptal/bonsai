@@ -55,20 +55,21 @@
         <version>1.5.0</version>
         <executions>
           <execution>
+            <id>NQueens.bonsai.java</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+            <configuration>
+              <executable>bonsai</executable>
+              <arguments>
+                <argument>--main</argument>
+                <argument>-o ${project.build.directory}/generated-sources/bonsai/NQueens.java</argument>
+                <argument>${project.build.sourceDirectory}/chococubes/example/NQueens.bonsai.java</argument>
+              </arguments>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <executable>bonsai</executable>
-          <arguments>
-            <argument>--main</argument>
-            <argument>-o ${project.build.directory}/generated-sources/bonsai/NQueens.java</argument>
-            <argument>${project.build.sourceDirectory}/chococubes/example/NQueens.bonsai.java</argument>
-          </arguments>
-        </configuration>
       </plugin>
 
       <plugin>
