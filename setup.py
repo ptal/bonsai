@@ -79,7 +79,8 @@ def rustup_target():
   targets = subprocess.run(list_target_rustup_cmd, stdout=subprocess.PIPE, universal_newlines=True).stdout
   for target in targets.splitlines():
     if target.endswith("(default)"):
-      return target.split(' ')[0]
+      target = target.split(' ')[0]
+      return rust_nightly_version + "-" + target
   input('Unknown target directory (enter the name of the target directory, it is in `~/.multirust/toolchains/`): ')
 
 def rustlib_export():

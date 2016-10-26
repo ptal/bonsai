@@ -14,7 +14,7 @@ Bonsai is a programming language on top of Java inspired by synchronous programm
 
 ## Prerequisites
 
-* [rustup](http://www.rustup.rs): `curl https://sh.rustup.rs -sSf | sh`
+* [rustup](http://www.rustup.rs): `curl https://sh.rustup.rs -sSf | sh` (do not forget to source your profile).
 * [Maven](https://maven.apache.org), it is usually available in the package manager of your distribution:
   1. MacOSX: `sudo brew install maven`
   2. Linux Ubuntu: `sudo apt-get install maven`
@@ -50,8 +50,8 @@ rm ~/.m2/repository/bonsai
 
 Remove the following export line in your profile:
 
-1. Linux in `~/.bashrc`: `export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:~/.multirust/toolchains/nightly-x86_64-unknown-linux-gnu/lib`
-2. MacOSX in `~/.bash_profile`: `export DYLD_LIBRARY_PATH=\$DYLD_LIBRARY_PATH:~/.multirust/toolchains/x86_64-apple-darwin/lib`
+1. Linux in `~/.bashrc`: `export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:~/.multirust/toolchains/.../lib`
+2. MacOSX in `~/.bash_profile`: `export DYLD_LIBRARY_PATH=\$DYLD_LIBRARY_PATH:~/.multirust/toolchains/.../lib`
 
 # Example
 
