@@ -26,11 +26,11 @@ public class VarStore extends Store implements Restorable {
     return new VarStore();
   }
 
-  VarStore() {
+  public VarStore() {
     this("ChocoCubes problem");
   }
 
-  VarStore(String problem_name) {
+  public VarStore(String problem_name) {
     model = new Model(problem_name);
     depth = 0;
   }
@@ -67,7 +67,7 @@ public class VarStore extends Store implements Restorable {
     assert value != null;
     if (value instanceof IntDomain) {
       IntDomain dom = (IntDomain) value;
-      return model.intVar(dom.lb, dom.ub);
+      return model.intVar(dom.lb, dom.ub, dom.bounded);
     }
     else {
       throw new RuntimeException(

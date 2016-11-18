@@ -18,6 +18,7 @@ import java.util.*;
 import bonsai.chococubes.core.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
 import org.chocosolver.solver.constraints.*;
+import org.chocosolver.solver.exception.ContradictionException;
 
 public class ConstraintStore extends LatticeVar implements Restorable {
 

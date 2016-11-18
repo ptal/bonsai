@@ -12,19 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.chococubes.choco;
+package bonsai.chococubes.core;
 
-public class IntDomain {
-  public int lb, ub;
-  public boolean bounded;
+public class RInteger implements Restorable
+{
+  private Integer value;
 
-  public IntDomain(int lb, int ub) {
-    this(lb, ub, false);
+  public RInteger(int value) {
+    this.value = new Integer(value);
   }
 
-  public IntDomain(int lb, int ub, boolean bounded) {
-    this.lb = lb;
-    this.ub = ub;
-    this.bounded = bounded;
+  public Object label() {
+    return new Integer(this.value);
+  }
+
+  public void restore(Object label) {
+    this.value = (Integer) label;
+  }
+
+  public String toString() {
+    return value.toString();
   }
 }

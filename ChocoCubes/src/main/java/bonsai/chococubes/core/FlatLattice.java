@@ -29,7 +29,7 @@ import java.util.Optional;
 
 public class FlatLattice<T> extends LatticeVar {
 
-  private Optional<T> value;
+  protected Optional<T> value;
 
   public FlatLattice(T value) {
     this.value = Optional.of(value);
