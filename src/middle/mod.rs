@@ -20,7 +20,8 @@ pub fn analyse_bonsai(ast: Program) -> Partial<Module> {
     header: ast.header,
     class_name: ast.class_name,
     processes: vec![],
-    java_methods: vec![]
+    java_methods: vec![],
+    java_static_attrs: vec![]
   };
 
   let mut body = vec![];
@@ -39,7 +40,8 @@ pub fn analyse_bonsai(ast: Program) -> Partial<Module> {
           module.processes.push(process);
         }
       }
-      Item::JavaMethod(decl) => module.java_methods.push(decl)
+      Item::JavaMethod(decl) => module.java_methods.push(decl),
+      Item::JavaStaticAttr(decl) => module.java_static_attrs.push(decl)
     }
   }
   let mut exec_proc = executable_proc.expect(

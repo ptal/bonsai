@@ -14,6 +14,7 @@
 
 use ast::*;
 use partial::*;
+use config::*;
 use std::collections::{HashMap, HashSet};
 
 pub struct SpacetimeVar {
@@ -95,14 +96,17 @@ impl Context {
   }
 }
 
-pub fn generate_chococubes(module: Module, main_method: bool) -> Partial<String> {
+pub fn generate_chococubes(module: Module, config: &Config) -> Partial<String> {
   let context = Context::new(module.clone());
   let mut gen = CodeGenerator::new();
   gen.push_block(module.header);
   gen.push_line(&format!("public class {} implements Executable", module.class_name));
   gen.open_block();
-  if main_method {
-    generate_main_method(&mut gen, module.class_name);
+  for static_attr in module.java_static_attrs {
+    generate_java_attr(&mut gen, static_attr);
+  }
+  if config.main_method {
+    generate_main_method(&mut gen, module.class_name, config.debug);
   }
   for process in module.processes {
     generate_process(&mut gen, &context, process);
@@ -114,21 +118,22 @@ pub fn generate_chococubes(module: Module, main_method: bool) -> Partial<String>
   Partial::Value(gen.code)
 }
 
-fn generate_main_method(gen: &mut CodeGenerator, class_name: String) {
+fn generate_main_method(gen: &mut CodeGenerator, class_name: String, debug: bool) {
   gen.push_line("public static void main(String[] args)");
   gen.open_block();
+  let machine_method = if debug { "createDebug" } else { "create" };
   gen.push_block(format!("\
     {} current = new {}();\n\
     Program program = current.execute();\n\
-    SpaceMachine machine = SpaceMachine.createDebug(program);\n\
-    machine.execute();", class_name.clone(), class_name));
+    SpaceMachine machine = SpaceMachine.{}(program);\n\
+    machine.execute();", class_name.clone(), class_name, machine_method));
   gen.close_block();
   gen.newline();
 }
 
 fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
   let code = vec![
-    String::from("public "),
+    String::from("private "),
     if method.is_static { String::from("static ") } else { String::new() },
     format!("{} ", method.return_ty),
     method.name,
@@ -136,6 +141,18 @@ fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
     method.body
   ].iter().flat_map(|x| x.chars()).collect();
   gen.push_java_method(code);
+}
+
+fn generate_java_attr(gen: &mut CodeGenerator, attr: JavaStaticAttrDecl) {
+  let code: String = vec![
+    String::from("private static "),
+    format!("{} ", attr.ty),
+    attr.name,
+    String::from(" = ")
+  ].iter().flat_map(|x| x.chars()).collect();
+  gen.push(&code);
+  generate_expr(gen, attr.expr);
+  gen.terminate_line(";");
 }
 
 fn generate_process(gen: &mut CodeGenerator, context: &Context, process: Process) {
@@ -269,7 +286,7 @@ fn generate_stream_var(gen: &mut CodeGenerator, var: StreamVar) {
 }
 
 fn generate_bottom(gen: &mut CodeGenerator, ty: JavaTy) {
-  gen.push(&format!("{}.bottom()", ty.name));
+  gen.push(&format!("new {}()", ty.name));
 }
 
 fn generate_statement(gen: &mut CodeGenerator, context: &Context, stmt: Stmt) {

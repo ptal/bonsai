@@ -21,7 +21,8 @@ pub struct Config
 {
   pub input: PathBuf,
   pub output: PathBuf,
-  pub main_method: bool
+  pub main_method: bool,
+  pub debug: bool
 }
 
 impl Config
@@ -34,6 +35,7 @@ impl Config
       .args_from_usage(
         "-o, --output=[filename] 'Write output to [filename]'
         --main                   'Generate a method main for immediate testing'
+        --debug                  'Generate code with debug facility'
         <input>                  'Bonsai file to compile'")
       .get_matches();
 
@@ -45,7 +47,8 @@ impl Config
     Config {
       input: input,
       output: output,
-      main_method: matches.is_present("main")
+      main_method: matches.is_present("main"),
+      debug: matches.is_present("debug")
     }
   }
 

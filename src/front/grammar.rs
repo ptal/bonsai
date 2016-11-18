@@ -39,6 +39,7 @@ grammar! bonsai {
     = spacetime_var > make_stmt_item
     / PROC identifier java_param_list block > make_process_item
     / java_method
+    / java_static_attr
 
   spacetime_var = spacetime java_ty identifier EQ bottom_expr SEMI_COLON > make_spacetime_var
 
@@ -74,6 +75,19 @@ grammar! bonsai {
 
   java_method
     = PRIVATE (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
+
+  java_static_attr
+    = PRIVATE STATIC java_ty identifier EQ java_expr SEMI_COLON > make_java_static_attr
+
+  fn make_java_static_attr(ty: JavaTy, name: String, expr: Expr) -> Item {
+    Item::JavaStaticAttr(
+      JavaStaticAttrDecl {
+        ty: ty,
+        name: name,
+        expr: expr
+      }
+    )
+  }
 
   fn make_java_method(is_static: Option<()>, return_ty: JavaTy, name: String,
     parameters: JavaParameters, body: JavaBlock) -> Item

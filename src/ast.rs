@@ -20,7 +20,8 @@ pub struct Module {
   pub header: String,
   pub class_name: String,
   pub processes: Vec<Process>,
-  pub java_methods: Vec<JavaMethodDecl>
+  pub java_methods: Vec<JavaMethodDecl>,
+  pub java_static_attrs: Vec<JavaStaticAttrDecl>
 }
 
 #[derive(Clone, Debug)]
@@ -34,7 +35,8 @@ pub struct Program {
 pub enum Item {
   Statement(Stmt),
   Proc(Process),
-  JavaMethod(JavaMethodDecl)
+  JavaMethod(JavaMethodDecl),
+  JavaStaticAttr(JavaStaticAttrDecl)
 }
 
 #[derive(Clone, Debug)]
@@ -44,6 +46,13 @@ pub struct JavaMethodDecl {
   pub name: String,
   pub parameters: JavaParameters,
   pub body: JavaBlock
+}
+
+#[derive(Clone, Debug)]
+pub struct JavaStaticAttrDecl {
+  pub ty: JavaTy,
+  pub name: String,
+  pub expr: Expr,
 }
 
 pub type JavaBlock = String;
