@@ -17,7 +17,7 @@
 grammar! bonsai {
   // #![show_api]
   use std::str::FromStr;
-  use ast::*;
+  use jast::*;
 
   program = java_header java_class > make_java_program
 

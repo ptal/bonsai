@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ast::*;
+use jast::*;
 use partial::*;
 use config::*;
 use std::collections::{HashMap, HashSet};
@@ -36,7 +36,7 @@ pub struct Context {
 }
 
 impl Context {
-  pub fn new(module: Module) -> Self {
+  pub fn new(module: JModule) -> Self {
     let mut context = Context {
       spacetime_vars: HashMap::new()
     };
@@ -44,7 +44,7 @@ impl Context {
     context
   }
 
-  fn initialize_program(&mut self, module: Module) {
+  fn initialize_program(&mut self, module: JModule) {
     for process in module.processes {
       self.initialize_stmt(process.body);
     }
@@ -96,25 +96,25 @@ impl Context {
   }
 }
 
-pub fn generate_chococubes(module: Module, config: &Config) -> Partial<String> {
+pub fn generate_chococubes(module: JModule, config: &Config) -> Partial<String> {
   let context = Context::new(module.clone());
   let mut gen = CodeGenerator::new();
-  gen.push_block(module.header);
-  gen.push_line(&format!("public class {} implements Executable", module.class_name));
+  gen.push_block(module.host.header);
+  gen.push_line(&format!("public class {} implements Executable", module.host.class_name));
   gen.open_block();
-  for attr in module.java_attrs {
+  for attr in module.host.java_attrs {
     generate_java_attr(&mut gen, attr);
   }
   if config.main_method {
-    generate_main_method(&mut gen, module.class_name, config.debug);
+    generate_main_method(&mut gen, module.host.class_name, config.debug);
   }
   for process in module.processes {
     generate_process(&mut gen, &context, process);
   }
-  for method in module.java_methods {
+  for method in module.host.java_methods {
     generate_java_method(&mut gen, method);
   }
-  for constructor in module.java_constructors {
+  for constructor in module.host.java_constructors {
     generate_java_constructor(&mut gen, constructor);
   }
   gen.close_block();

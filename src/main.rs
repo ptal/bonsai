@@ -21,6 +21,7 @@ extern crate partial;
 
 mod config;
 mod ast;
+mod jast;
 mod front;
 mod middle;
 mod back;

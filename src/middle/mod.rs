@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ast::*;
+use jast::*;
 use partial::*;
 
-pub fn analyse_bonsai(ast: Program) -> Partial<Module> {
+pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
   let mut module = Module {
-    header: ast.header,
-    class_name: ast.class_name,
     processes: vec![],
-    java_methods: vec![],
-    java_attrs: vec![],
-    java_constructors: vec![]
+    host: JClass::new(ast.header, ast.class_name)
   };
 
   let mut body = vec![];
@@ -41,9 +37,9 @@ pub fn analyse_bonsai(ast: Program) -> Partial<Module> {
           module.processes.push(process);
         }
       }
-      Item::JavaMethod(decl) => module.java_methods.push(decl),
-      Item::JavaAttr(decl) => module.java_attrs.push(decl),
-      Item::JavaConstructor(decl) => module.java_constructors.push(decl)
+      Item::JavaMethod(decl) => module.host.java_methods.push(decl),
+      Item::JavaAttr(decl) => module.host.java_attrs.push(decl),
+      Item::JavaConstructor(decl) => module.host.java_constructors.push(decl)
     }
   }
   let mut exec_proc = executable_proc.expect(

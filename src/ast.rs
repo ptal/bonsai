@@ -13,16 +13,12 @@
 // limitations under the License.
 
 use std::fmt::{Formatter, Display, Error};
-
+use jast::{JavaParameters,JavaMethodDecl,JavaConstructorDecl,JavaAttrDecl,JavaTy,JavaCall};
 
 #[derive(Clone, Debug)]
-pub struct Module {
-  pub header: String,
-  pub class_name: String,
+pub struct Module<Host> {
   pub processes: Vec<Process>,
-  pub java_methods: Vec<JavaMethodDecl>,
-  pub java_attrs: Vec<JavaAttrDecl>,
-  pub java_constructors: Vec<JavaConstructorDecl>,
+  pub host: Host
 }
 
 #[derive(Clone, Debug)]
@@ -39,78 +35,6 @@ pub enum Item {
   JavaMethod(JavaMethodDecl),
   JavaAttr(JavaAttrDecl),
   JavaConstructor(JavaConstructorDecl),
-}
-
-#[derive(Clone, Debug)]
-pub struct JavaMethodDecl {
-  pub visibility: JavaVisibility,
-  pub is_static: bool,
-  pub return_ty: JavaTy,
-  pub name: String,
-  pub parameters: JavaParameters,
-  pub body: JavaBlock
-}
-
-#[derive(Clone, Debug)]
-pub struct JavaConstructorDecl {
-  pub visibility: JavaVisibility,
-  pub name: String,
-  pub parameters: JavaParameters,
-  pub body: JavaBlock
-}
-
-#[derive(Clone, Debug)]
-pub struct JavaAttrDecl {
-  pub visibility: JavaVisibility,
-  pub is_static: bool,
-  pub ty: JavaTy,
-  pub name: String,
-  pub expr: Option<Expr>,
-}
-
-pub type JavaBlock = String;
-pub type JavaParameters = String;
-
-#[derive(Clone, Debug)]
-pub struct JavaTy {
-  pub name: String,
-  pub generics: Vec<JavaTy>
-}
-
-impl Display for JavaTy
-{
-  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-    formatter.write_fmt(format_args!("{}", self.name))?;
-    if !self.generics.is_empty() {
-      let mut generics_str = String::from("<");
-      for generic in &self.generics {
-        generics_str.push_str(format!("{}, ", generic).as_str());
-      }
-      // Remove the extra ", " characters.
-      generics_str.pop();
-      generics_str.pop();
-      formatter.write_fmt(format_args!("{}>", generics_str))?;
-    }
-    Ok(())
-  }
-}
-
-#[derive(Clone, Debug)]
-pub enum JavaVisibility {
-  Public,
-  Protected,
-  Private,
-}
-
-impl Display for JavaVisibility {
-  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-    use self::JavaVisibility::*;
-    match self {
-      &Public => formatter.write_str("public"),
-      &Protected => formatter.write_str("protected"),
-      &Private => formatter.write_str("private"),
-    }
-  }
 }
 
 #[derive(Clone, Debug)]
@@ -210,11 +134,4 @@ pub enum Expr {
   StringLiteral(String),
   Variable(StreamVar),
   Bottom(JavaTy)
-}
-
-#[derive(Clone, Debug)]
-pub struct JavaCall {
-  pub property: String, // can be an attribute or a method.
-  pub is_attribute: bool,
-  pub args: Vec<Expr>
 }
