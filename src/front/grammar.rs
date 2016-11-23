@@ -36,38 +36,45 @@ grammar! bonsai {
   java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE LBRACE item+ RBRACE
 
   item
-    = spacetime_var > make_stmt_item
+    = spacetime_attribute
     / PROC identifier java_param_list block > make_process_item
     / java_method
     / java_attr
     / java_constructor
 
-  spacetime_var = spacetime java_ty identifier EQ bottom_expr SEMI_COLON > make_spacetime_var
+  spacetime_attribute = (CHANNEL->())? spacetime_var > make_spacetime_attribute
+
+  spacetime_var = spacetime java_ty identifier (EQ bottom_expr)? SEMI_COLON > make_spacetime_var
 
   bottom_expr = expr > some_expr
               / BOT > make_bottom_expr
+
   fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
   fn make_bottom_expr() -> Option<Expr> { None }
 
+  fn make_spacetime_attribute(is_channel: Option<()>, var: LetDecl) -> Item {
+    Item::Attribute(
+      AttributeDecl {
+        is_channel: is_channel.is_some(),
+        var: var
+      }
+    )
+  }
+
   fn make_spacetime_var(spacetime: Spacetime, var_ty: JavaTy,
-    var_name: String, expr: Option<Expr>) -> Stmt
+    var_name: String, expr: Option<Option<Expr>>) -> LetDecl
   {
     let expr = match expr {
-      Some(expr) => expr,
-      None => Expr::Bottom(var_ty.clone())
+      Some(Some(expr)) => expr,
+      None | Some(None) => Expr::Bottom(var_ty.clone())
     };
-    let decl = LetDecl {
+    LetDecl {
       var: var_name,
       var_ty: var_ty,
       spacetime: spacetime,
       expr: expr,
       body: Box::new(Stmt::Pause) // Placeholder waiting for the variable folding.
-    };
-    Stmt::Let(decl)
-  }
-
-  fn make_stmt_item(stmt: Stmt) -> Item {
-    Item::Statement(stmt)
+    }
   }
 
   fn make_process_item(name: String, params: JavaParameters, body: Stmt) -> Item {
@@ -168,7 +175,7 @@ grammar! bonsai {
   stmt
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / spacetime_var
+    / spacetime_var > make_spacetime_var_stmt
     / spacetime_var_in_store
     / WHEN entailment block > make_when
     / PAUSE SEMI_COLON > make_pause
@@ -203,6 +210,8 @@ grammar! bonsai {
     };
     Stmt::LetInStore(decl)
   }
+
+  fn make_spacetime_var_stmt(decl: LetDecl) -> Stmt { Stmt::Let(decl) }
 
   fn make_when(entailment: EntailmentRel, body: Stmt) -> Stmt {
     Stmt::When(entailment, Box::new(body))
@@ -391,7 +400,7 @@ grammar! bonsai {
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "trap" / "exit" / "in" / "world_line"
-    / "single_time" / "single_space" / "bot" / "top" / java_kw
+    / "single_time" / "single_space" / "bot" / "top" / "channel" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -412,6 +421,7 @@ grammar! bonsai {
   SINGLE_SPACE = "single_space" kw_tail
   BOT = "bot" kw_tail
   TOP = "top" kw_tail
+  CHANNEL = "channel" kw_tail
 
   // Java keyword
   java_kw
@@ -516,6 +526,14 @@ mod test
         private int m1;
         public int m2 = 0;
         protected int m3;
+
+        single_time int x1 = bot;
+        single_space int x2 = 0;
+        world_line int x3 = bot;
+
+        channel single_time int c1 = bot;
+        channel single_space int c2 = 0;
+        channel world_line int c3 = bot;
       }
      "#.into_state());
     let result = state.into_result();

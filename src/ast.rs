@@ -17,6 +17,7 @@ use jast::{JavaParameters,JavaMethodDecl,JavaConstructorDecl,JavaAttrDecl,JavaTy
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
+  pub attributes: Vec<AttributeDecl>,
   pub processes: Vec<Process>,
   pub host: Host
 }
@@ -30,7 +31,7 @@ pub struct Program {
 
 #[derive(Clone, Debug)]
 pub enum Item {
-  Statement(Stmt),
+  Attribute(AttributeDecl),
   Proc(Process),
   JavaMethod(JavaMethodDecl),
   JavaAttr(JavaAttrDecl),
@@ -72,6 +73,12 @@ pub enum Stmt {
 }
 
 #[derive(Clone, Debug)]
+pub struct AttributeDecl {
+  pub is_channel: bool,
+  pub var: LetDecl
+}
+
+#[derive(Clone, Debug)]
 pub struct LetDecl {
   pub var: String,
   pub var_ty: JavaTy,
@@ -99,6 +106,15 @@ pub struct EntailmentRel {
 pub struct Var {
   pub name: String,
   pub args: Vec<Var>
+}
+
+impl Var {
+  pub fn simple(name: String) -> Self {
+    Var {
+      name: name,
+      args: vec![]
+    }
+  }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -134,4 +150,13 @@ pub enum Expr {
   StringLiteral(String),
   Variable(StreamVar),
   Bottom(JavaTy)
+}
+
+impl Expr {
+  pub fn is_bottom(&self) -> bool {
+    match self {
+      &Expr::Bottom(_) => true,
+      _ => false
+    }
+  }
 }

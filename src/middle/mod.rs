@@ -17,17 +17,15 @@ use partial::*;
 
 pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
   let mut module = Module {
+    attributes: vec![],
     processes: vec![],
     host: JClass::new(ast.header, ast.class_name)
   };
 
-  let mut body = vec![];
   let mut executable_proc = None;
   for item in ast.items {
     match item {
-      Item::Statement(Stmt::Let(decl)) => body.push(Stmt::Let(decl)),
-      Item::Statement(stmt) => panic!(
-        format!("The following statement cannot appear at top-level: {:?}", stmt)),
+      Item::Attribute(attr) => module.attributes.push(attr),
       Item::Proc(mut process) => {
         if process.name == "execute" {
           executable_proc = Some(process);
@@ -44,10 +42,34 @@ pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
   }
   let mut exec_proc = executable_proc.expect(
     "Missing process `execute`. It is the entry point of the reactive module.");
-  body.push(exec_proc.body);
-  exec_proc.body = fold_var_sequence(body);
+  exec_proc.body = wrap_body_with_attr(module.attributes.clone(), exec_proc.body);
   module.processes.insert(0, exec_proc);
   Partial::Value(module)
+}
+
+fn wrap_body_with_attr(attrs: Vec<AttributeDecl>, body: Stmt) -> Stmt {
+  let mut channel_attrs = vec![];
+  let mut mod_attrs = vec![];
+  for attr in attrs {
+    if attr.is_channel {
+      channel_attrs.push(attr.var);
+    }
+    else {
+      mod_attrs.push(attr.var);
+    }
+  }
+
+  let mut stmts: Vec<_> = mod_attrs.into_iter()
+    .map(|attr| Stmt::Let(attr))
+    .collect();
+
+  let mut seq_branches: Vec<_> = channel_attrs.into_iter()
+    .filter(|attr| !attr.expr.is_bottom())
+    .map(|attr| Stmt::Tell(Var::simple(attr.var), attr.expr))
+    .collect();
+  seq_branches.push(body);
+  stmts.push(Stmt::Seq(seq_branches));
+  fold_var_sequence(stmts)
 }
 
 fn fold_stmt(stmt: Stmt) -> Stmt {
