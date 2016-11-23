@@ -41,6 +41,7 @@ pub enum Item {
 
 #[derive(Clone, Debug)]
 pub struct JavaMethodDecl {
+  pub visibility: JavaVisibility,
   pub is_static: bool,
   pub return_ty: JavaTy,
   pub name: String,
@@ -50,9 +51,10 @@ pub struct JavaMethodDecl {
 
 #[derive(Clone, Debug)]
 pub struct JavaStaticAttrDecl {
+  pub visibility: JavaVisibility,
   pub ty: JavaTy,
   pub name: String,
-  pub expr: Expr,
+  pub expr: Option<Expr>,
 }
 
 pub type JavaBlock = String;
@@ -79,6 +81,24 @@ impl Display for JavaTy
       formatter.write_fmt(format_args!("{}>", generics_str))?;
     }
     Ok(())
+  }
+}
+
+#[derive(Clone, Debug)]
+pub enum JavaVisibility {
+  Public,
+  Protected,
+  Private,
+}
+
+impl Display for JavaVisibility {
+  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
+    use self::JavaVisibility::*;
+    match self {
+      &Public => formatter.write_str("public"),
+      &Protected => formatter.write_str("protected"),
+      &Private => formatter.write_str("private"),
+    }
   }
 }
 

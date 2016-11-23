@@ -74,14 +74,17 @@ grammar! bonsai {
   }
 
   java_method
-    = PRIVATE (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
+    = java_visibity (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
 
   java_static_attr
-    = PRIVATE STATIC java_ty identifier EQ java_expr SEMI_COLON > make_java_static_attr
+    = java_visibity STATIC java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_static_attr
 
-  fn make_java_static_attr(ty: JavaTy, name: String, expr: Expr) -> Item {
+  fn make_java_static_attr(visibility: JavaVisibility, ty: JavaTy,
+    name: String, expr: Option<Expr>) -> Item
+  {
     Item::JavaStaticAttr(
       JavaStaticAttrDecl {
+        visibility: visibility,
         ty: ty,
         name: name,
         expr: expr
@@ -89,10 +92,12 @@ grammar! bonsai {
     )
   }
 
-  fn make_java_method(is_static: Option<()>, return_ty: JavaTy, name: String,
+  fn make_java_method(visibility: JavaVisibility, is_static: Option<()>,
+    return_ty: JavaTy, name: String,
     parameters: JavaParameters, body: JavaBlock) -> Item
   {
     let decl = JavaMethodDecl {
+      visibility: visibility,
       is_static: is_static.is_some(),
       return_ty: return_ty,
       name: name,
@@ -346,6 +351,15 @@ grammar! bonsai {
   fn single_time() -> Spacetime { Spacetime::SingleTime }
   fn single_space() -> Spacetime { Spacetime::SingleSpace }
 
+  java_visibity
+    = PUBLIC > java_public
+    / PRIVATE > java_private
+    / PROTECTED > java_protected
+
+  fn java_public() -> JavaVisibility { JavaVisibility::Public }
+  fn java_private() -> JavaVisibility { JavaVisibility::Private }
+  fn java_protected() -> JavaVisibility { JavaVisibility::Protected }
+
   identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
 
@@ -385,9 +399,11 @@ grammar! bonsai {
   java_kw
     = "new" / "private" / "public" / "class"
     / "implements" / "Executable" / "static"
+    / "protected"
   NEW = "new" kw_tail
   PRIVATE = "private" kw_tail
   PUBLIC = "public" kw_tail
+  PROTECTED = "protected" kw_tail
   CLASS = "class" kw_tail
   IMPLEMENTS = "implements" kw_tail
   EXECUTABLE = "Executable" kw_tail
@@ -466,6 +482,14 @@ mod test
           constraints <- queen1.ne(queen2);
           single_time Fake fake = new Fake(pre pre queens1[pre queens, queen2], new Object());
         }
+
+        public void test1() {}
+        protected void test2() {}
+        private void test3() {}
+
+        private static int s1;
+        public static int s2 = 0;
+        protected static int s3;
       }
      "#.into_state());
     let result = state.into_result();

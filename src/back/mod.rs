@@ -133,7 +133,7 @@ fn generate_main_method(gen: &mut CodeGenerator, class_name: String, debug: bool
 
 fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
   let code = vec![
-    String::from("private "),
+    format!("{} ", method.visibility),
     if method.is_static { String::from("static ") } else { String::new() },
     format!("{} ", method.return_ty),
     method.name,
@@ -145,13 +145,16 @@ fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
 
 fn generate_java_attr(gen: &mut CodeGenerator, attr: JavaStaticAttrDecl) {
   let code: String = vec![
-    String::from("private static "),
+    format!("{} ", attr.visibility),
+    String::from("static "),
     format!("{} ", attr.ty),
-    attr.name,
-    String::from(" = ")
+    attr.name
   ].iter().flat_map(|x| x.chars()).collect();
   gen.push(&code);
-  generate_expr(gen, attr.expr);
+  if let Some(expr) = attr.expr {
+    gen.push(" = ");
+    generate_expr(gen, expr);
+  }
   gen.terminate_line(";");
 }
 
