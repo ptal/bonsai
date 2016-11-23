@@ -102,8 +102,8 @@ pub fn generate_chococubes(module: Module, config: &Config) -> Partial<String> {
   gen.push_block(module.header);
   gen.push_line(&format!("public class {} implements Executable", module.class_name));
   gen.open_block();
-  for static_attr in module.java_static_attrs {
-    generate_java_attr(&mut gen, static_attr);
+  for attr in module.java_attrs {
+    generate_java_attr(&mut gen, attr);
   }
   if config.main_method {
     generate_main_method(&mut gen, module.class_name, config.debug);
@@ -113,6 +113,9 @@ pub fn generate_chococubes(module: Module, config: &Config) -> Partial<String> {
   }
   for method in module.java_methods {
     generate_java_method(&mut gen, method);
+  }
+  for constructor in module.java_constructors {
+    generate_java_constructor(&mut gen, constructor);
   }
   gen.close_block();
   Partial::Value(gen.code)
@@ -134,7 +137,7 @@ fn generate_main_method(gen: &mut CodeGenerator, class_name: String, debug: bool
 fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
   let code = vec![
     format!("{} ", method.visibility),
-    if method.is_static { String::from("static ") } else { String::new() },
+    string_from_static(method.is_static),
     format!("{} ", method.return_ty),
     method.name,
     method.parameters,
@@ -143,10 +146,20 @@ fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
   gen.push_java_method(code);
 }
 
-fn generate_java_attr(gen: &mut CodeGenerator, attr: JavaStaticAttrDecl) {
+fn generate_java_constructor(gen: &mut CodeGenerator, constructor: JavaConstructorDecl) {
+  let code = vec![
+    format!("{} ", constructor.visibility),
+    constructor.name,
+    constructor.parameters,
+    constructor.body
+  ].iter().flat_map(|x| x.chars()).collect();
+  gen.push_java_method(code);
+}
+
+fn generate_java_attr(gen: &mut CodeGenerator, attr: JavaAttrDecl) {
   let code: String = vec![
     format!("{} ", attr.visibility),
-    String::from("static "),
+    string_from_static(attr.is_static),
     format!("{} ", attr.ty),
     attr.name
   ].iter().flat_map(|x| x.chars()).collect();
@@ -156,6 +169,13 @@ fn generate_java_attr(gen: &mut CodeGenerator, attr: JavaStaticAttrDecl) {
     generate_expr(gen, expr);
   }
   gen.terminate_line(";");
+}
+
+fn string_from_static(is_static: bool) -> String {
+  if is_static {
+    String::from("static ")
+  }
+  else { String::new() }
 }
 
 fn generate_process(gen: &mut CodeGenerator, context: &Context, process: Process) {

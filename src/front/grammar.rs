@@ -39,7 +39,8 @@ grammar! bonsai {
     = spacetime_var > make_stmt_item
     / PROC identifier java_param_list block > make_process_item
     / java_method
-    / java_static_attr
+    / java_attr
+    / java_constructor
 
   spacetime_var = spacetime java_ty identifier EQ bottom_expr SEMI_COLON > make_spacetime_var
 
@@ -76,15 +77,19 @@ grammar! bonsai {
   java_method
     = java_visibity (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
 
-  java_static_attr
-    = java_visibity STATIC java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_static_attr
+  java_constructor
+    = java_visibity identifier java_param_list java_block kw_tail > make_java_constructor
 
-  fn make_java_static_attr(visibility: JavaVisibility, ty: JavaTy,
-    name: String, expr: Option<Expr>) -> Item
+  java_attr
+    = java_visibity (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
+
+  fn make_java_attr(visibility: JavaVisibility, is_static: Option<()>,
+    ty: JavaTy, name: String, expr: Option<Expr>) -> Item
   {
-    Item::JavaStaticAttr(
-      JavaStaticAttrDecl {
+    Item::JavaAttr(
+      JavaAttrDecl {
         visibility: visibility,
+        is_static: is_static.is_some(),
         ty: ty,
         name: name,
         expr: expr
@@ -105,6 +110,19 @@ grammar! bonsai {
       body: body
     };
     Item::JavaMethod(decl)
+  }
+
+
+  fn make_java_constructor(visibility: JavaVisibility, name: String,
+    parameters: JavaParameters, body: JavaBlock) -> Item
+  {
+    let decl = JavaConstructorDecl {
+      visibility: visibility,
+      name: name,
+      parameters: parameters,
+      body: body
+    };
+    Item::JavaConstructor(decl)
   }
 
   java_param_list
@@ -483,6 +501,10 @@ mod test
           single_time Fake fake = new Fake(pre pre queens1[pre queens, queen2], new Object());
         }
 
+        public Test(int i, Integer x) {
+          this.m1 = i + x;
+        }
+
         public void test1() {}
         protected void test2() {}
         private void test3() {}
@@ -490,6 +512,10 @@ mod test
         private static int s1;
         public static int s2 = 0;
         protected static int s3;
+
+        private int m1;
+        public int m2 = 0;
+        protected int m3;
       }
      "#.into_state());
     let result = state.into_result();

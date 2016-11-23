@@ -17,6 +17,16 @@ public class NQueens implements Executable
   world_line ConstraintStore constraints = bot;
   single_time FlatLattice<Consistent> consistent = bot;
 
+  private int n;
+
+  public NQueens(int n) {
+    this.n = n;
+  }
+
+  public NQueens() {
+    this.n = 8;
+  }
+
   proc execute() {
     model();
     engine();
@@ -24,7 +34,7 @@ public class NQueens implements Executable
   }
 
   proc model() {
-    ~modelChoco(4, domains, constraints);
+    ~modelChoco(domains, constraints);
     ~printModel("After initialization", consistent, domains);
   }
 
@@ -70,7 +80,7 @@ public class NQueens implements Executable
     }
   }
 
-  private static void modelChoco(int n, VarStore domains,
+  private void modelChoco(VarStore domains,
     ConstraintStore constraints)
   {
     IntVar[] vars = new IntVar[n];
