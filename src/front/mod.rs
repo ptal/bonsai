@@ -13,20 +13,23 @@
 // limitations under the License.
 
 pub mod grammar;
+pub mod let_lifting;
 
 use self::grammar::*;
+use self::let_lifting::*;
 use ast::Program;
 use partial::*;
 use oak_runtime::*;
 
 pub fn parse_bonsai(input: String) -> Partial<Program> {
   let state = bonsai::parse_program(input.into_state());
-  match state.into_result() {
+  let ast = match state.into_result() {
     ParseResult::Success(program) => Partial::Value(program),
     ParseResult::Partial(_, expectation)
   | ParseResult::Failure(expectation) => {
       println!("{:?}", expectation);
       Partial::Nothing
     }
-  }
+  };
+  ast.map(let_lifting)
 }

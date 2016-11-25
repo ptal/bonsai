@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use jast::*;
+use front::let_lifting::*;
 use partial::*;
 
 pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
@@ -26,12 +27,11 @@ pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
   for item in ast.items {
     match item {
       Item::Attribute(attr) => module.attributes.push(attr),
-      Item::Proc(mut process) => {
+      Item::Proc(process) => {
         if process.name == "execute" {
           executable_proc = Some(process);
         }
         else {
-          process.body = fold_stmt(process.body);
           module.processes.push(process);
         }
       }
@@ -47,7 +47,7 @@ pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
   Partial::Value(module)
 }
 
-fn wrap_body_with_attr(attrs: Vec<AttributeDecl>, body: Stmt) -> Stmt {
+fn wrap_body_with_attr(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   let mut channel_attrs = vec![];
   let mut mod_attrs = vec![];
   for attr in attrs {
@@ -60,78 +60,14 @@ fn wrap_body_with_attr(attrs: Vec<AttributeDecl>, body: Stmt) -> Stmt {
   }
 
   let mut stmts: Vec<_> = mod_attrs.into_iter()
-    .map(|attr| Stmt::Let(attr))
+    .map(|attr| Stmt::Let(LetStmt::placeholder(attr)))
     .collect();
 
   let mut seq_branches: Vec<_> = channel_attrs.into_iter()
     .filter(|attr| !attr.expr.is_bottom())
-    .map(|attr| Stmt::Tell(Var::simple(attr.var), attr.expr))
+    .map(|attr| Stmt::Tell(Var::simple(attr.name), attr.expr))
     .collect();
   seq_branches.push(body);
   stmts.push(Stmt::Seq(seq_branches));
-  fold_var_sequence(stmts)
-}
-
-fn fold_stmt(stmt: Stmt) -> Stmt {
-  use ast::Stmt::*;
-  match stmt {
-    Seq(branches) => fold_var_sequence(branches),
-    Par(branches) => Par(fold_stmts(branches)),
-    Space(branches) => Space(fold_stmts(branches)),
-    When(entailment, body) => When(entailment, Box::new(fold_stmt(*body))),
-    Trap(name, body) => Trap(name, Box::new(fold_stmt(*body))),
-    Loop(body) => Loop(Box::new(fold_stmt(*body))),
-    Let(mut decl) => {
-      decl.body = Box::new(fold_stmt(*decl.body));
-      Let(decl)
-    },
-    LetInStore(mut decl) => {
-      decl.body = Box::new(fold_stmt(*decl.body));
-      LetInStore(decl)
-    },
-    x => x
-  }
-}
-
-fn fold_stmts(stmts: Vec<Stmt>) -> Vec<Stmt> {
-  stmts.into_iter().map(|stmt| fold_stmt(stmt)).collect()
-}
-
-// This method is used to transform:
-// Vec[stmt1, LetDecl(..), LetDecl(..), stmt, stmt2] into
-// Seq(Vec[stmt1, LetDecl(LetDecl(Seq(stmt2, stmt3))])
-fn fold_var_sequence(mut stmts: Vec<Stmt>) -> Stmt {
-  use ast::Stmt::*;
-  stmts = fold_var(stmts);
-  if stmts.len() == 1 {
-    fold_stmt(stmts.pop().unwrap())
-  }
-  else {
-    Seq(stmts)
-  }
-}
-
-fn fold_var(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
-  use ast::Stmt::*;
-  if stmts.len() == 1 {
-    stmts
-  }
-  else {
-    match stmts.remove(0) {
-      Let(mut decl) => {
-        decl.body = Box::new(fold_var_sequence(stmts));
-        vec![Let(decl)]
-      },
-      LetInStore(mut decl) => {
-        decl.body = Box::new(fold_var_sequence(stmts));
-        vec![LetInStore(decl)]
-      },
-      mut front => {
-        front = fold_stmt(front);
-        let mut rest = fold_var(stmts);
-        rest.insert(0, front);
-        rest
-      }
-    }
-  }
+  lift_let_sequence(stmts)
 }

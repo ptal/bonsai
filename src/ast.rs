@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::{Formatter, Display, Error};
 use jast::{JParameters,JMethod,JConstructor,JAttribute,JavaTy,JavaCall};
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
-  pub attributes: Vec<AttributeDecl>,
+  pub attributes: Vec<ModuleAttribute>,
   pub processes: Vec<Process>,
   pub host: Host
 }
@@ -31,7 +30,7 @@ pub struct Program {
 
 #[derive(Clone, Debug)]
 pub enum Item {
-  Attribute(AttributeDecl),
+  Attribute(ModuleAttribute),
   Proc(Process),
   JavaMethod(JMethod),
   JavaAttr(JAttribute),
@@ -60,8 +59,8 @@ pub enum Stmt {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
-  Let(LetDecl),
-  LetInStore(LetInStoreDecl),
+  Let(LetStmt),
+  LetInStore(LetInStoreStmt),
   When(EntailmentRel, Box<Stmt>),
   Tell(Var, Expr),
   Pause,
@@ -73,27 +72,49 @@ pub enum Stmt {
 }
 
 #[derive(Clone, Debug)]
-pub struct AttributeDecl {
+pub struct ModuleAttribute {
   pub is_channel: bool,
-  pub var: LetDecl
+  pub var: LetBinding
 }
 
 #[derive(Clone, Debug)]
-pub struct LetDecl {
-  pub var: String,
-  pub var_ty: JavaTy,
+pub struct LetBinding {
+  pub name: String,
+  pub ty: JavaTy,
   pub spacetime: Spacetime,
-  pub expr: Expr,
-  pub body: Box<Stmt>
+  pub expr: Expr
 }
 
 #[derive(Clone, Debug)]
-pub struct LetInStoreDecl {
-  pub location: String,
-  pub loc_ty: JavaTy,
-  pub store: String,
-  pub expr: Expr,
+pub struct LetStmt {
+  pub var: LetBinding,
   pub body: Box<Stmt>
+}
+
+impl LetStmt {
+  pub fn placeholder(var: LetBinding) -> Self {
+    LetStmt {
+      var: var,
+      body: Box::new(Stmt::Pause) // Placeholder, replaced in `lift_let.rs`.
+    }
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct LetInStoreStmt {
+  pub var: LetBinding,
+  pub store: String,
+  pub body: Box<Stmt>
+}
+
+impl LetInStoreStmt {
+  pub fn placeholder(var: LetBinding, store: String) -> Self {
+    LetInStoreStmt {
+      var: var,
+      store: store,
+      body: Box::new(Stmt::Pause), // Placeholder, replaced in `lift_let.rs`.
+    }
+  }
 }
 
 #[derive(Clone, Debug)]

@@ -67,12 +67,11 @@ impl Context {
     use ast::Stmt::*;
     match stmt {
       Let(decl) => {
-        self.insert_var(decl.var, decl.var_ty);
+        self.insert_var(decl.var.name, decl.var.ty);
         self.initialize_stmt(*decl.body);
       }
       LetInStore(decl) => {
-        // Use a dummy expr because the type of the location cannot be infered with the expr.
-        self.insert_var(decl.location, decl.loc_ty);
+        self.insert_var(decl.var.name, decl.var.ty);
         self.initialize_stmt(*decl.body);
       }
       Seq(branches)
@@ -378,11 +377,11 @@ fn generate_space(gen: &mut CodeGenerator, context: &Context, branches: Vec<Stmt
   gen.push(")))");
 }
 
-fn generate_let(gen: &mut CodeGenerator, context: &Context, let_decl: LetDecl) {
-  let spacetime = generate_spacetime(let_decl.spacetime);
+fn generate_let(gen: &mut CodeGenerator, context: &Context, let_decl: LetStmt) {
+  let spacetime = generate_spacetime(let_decl.var.spacetime);
   gen.push(&format!("new SpacetimeVar(\"{}\", {}, ",
-    let_decl.var, spacetime));
-  generate_closure(gen, context, true, let_decl.expr);
+    let_decl.var.name, spacetime));
+  generate_closure(gen, context, true, let_decl.var.expr);
   gen.terminate_line(",");
   generate_statement(gen, context, *let_decl.body);
   gen.push(")");
@@ -397,10 +396,10 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
   }
 }
 
-fn generate_let_in_store(gen: &mut CodeGenerator, context: &Context, let_in_store: LetInStoreDecl) {
+fn generate_let_in_store(gen: &mut CodeGenerator, context: &Context, let_in_store: LetInStoreStmt) {
   gen.push(&format!("new LocationVar(\"{}\", \"{}\", ",
-    let_in_store.location, let_in_store.store));
-  generate_closure(gen, context, true, let_in_store.expr);
+    let_in_store.var.name, let_in_store.store));
+  generate_closure(gen, context, true, let_in_store.var.expr);
   gen.terminate_line(",");
   generate_statement(gen, context, *let_in_store.body);
   gen.push(")");

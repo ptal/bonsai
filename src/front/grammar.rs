@@ -52,28 +52,27 @@ grammar! bonsai {
   fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
   fn make_bottom_expr() -> Option<Expr> { None }
 
-  fn make_spacetime_attribute(is_channel: Option<()>, var: LetDecl) -> Item {
+  fn make_spacetime_attribute(is_channel: Option<()>, var: LetBinding) -> Item {
     Item::Attribute(
-      AttributeDecl {
+      ModuleAttribute {
+        var: var,
         is_channel: is_channel.is_some(),
-        var: var
       }
     )
   }
 
   fn make_spacetime_var(spacetime: Spacetime, var_ty: JavaTy,
-    var_name: String, expr: Option<Option<Expr>>) -> LetDecl
+    var_name: String, expr: Option<Option<Expr>>) -> LetBinding
   {
     let expr = match expr {
       Some(Some(expr)) => expr,
       None | Some(None) => Expr::Bottom(var_ty.clone())
     };
-    LetDecl {
-      var: var_name,
-      var_ty: var_ty,
+    LetBinding {
+      name: var_name,
+      ty: var_ty,
       spacetime: spacetime,
-      expr: expr,
-      body: Box::new(Stmt::Pause) // Placeholder waiting for the variable folding.
+      expr: expr
     }
   }
 
@@ -175,7 +174,7 @@ grammar! bonsai {
   stmt
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / spacetime_var > make_spacetime_var_stmt
+    / spacetime_var > make_let_stmt
     / spacetime_var_in_store
     / WHEN entailment block > make_when
     / PAUSE SEMI_COLON > make_pause
@@ -196,22 +195,24 @@ grammar! bonsai {
   }
 
   spacetime_var_in_store =
-    java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_spacetime_store
+    java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store_stmt
 
-  fn make_spacetime_store(loc_ty: JavaTy, location: String,
+  fn make_let_in_store_stmt(loc_ty: JavaTy, location: String,
     store: String, expr: Expr) -> Stmt
   {
-    let decl = LetInStoreDecl {
-      location: location,
-      loc_ty: loc_ty,
-      store: store,
+    let binding = LetBinding {
+      name: location,
+      ty: loc_ty,
+      spacetime: Spacetime::SingleTime,
       expr: expr,
-      body: Box::new(Stmt::Pause) // Placeholder waiting for the variable folding.
     };
-    Stmt::LetInStore(decl)
+    Stmt::LetInStore(
+      LetInStoreStmt::placeholder(binding, store))
   }
 
-  fn make_spacetime_var_stmt(decl: LetDecl) -> Stmt { Stmt::Let(decl) }
+  fn make_let_stmt(var: LetBinding) -> Stmt {
+    Stmt::Let(LetStmt::placeholder(var))
+  }
 
   fn make_when(entailment: EntailmentRel, body: Stmt) -> Stmt {
     Stmt::When(entailment, Box::new(body))
