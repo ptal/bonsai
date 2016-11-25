@@ -77,7 +77,7 @@ grammar! bonsai {
     }
   }
 
-  fn make_process_item(name: String, params: JavaParameters, body: Stmt) -> Item {
+  fn make_process_item(name: String, params: JParameters, body: Stmt) -> Item {
     Item::Proc(Process::new(name, params, body))
   }
 
@@ -90,11 +90,11 @@ grammar! bonsai {
   java_attr
     = java_visibity (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
 
-  fn make_java_attr(visibility: JavaVisibility, is_static: Option<()>,
+  fn make_java_attr(visibility: JVisibility, is_static: Option<()>,
     ty: JavaTy, name: String, expr: Option<Expr>) -> Item
   {
     Item::JavaAttr(
-      JavaAttrDecl {
+      JAttribute {
         visibility: visibility,
         is_static: is_static.is_some(),
         ty: ty,
@@ -104,11 +104,11 @@ grammar! bonsai {
     )
   }
 
-  fn make_java_method(visibility: JavaVisibility, is_static: Option<()>,
+  fn make_java_method(visibility: JVisibility, is_static: Option<()>,
     return_ty: JavaTy, name: String,
-    parameters: JavaParameters, body: JavaBlock) -> Item
+    parameters: JParameters, body: JavaBlock) -> Item
   {
-    let decl = JavaMethodDecl {
+    let decl = JMethod {
       visibility: visibility,
       is_static: is_static.is_some(),
       return_ty: return_ty,
@@ -120,10 +120,10 @@ grammar! bonsai {
   }
 
 
-  fn make_java_constructor(visibility: JavaVisibility, name: String,
-    parameters: JavaParameters, body: JavaBlock) -> Item
+  fn make_java_constructor(visibility: JVisibility, name: String,
+    parameters: JParameters, body: JavaBlock) -> Item
   {
-    let decl = JavaConstructorDecl {
+    let decl = JConstructor {
       visibility: visibility,
       name: name,
       parameters: parameters,
@@ -136,7 +136,7 @@ grammar! bonsai {
     = &LPAREN (!")" .)* ")" blanks > make_java_param_list
 
   fn make_java_param_list(mut raw_list: Vec<char>,
-    blanks: Vec<char>) -> JavaParameters
+    blanks: Vec<char>) -> JParameters
   {
     raw_list.push(')');
     raw_list.extend(blanks.into_iter());
@@ -383,9 +383,9 @@ grammar! bonsai {
     / PRIVATE > java_private
     / PROTECTED > java_protected
 
-  fn java_public() -> JavaVisibility { JavaVisibility::Public }
-  fn java_private() -> JavaVisibility { JavaVisibility::Private }
-  fn java_protected() -> JavaVisibility { JavaVisibility::Protected }
+  fn java_public() -> JVisibility { JVisibility::Public }
+  fn java_private() -> JVisibility { JVisibility::Private }
+  fn java_protected() -> JVisibility { JVisibility::Protected }
 
   identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]

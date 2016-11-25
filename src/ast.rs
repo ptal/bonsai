@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::fmt::{Formatter, Display, Error};
-use jast::{JavaParameters,JavaMethodDecl,JavaConstructorDecl,JavaAttrDecl,JavaTy,JavaCall};
+use jast::{JParameters,JMethod,JConstructor,JAttribute,JavaTy,JavaCall};
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
@@ -33,20 +33,20 @@ pub struct Program {
 pub enum Item {
   Attribute(AttributeDecl),
   Proc(Process),
-  JavaMethod(JavaMethodDecl),
-  JavaAttr(JavaAttrDecl),
-  JavaConstructor(JavaConstructorDecl),
+  JavaMethod(JMethod),
+  JavaAttr(JAttribute),
+  JavaConstructor(JConstructor),
 }
 
 #[derive(Clone, Debug)]
 pub struct Process {
   pub name: String,
-  pub params: JavaParameters,
+  pub params: JParameters,
   pub body: Stmt
 }
 
 impl Process {
-  pub fn new(name: String, params: JavaParameters, body: Stmt) -> Self {
+  pub fn new(name: String, params: JParameters, body: Stmt) -> Self {
     Process {
       name: name,
       params: params,

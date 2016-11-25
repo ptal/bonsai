@@ -134,7 +134,7 @@ fn generate_main_method(gen: &mut CodeGenerator, class_name: String, debug: bool
   gen.newline();
 }
 
-fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
+fn generate_java_method(gen: &mut CodeGenerator, method: JMethod) {
   let code = vec![
     format!("{} ", method.visibility),
     string_from_static(method.is_static),
@@ -146,7 +146,7 @@ fn generate_java_method(gen: &mut CodeGenerator, method: JavaMethodDecl) {
   gen.push_java_method(code);
 }
 
-fn generate_java_constructor(gen: &mut CodeGenerator, constructor: JavaConstructorDecl) {
+fn generate_java_constructor(gen: &mut CodeGenerator, constructor: JConstructor) {
   let code = vec![
     format!("{} ", constructor.visibility),
     constructor.name,
@@ -156,7 +156,7 @@ fn generate_java_constructor(gen: &mut CodeGenerator, constructor: JavaConstruct
   gen.push_java_method(code);
 }
 
-fn generate_java_attr(gen: &mut CodeGenerator, attr: JavaAttrDecl) {
+fn generate_java_attr(gen: &mut CodeGenerator, attr: JAttribute) {
   let code: String = vec![
     format!("{} ", attr.visibility),
     string_from_static(attr.is_static),

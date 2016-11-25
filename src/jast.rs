@@ -19,9 +19,9 @@ use std::fmt::{Formatter, Display, Error};
 pub struct JClass {
   pub header: String,
   pub class_name: String,
-  pub java_methods: Vec<JavaMethodDecl>,
-  pub java_attrs: Vec<JavaAttrDecl>,
-  pub java_constructors: Vec<JavaConstructorDecl>,
+  pub java_methods: Vec<JMethod>,
+  pub java_attrs: Vec<JAttribute>,
+  pub java_constructors: Vec<JConstructor>,
 }
 
 impl JClass {
@@ -40,26 +40,26 @@ pub type JModule = Module<JClass>;
 
 
 #[derive(Clone, Debug)]
-pub struct JavaMethodDecl {
-  pub visibility: JavaVisibility,
+pub struct JMethod {
+  pub visibility: JVisibility,
   pub is_static: bool,
   pub return_ty: JavaTy,
   pub name: String,
-  pub parameters: JavaParameters,
+  pub parameters: JParameters,
   pub body: JavaBlock
 }
 
 #[derive(Clone, Debug)]
-pub struct JavaConstructorDecl {
-  pub visibility: JavaVisibility,
+pub struct JConstructor {
+  pub visibility: JVisibility,
   pub name: String,
-  pub parameters: JavaParameters,
+  pub parameters: JParameters,
   pub body: JavaBlock
 }
 
 #[derive(Clone, Debug)]
-pub struct JavaAttrDecl {
-  pub visibility: JavaVisibility,
+pub struct JAttribute {
+  pub visibility: JVisibility,
   pub is_static: bool,
   pub ty: JavaTy,
   pub name: String,
@@ -67,7 +67,7 @@ pub struct JavaAttrDecl {
 }
 
 pub type JavaBlock = String;
-pub type JavaParameters = String;
+pub type JParameters = String;
 
 #[derive(Clone, Debug)]
 pub struct JavaTy {
@@ -94,15 +94,15 @@ impl Display for JavaTy
 }
 
 #[derive(Clone, Debug)]
-pub enum JavaVisibility {
+pub enum JVisibility {
   Public,
   Protected,
   Private,
 }
 
-impl Display for JavaVisibility {
+impl Display for JVisibility {
   fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-    use self::JavaVisibility::*;
+    use self::JVisibility::*;
     match self {
       &Public => formatter.write_str("public"),
       &Protected => formatter.write_str("protected"),
