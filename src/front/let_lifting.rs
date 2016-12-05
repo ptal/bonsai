@@ -15,7 +15,7 @@
 /// The declaration of variable in Java is a statement and not an expression. We perform this transformation as follows:
 /// `single_time Type var = expr; <code-following>` into
 /// `single_time Type var = expr in <code-following>`.
-/// The code following the variable declaration is lifted inside the structure of the let statement.
+/// The code following the variable declaration is lifted inside the structure of the let statement. It replaces the `Unknown` statements by the statement following inside the AST.
 
 use jast::*;
 
@@ -76,12 +76,15 @@ fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
     stmts
   }
   else {
+    // If the first statement of the list is a let-decl, then lift the rest of the list in the let-decl.
     match stmts.remove(0) {
-      Let(mut decl) => {
+      Let(ref decl) if decl.body.is_nothing() => {
+        let mut decl = decl.clone();
         decl.body = Box::new(lift_let_sequence(stmts));
         vec![Let(decl)]
       },
-      LetInStore(mut decl) => {
+      LetInStore(ref decl) if decl.body.is_nothing() => {
+        let mut decl = decl.clone();
         decl.body = Box::new(lift_let_sequence(stmts));
         vec![LetInStore(decl)]
       },
@@ -94,3 +97,29 @@ fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
     }
   }
 }
+
+#[cfg(test)]
+mod test
+{
+  use ast::*;
+
+  #[test]
+  fn test_let_lifting() {
+    use ast::Stmt::*;
+    let let_stmt = Let(LetStmt::imperative(LetBinding::example()));
+    let ast = Seq(vec![
+      Stmt::example(),
+      let_stmt.clone(),
+      Seq(vec![let_stmt.clone(), Stmt::example(), let_stmt.clone()])
+    ]);
+    let res = super::lift_stmt(ast);
+    let expected = Seq(vec![
+      Stmt::example(),
+      Let(LetStmt::new(LetBinding::example(),
+        box Let(LetStmt::new(LetBinding::example(),
+          box Seq(vec![Stmt::example(), let_stmt.clone()])))))
+    ]);
+    assert_eq!(res, expected);
+  }
+}
+

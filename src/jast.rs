@@ -15,7 +15,7 @@
 pub use ast::*;
 use std::fmt::{Formatter, Display, Error};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JClass {
   pub header: String,
   pub class_name: String,
@@ -39,17 +39,17 @@ impl JClass {
 pub type JModule = Module<JClass>;
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JMethod {
   pub visibility: JVisibility,
   pub is_static: bool,
-  pub return_ty: JavaTy,
+  pub return_ty: JType,
   pub name: String,
   pub parameters: JParameters,
   pub body: JavaBlock
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JConstructor {
   pub visibility: JVisibility,
   pub name: String,
@@ -57,11 +57,11 @@ pub struct JConstructor {
   pub body: JavaBlock
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JAttribute {
   pub visibility: JVisibility,
   pub is_static: bool,
-  pub ty: JavaTy,
+  pub ty: JType,
   pub name: String,
   pub expr: Option<Expr>,
 }
@@ -69,13 +69,26 @@ pub struct JAttribute {
 pub type JavaBlock = String;
 pub type JParameters = String;
 
-#[derive(Clone, Debug)]
-pub struct JavaTy {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct JType {
   pub name: String,
-  pub generics: Vec<JavaTy>
+  pub generics: Vec<JType>
 }
 
-impl Display for JavaTy
+impl JType {
+  pub fn simple(name: String) -> Self {
+    JType {
+      name: name,
+      generics: vec![]
+    }
+  }
+
+  pub fn example() -> Self {
+    JType::simple(String::from("<Java type>"))
+  }
+}
+
+impl Display for JType
 {
   fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
     formatter.write_fmt(format_args!("{}", self.name))?;
@@ -93,7 +106,7 @@ impl Display for JavaTy
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum JVisibility {
   Public,
   Protected,
@@ -111,7 +124,7 @@ impl Display for JVisibility {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JavaCall {
   pub property: String, // can be an attribute or a method.
   pub is_attribute: bool,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jast::{JParameters,JMethod,JConstructor,JAttribute,JavaTy,JavaCall};
+use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JavaCall};
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
@@ -54,7 +54,7 @@ impl Process {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Stmt {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
@@ -68,39 +68,77 @@ pub enum Stmt {
   Exit(String),
   Loop(Box<Stmt>),
   ProcCall(String, Vec<Expr>),
-  FnCall(Expr)
+  FnCall(Expr),
+  Nothing // This is a facility for parsing, passing from imperative to functional representation. (see let_lifting.rs).
 }
 
-#[derive(Clone, Debug)]
+impl Stmt {
+  pub fn is_nothing(&self) -> bool {
+    match self {
+      &Stmt::Nothing => true,
+      _ => false
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Stmt::Tell(Var::simple(String::from("x")), Expr::example())
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModuleAttribute {
   pub is_channel: bool,
   pub var: LetBinding
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetBinding {
   pub name: String,
-  pub ty: JavaTy,
+  pub ty: JType,
   pub spacetime: Spacetime,
   pub expr: Expr
 }
 
-#[derive(Clone, Debug)]
+impl LetBinding {
+  pub fn new(name: String, ty: JType,
+    sp: Spacetime, expr: Expr) -> Self
+  {
+    LetBinding {
+      name: name,
+      ty: ty,
+      spacetime: sp,
+      expr: expr
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    LetBinding::new(String::from("<name>"), JType::example(),
+      Spacetime::example(), Expr::example())
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetStmt {
   pub var: LetBinding,
   pub body: Box<Stmt>
 }
 
 impl LetStmt {
-  pub fn placeholder(var: LetBinding) -> Self {
+  pub fn new(var: LetBinding, body: Box<Stmt>) -> Self {
     LetStmt {
       var: var,
-      body: Box::new(Stmt::Pause) // Placeholder, replaced in `lift_let.rs`.
+      body: body
     }
+  }
+
+  pub fn imperative(var: LetBinding) -> Self {
+    LetStmt::new(var, Box::new(Stmt::Nothing))
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetInStoreStmt {
   pub var: LetBinding,
   pub store: String,
@@ -108,22 +146,22 @@ pub struct LetInStoreStmt {
 }
 
 impl LetInStoreStmt {
-  pub fn placeholder(var: LetBinding, store: String) -> Self {
+  pub fn imperative(var: LetBinding, store: String) -> Self {
     LetInStoreStmt {
       var: var,
       store: store,
-      body: Box::new(Stmt::Pause), // Placeholder, replaced in `lift_let.rs`.
+      body: Box::new(Stmt::Nothing),
     }
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntailmentRel {
   pub left: StreamVar,
   pub right: Expr
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Var {
   pub name: String,
   pub args: Vec<Var>
@@ -155,22 +193,29 @@ impl StreamVar {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Spacetime {
   SingleSpace,
   SingleTime,
   WorldLine
 }
 
-#[derive(Clone, Debug)]
+impl Spacetime {
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Spacetime::SingleSpace
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expr {
-  JavaNew(JavaTy, Vec<Expr>),
+  JavaNew(JType, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
   JavaThisCall(JavaCall),
   Number(u64),
   StringLiteral(String),
   Variable(StreamVar),
-  Bottom(JavaTy)
+  Bottom(JType)
 }
 
 impl Expr {
@@ -179,5 +224,10 @@ impl Expr {
       &Expr::Bottom(_) => true,
       _ => false
     }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Expr::Variable(StreamVar::simple(String::from("<expr>")))
   }
 }

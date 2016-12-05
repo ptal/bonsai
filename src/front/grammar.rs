@@ -61,19 +61,14 @@ grammar! bonsai {
     )
   }
 
-  fn make_spacetime_var(spacetime: Spacetime, var_ty: JavaTy,
+  fn make_spacetime_var(spacetime: Spacetime, var_ty: JType,
     var_name: String, expr: Option<Option<Expr>>) -> LetBinding
   {
     let expr = match expr {
       Some(Some(expr)) => expr,
       None | Some(None) => Expr::Bottom(var_ty.clone())
     };
-    LetBinding {
-      name: var_name,
-      ty: var_ty,
-      spacetime: spacetime,
-      expr: expr
-    }
+    LetBinding::new(var_name, var_ty, spacetime, expr)
   }
 
   fn make_process_item(name: String, params: JParameters, body: Stmt) -> Item {
@@ -90,7 +85,7 @@ grammar! bonsai {
     = java_visibity (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
 
   fn make_java_attr(visibility: JVisibility, is_static: Option<()>,
-    ty: JavaTy, name: String, expr: Option<Expr>) -> Item
+    ty: JType, name: String, expr: Option<Expr>) -> Item
   {
     Item::JavaAttr(
       JAttribute {
@@ -104,7 +99,7 @@ grammar! bonsai {
   }
 
   fn make_java_method(visibility: JVisibility, is_static: Option<()>,
-    return_ty: JavaTy, name: String,
+    return_ty: JType, name: String,
     parameters: JParameters, body: JavaBlock) -> Item
   {
     let decl = JMethod {
@@ -197,21 +192,17 @@ grammar! bonsai {
   spacetime_var_in_store =
     java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store_stmt
 
-  fn make_let_in_store_stmt(loc_ty: JavaTy, location: String,
+  fn make_let_in_store_stmt(loc_ty: JType, location: String,
     store: String, expr: Expr) -> Stmt
   {
-    let binding = LetBinding {
-      name: location,
-      ty: loc_ty,
-      spacetime: Spacetime::SingleTime,
-      expr: expr,
-    };
+    let binding = LetBinding::new(
+      location, loc_ty, Spacetime::SingleTime, expr);
     Stmt::LetInStore(
-      LetInStoreStmt::placeholder(binding, store))
+      LetInStoreStmt::imperative(binding, store))
   }
 
   fn make_let_stmt(var: LetBinding) -> Stmt {
-    Stmt::Let(LetStmt::placeholder(var))
+    Stmt::Let(LetStmt::imperative(var))
   }
 
   fn make_when(entailment: EntailmentRel, body: Stmt) -> Stmt {
@@ -255,8 +246,8 @@ grammar! bonsai {
   java_ty
     = identifier java_generic_list > make_java_ty
 
-  fn make_java_ty(name: String, generics: Vec<JavaTy>) -> JavaTy {
-    JavaTy {
+  fn make_java_ty(name: String, generics: Vec<JType>) -> JType {
+    JType {
       name: name,
       generics: generics
     }
@@ -266,11 +257,11 @@ grammar! bonsai {
     = LT java_ty (COMMA java_ty)* GT? > make_generic_list
     / "" > empty_generic_list
 
-  fn make_generic_list(first: JavaTy, rest: Vec<JavaTy>) -> Vec<JavaTy> {
+  fn make_generic_list(first: JType, rest: Vec<JType>) -> Vec<JType> {
     extend_front(first, rest)
   }
 
-  fn empty_generic_list() -> Vec<JavaTy> {
+  fn empty_generic_list() -> Vec<JType> {
     vec![]
   }
 
@@ -286,7 +277,7 @@ grammar! bonsai {
     = identifier java_method_call+ > java_object_calls
     / java_call > java_this_call
 
-  fn java_new(class_ty: JavaTy, args: Vec<Expr>) -> Expr {
+  fn java_new(class_ty: JType, args: Vec<Expr>) -> Expr {
     Expr::JavaNew(class_ty, args)
   }
 

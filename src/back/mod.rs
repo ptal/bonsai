@@ -19,11 +19,11 @@ use std::collections::{HashMap, HashSet};
 
 pub struct SpacetimeVar {
   pub name: String,
-  pub ty: JavaTy
+  pub ty: JType
 }
 
 impl SpacetimeVar {
-  pub fn new(name: String, ty: JavaTy) -> Self {
+  pub fn new(name: String, ty: JType) -> Self {
     SpacetimeVar {
       name: name,
       ty: ty
@@ -50,7 +50,7 @@ impl Context {
     }
   }
 
-  fn insert_var(&mut self, var: String, ty: JavaTy) {
+  fn insert_var(&mut self, var: String, ty: JType) {
     let spacetime_var = SpacetimeVar::new(var.clone(), ty);
     self.spacetime_vars.insert(
       var,
@@ -84,7 +84,7 @@ impl Context {
     }
   }
 
-  pub fn type_of_var(&self, var: &StreamVar) -> JavaTy {
+  pub fn type_of_var(&self, var: &StreamVar) -> JType {
     self.spacetime_vars.get(&var.name)
       .expect(&format!("Undeclared variable `{}`.", var.name))
       .ty.clone()
@@ -268,7 +268,7 @@ fn generate_fun_call(gen: &mut CodeGenerator, name: String, args: Vec<Expr>) {
   gen.push(")");
 }
 
-fn generate_java_new(gen: &mut CodeGenerator, ty: JavaTy, args: Vec<Expr>) {
+fn generate_java_new(gen: &mut CodeGenerator, ty: JType, args: Vec<Expr>) {
   gen.push("new ");
   generate_fun_call(gen, format!("{}", ty), args);
 }
@@ -307,7 +307,7 @@ fn generate_stream_var(gen: &mut CodeGenerator, var: StreamVar) {
   gen.push(&var.name);
 }
 
-fn generate_bottom(gen: &mut CodeGenerator, ty: JavaTy) {
+fn generate_bottom(gen: &mut CodeGenerator, ty: JType) {
   gen.push(&format!("new {}()", ty.name));
 }
 
@@ -327,6 +327,7 @@ fn generate_statement(gen: &mut CodeGenerator, context: &Context, stmt: Stmt) {
     FnCall(java_call) => generate_java_call(gen, context, java_call),
     ProcCall(process, args) => generate_fun_call(gen, process, args),
     Tell(var, expr) => generate_tell(gen, context, var, expr),
+    Nothing => generate_nothing(gen)
   }
 }
 
@@ -433,6 +434,10 @@ fn generate_tell(gen: &mut CodeGenerator, context: &Context, var: Var, expr: Exp
 
 fn generate_pause(gen: &mut CodeGenerator) {
   gen.push("SC.stop()");
+}
+
+fn generate_nothing(gen: &mut CodeGenerator) {
+  gen.push("SC.NOTHING");
 }
 
 fn generate_loop(gen: &mut CodeGenerator, context: &Context, body: Box<Stmt>) {
