@@ -104,9 +104,7 @@ pub fn generate_chococubes(module: JModule, config: &Config) -> Partial<String> 
   for attr in module.host.java_attrs {
     generate_java_attr(&mut gen, attr);
   }
-  if config.main_method.is_some() {
-    generate_main_method(&mut gen, module.host.class_name, config.debug);
-  }
+  generate_main_method(config, &mut gen, module.host.class_name);
   for process in module.processes {
     generate_process(&mut gen, &context, process);
   }
@@ -120,17 +118,21 @@ pub fn generate_chococubes(module: JModule, config: &Config) -> Partial<String> 
   Partial::Value(gen.code)
 }
 
-fn generate_main_method(gen: &mut CodeGenerator, class_name: String, debug: bool) {
-  gen.push_line("public static void main(String[] args)");
-  gen.open_block();
-  let machine_method = if debug { "createDebug" } else { "create" };
-  gen.push_block(format!("\
-    {} current = new {}();\n\
-    Program program = current.execute();\n\
-    SpaceMachine machine = SpaceMachine.{}(program);\n\
-    machine.execute();", class_name.clone(), class_name, machine_method));
-  gen.close_block();
-  gen.newline();
+fn generate_main_method(config: &Config, gen: &mut CodeGenerator, class_name: String) {
+  if let Some(main_class) = config.main_method.clone() {
+    if main_class == class_name {
+      gen.push_line("public static void main(String[] args)");
+      gen.open_block();
+      let machine_method = if config.debug { "createDebug" } else { "create" };
+      gen.push_block(format!("\
+        {} current = new {}();\n\
+        Program program = current.execute();\n\
+        SpaceMachine machine = SpaceMachine.{}(program);\n\
+        machine.execute();", class_name.clone(), class_name, machine_method));
+      gen.close_block();
+      gen.newline();
+    }
+  }
 }
 
 fn generate_java_method(gen: &mut CodeGenerator, method: JMethod) {
