@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>chococubes.example</groupId>
-  <artifactId>NQueens</artifactId>
+  <groupId>benchmark</groupId>
+  <artifactId>Benchmark</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>NQueens</name>
+  <name>Benchmark</name>
   <url>http://maven.apache.org</url>
   <properties>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -63,7 +63,7 @@
             <configuration>
               <executable>bonsai</executable>
               <arguments>
-                <argument>--main=NQueens</argument>
+                <argument>--main=Benchmark</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
                 <argument>${project.build.sourceDirectory}</argument>
               </arguments>

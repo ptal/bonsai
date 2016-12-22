@@ -1,4 +1,4 @@
-package chococubes.example;
+package benchmark.bonsai;
 
 import java.util.*;
 import inria.meije.rc.sugarcubes.*;
@@ -12,14 +12,13 @@ import bonsai.chococubes.core.*;
 import bonsai.chococubes.choco.*;
 import bonsai.chococubes.sugarcubes.*;
 
-public class GolombRuler implements Executable
+public class LatinSquare implements Executable
 {
   world_line VarStore domains = bot;
   world_line ConstraintStore constraints = bot;
-  single_space ConstraintStore objective = bot;
   single_time FlatLattice<Consistent> consistent = bot;
 
-  private static int m = 11;
+  private static int m = 60;
 
   proc execute() {
     model();
@@ -31,11 +30,13 @@ public class GolombRuler implements Executable
   }
 
   proc engine() {
-    par
-    || input_order_lb();
-    || propagation();
-    || optimize();
-    end
+    trap FoundSolution {
+      par
+      || input_order_lb();
+      || propagation();
+      || one_solution();
+      end
+    }
   }
 
   proc input_order_lb() {
@@ -61,13 +62,10 @@ public class GolombRuler implements Executable
     }
   }
 
-  proc optimize() {
+  proc one_solution() {
     loop {
       when consistent |= Consistent.True {
-        single_time IntVar obj = rulerLengthVar(domains);
-        objective <- obj.lt(rulerLength(domains));
-        ~incSolution();
-        ~printNumberSolution(rulerLength(domains));
+        exit FoundSolution;
       }
       pause;
     }
@@ -76,49 +74,24 @@ public class GolombRuler implements Executable
   private static void modelChoco(VarStore domains,
     ConstraintStore constraints)
   {
-    IntVar[] ticks = new IntVar[m];
-    IntVar[] diffs = new IntVar[(m*m -m)/2];
     Model model = domains.model();
-
-    int ub =  (m < 31) ? (1 << (m + 1)) - 1 : 9999;
-    for(int i=0; i < ticks.length; i++) {
-      ticks[i] = (IntVar) domains.alloc(new IntDomain(0, ub, true));
-    }
-    for(int i=0; i < diffs.length; i++) {
-      diffs[i] = (IntVar) domains.alloc(new IntDomain(0, ub, true));
-    }
-
-    constraints.join(model.arithm(ticks[0], "=", 0));
-    for (int i = 0; i < m - 1; i++) {
-      constraints.join(model.arithm(ticks[i + 1], ">", ticks[i]));
-    }
-
-    IntVar[][] m_diffs = new IntVar[m][m];
-    for (int k = 0, i = 0; i < m - 1; i++) {
-      for (int j = i + 1; j < m; j++, k++) {
-        // d[k] is m[j]-m[i] and must be at least sum of first j-i integers
-        // <cpru 04/03/12> it is worth adding a constraint instead of a view
-        constraints.join(model.scalar(new IntVar[]{ticks[j], ticks[i]}, new int[]{1, -1}, "=", diffs[k]));
-        constraints.join(model.arithm(diffs[k], ">=", (j - i) * (j - i + 1) / 2));
-        constraints.join(model.arithm(diffs[k], "-", ticks[m - 1], "<=", -((m - 1 - j + i) * (m - j + i)) / 2));
-        constraints.join(model.arithm(diffs[k], "<=", ticks[m - 1], "-", ((m - 1 - j + i) * (m - j + i)) / 2));
-        m_diffs[i][j] = diffs[k];
+    IntVar[] vars = new IntVar[m*m];
+    for (int i = 0; i < m; i++) {
+      for (int j = 0; j < m; j++) {
+        vars[i * m + j] = (IntVar) domains.alloc(new IntDomain(0, m - 1, false));
       }
     }
-    constraints.join(model.allDifferent(diffs, "BC"));
-
-    // break symetries
-    if (m > 2) {
-      constraints.join(model.arithm(diffs[0], "<", diffs[diffs.length - 1]));
+    // Constraints
+    for (int i = 0; i < m; i++) {
+        IntVar[] row = new IntVar[m];
+        IntVar[] col = new IntVar[m];
+        for (int x = 0; x < m; x++) {
+            row[x] = vars[i * m + x];
+            col[x] = vars[x * m + i];
+        }
+        constraints.join(model.allDifferent(col, "AC"));
+        constraints.join(model.allDifferent(row, "AC"));
     }
-  }
-
-  private static IntVar rulerLengthVar(VarStore domains) {
-    return (IntVar)domains.model().getVars()[m - 1];
-  }
-
-  private static int rulerLength(VarStore domains) {
-    return rulerLengthVar(domains).getLB();
   }
 
   private static void printHeader(String message,

@@ -1,4 +1,4 @@
-package chococubes.example;
+package benchmark.bonsai;
 
 import java.util.*;
 import inria.meije.rc.sugarcubes.*;
