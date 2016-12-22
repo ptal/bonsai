@@ -12,20 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+pub mod config;
+mod module_file;
+mod project;
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
+pub use self::config::*;
+use self::project::*;
+use partial::*;
+use front;
+use middle;
+use back;
 
-mod driver;
-mod ast;
-mod jast;
-mod front;
-mod middle;
-mod back;
+pub fn run() {
+  let config = Config::new();
+  let project = Project::new(&config);
 
-fn main() {
-  driver::run();
+  for module in project {
+    Partial::Value(module.input_as_string())
+    .and_then(front::parse_bonsai)
+    .and_then(middle::analyse_bonsai)
+    .and_then(|m| back::generate_chococubes(m, &config))
+    .map(|output| module.write_output(output));
+  }
 }
+

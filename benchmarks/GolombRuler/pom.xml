@@ -55,7 +55,7 @@
         <version>1.5.0</version>
         <executions>
           <execution>
-            <id>GolombRuler.bonsai.java</id>
+            <id>Bonsai</id>
             <phase>generate-sources</phase>
             <goals>
               <goal>exec</goal>
@@ -63,9 +63,9 @@
             <configuration>
               <executable>bonsai</executable>
               <arguments>
-                <argument>--main</argument>
-                <argument>-o ${project.build.directory}/generated-sources/bonsai/GolombRuler.java</argument>
-                <argument>${project.build.sourceDirectory}/chococubes/example/GolombRuler.bonsai.java</argument>
+                <argument>--main=GolombRuler</argument>
+                <argument>-o ${project.build.directory}/generated-sources</argument>
+                <argument>${project.build.sourceDirectory}</argument>
               </arguments>
             </configuration>
           </execution>
@@ -84,7 +84,7 @@
             <phase>process-sources</phase>
             <configuration>
               <sources>
-                <source>${project.build.directory}/generated-sources/bonsai</source>
+                <source>${project.build.directory}/generated-sources</source>
               </sources>
             </configuration>
           </execution>

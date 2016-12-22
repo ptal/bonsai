@@ -14,7 +14,7 @@
 
 use jast::*;
 use partial::*;
-use config::*;
+use driver::config::*;
 use std::collections::{HashMap, HashSet};
 
 pub struct SpacetimeVar {
@@ -104,7 +104,7 @@ pub fn generate_chococubes(module: JModule, config: &Config) -> Partial<String> 
   for attr in module.host.java_attrs {
     generate_java_attr(&mut gen, attr);
   }
-  if config.main_method {
+  if config.main_method.is_some() {
     generate_main_method(&mut gen, module.host.class_name, config.debug);
   }
   for process in module.processes {
