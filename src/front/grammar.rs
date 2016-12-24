@@ -36,27 +36,13 @@ grammar! bonsai {
   java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE LBRACE item+ RBRACE
 
   item
-    = spacetime_attribute
-    / PROC identifier java_param_list block > make_process_item
+    = module_attribute
+    / java_visibility? PROC identifier java_param_list block > make_process_item
     / java_method
     / java_attr
     / java_constructor
 
-  spacetime_attribute = (CHANNEL->())? spacetime_var > make_spacetime_attribute
-
-  spacetime_var = spacetime let_binding_base > make_spacetime_var
-
-  let_binding_base = java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_let_binding
-
-  fn make_let_binding(var_ty: JType,
-    var_name: String, expr: Option<Option<Expr>>) -> LetBindingBase
-  {
-    let expr = match expr {
-      Some(Some(expr)) => expr,
-      None | Some(None) => Expr::Bottom(var_ty.clone())
-    };
-    LetBindingBase::new(var_name, var_ty, expr)
-  }
+  module_attribute = java_visibility? (CHANNEL->())? let_binding > make_module_attribute
 
   expr_or_bot = expr > some_expr
               / BOT > make_bottom_expr
@@ -64,32 +50,33 @@ grammar! bonsai {
   fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
   fn make_bottom_expr() -> Option<Expr> { None }
 
-  fn make_spacetime_attribute(is_channel: Option<()>, binding: LetBindingSpacetime) -> Item {
+  fn make_module_attribute(visibility: Option<JVisibility>, is_channel: Option<()>,
+    binding: LetBinding) -> Item
+  {
     Item::Attribute(
       ModuleAttribute {
+        visibility: visibility.unwrap_or(JVisibility::Private),
         binding: binding,
         is_channel: is_channel.is_some(),
       }
     )
   }
 
-  fn make_spacetime_var(spacetime: Spacetime, binding: LetBindingBase) -> LetBindingSpacetime
+  fn make_process_item(visibility: Option<JVisibility>, name: String,
+    params: JParameters, body: Stmt) -> Item
   {
-    LetBindingSpacetime::new(binding, spacetime)
-  }
-
-  fn make_process_item(name: String, params: JParameters, body: Stmt) -> Item {
-    Item::Proc(Process::new(name, params, body))
+    Item::Proc(Process::new(visibility.unwrap_or(JVisibility::Private),
+      name, params, body))
   }
 
   java_method
-    = java_visibity (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
+    = java_visibility (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
 
   java_constructor
-    = java_visibity identifier java_param_list java_block kw_tail > make_java_constructor
+    = java_visibility identifier java_param_list java_block kw_tail > make_java_constructor
 
   java_attr
-    = java_visibity (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
+    = java_visibility (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
 
   fn make_java_attr(visibility: JVisibility, is_static: Option<()>,
     ty: JType, name: String, expr: Option<Expr>) -> Item
@@ -200,12 +187,24 @@ grammar! bonsai {
   }
 
   let_binding
-    = spacetime_var > make_spacetime_binding
+    = spacetime let_binding_base > make_spacetime_binding
     / MODULE let_binding_base > make_module_binding
     / java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store_binding
 
-  fn make_spacetime_binding(binding: LetBindingSpacetime) -> LetBinding {
-    LetBinding::Spacetime(binding)
+  let_binding_base = java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_let_binding
+
+  fn make_let_binding(var_ty: JType,
+    var_name: String, expr: Option<Option<Expr>>) -> LetBindingBase
+  {
+    let expr = match expr {
+      Some(Some(expr)) => expr,
+      None | Some(None) => Expr::Bottom(var_ty.clone())
+    };
+    LetBindingBase::new(var_name, var_ty, expr)
+  }
+
+  fn make_spacetime_binding(spacetime: Spacetime, binding: LetBindingBase) -> LetBinding {
+    LetBinding::Spacetime(LetBindingSpacetime::new(binding, spacetime))
   }
 
   fn make_module_binding(binding: LetBindingBase) -> LetBinding {
@@ -385,7 +384,7 @@ grammar! bonsai {
   fn single_time() -> Spacetime { Spacetime::SingleTime }
   fn single_space() -> Spacetime { Spacetime::SingleSpace }
 
-  java_visibity
+  java_visibility
     = PUBLIC > java_public
     / PRIVATE > java_private
     / PROTECTED > java_protected
@@ -521,6 +520,7 @@ mod test
 
         public Test(int i, Integer x) {
           this.m1 = i + x;
+          module Propagation prop = new Propagation();
         }
 
         public void test1() {}
@@ -537,10 +537,14 @@ mod test
 
         single_time int x1 = bot;
         single_space int x2 = 0;
-        world_line int x3 = bot;
+        private world_line int x3 = bot;
+
+        module int x1 = bot;
+        public module int x2 = 0;
+        module int x3 = bot;
 
         channel single_time int c1 = bot;
-        channel single_space int c2 = 0;
+        protected channel single_space int c2 = 0;
         channel world_line int c3 = bot;
       }
      "#.into_state());

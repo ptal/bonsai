@@ -54,11 +54,7 @@ impl Context {
     use ast::Stmt::*;
     match stmt {
       Let(decl) => {
-        let base_binding = match decl.binding {
-          LetBinding::InStore(decl) => decl.binding,
-          LetBinding::Spacetime(decl) => decl.binding,
-          LetBinding::Module(decl) => decl.binding
-        };
+        let base_binding = decl.binding.base().clone();
         self.insert_binding(base_binding);
         self.visit_stmt(*decl.body);
       }

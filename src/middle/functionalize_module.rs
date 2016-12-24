@@ -62,12 +62,11 @@ fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   }
 
   let mut stmts: Vec<_> = mod_attrs.into_iter()
-    .map(|binding| LetBinding::Spacetime(binding))
     .map(|binding| Stmt::Let(LetStmt::imperative(binding)))
     .collect();
 
   let mut seq_branches: Vec<_> = channel_attrs.into_iter()
-    .map(|attr| attr.binding)
+    .map(|binding| binding.base())
     .filter(|binding| !binding.expr.is_bottom())
     .map(|binding| Stmt::Tell(Var::simple(binding.name), binding.expr))
     .collect();

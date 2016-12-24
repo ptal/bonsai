@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JavaCall};
+use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JVisibility,JavaCall};
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
@@ -39,14 +39,16 @@ pub enum Item {
 
 #[derive(Clone, Debug)]
 pub struct Process {
+  pub visibility: JVisibility,
   pub name: String,
   pub params: JParameters,
   pub body: Stmt
 }
 
 impl Process {
-  pub fn new(name: String, params: JParameters, body: Stmt) -> Self {
+  pub fn new(vis: JVisibility, name: String, params: JParameters, body: Stmt) -> Self {
     Process {
+      visibility: vis,
       name: name,
       params: params,
       body: body
@@ -87,7 +89,8 @@ impl Stmt {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModuleAttribute {
-  pub binding: LetBindingSpacetime,
+  pub visibility: JVisibility,
+  pub binding: LetBinding,
   pub is_channel: bool,
 }
 
@@ -115,6 +118,17 @@ pub enum LetBinding {
   InStore(LetBindingInStore),
   Spacetime(LetBindingSpacetime),
   Module(LetBindingModule)
+}
+
+impl LetBinding {
+  pub fn base(&self) -> LetBindingBase {
+    use self::LetBinding::*;
+    match self.clone() {
+      InStore(base) => base.binding,
+      Spacetime(base) => base.binding,
+      Module(base) => base.binding
+    }
+  }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

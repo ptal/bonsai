@@ -105,7 +105,7 @@ fn string_from_static(is_static: bool) -> String {
 
 fn generate_process(fmt: &mut CodeFormatter, context: &Context, process: Process) {
   fmt.push_line(&format!(
-    "public Program {}{}", process.name, process.params));
+    "{} Program {}{}", process.visibility, process.name, process.params));
   fmt.open_block();
   fmt.push_line("return");
   fmt.indent();
