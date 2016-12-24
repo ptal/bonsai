@@ -60,7 +60,6 @@ pub enum Stmt {
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
   Let(LetStmt),
-  LetInStore(LetInStoreStmt),
   When(EntailmentRel, Box<Stmt>),
   Tell(Var, Expr),
   Pause,
@@ -88,69 +87,111 @@ impl Stmt {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModuleAttribute {
+  pub binding: LetBindingSpacetime,
   pub is_channel: bool,
-  pub var: LetBinding
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LetBinding {
+pub struct LetStmt {
+  pub binding: LetBinding,
+  pub body: Box<Stmt>
+}
+
+impl LetStmt {
+  pub fn new(binding: LetBinding, body: Box<Stmt>) -> Self {
+    LetStmt {
+      binding: binding,
+      body: body
+    }
+  }
+
+  pub fn imperative(binding: LetBinding) -> Self {
+    LetStmt::new(binding, Box::new(Stmt::Nothing))
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LetBinding {
+  InStore(LetBindingInStore),
+  Spacetime(LetBindingSpacetime),
+  Module(LetBindingModule)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LetBindingBase {
   pub name: String,
   pub ty: JType,
-  pub spacetime: Spacetime,
   pub expr: Expr
 }
 
-impl LetBinding {
-  pub fn new(name: String, ty: JType,
-    sp: Spacetime, expr: Expr) -> Self
+impl LetBindingBase {
+  pub fn new(name: String, ty: JType, expr: Expr) -> Self
   {
-    LetBinding {
+    LetBindingBase {
       name: name,
       ty: ty,
-      spacetime: sp,
       expr: expr
     }
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    LetBinding::new(String::from("<name>"), JType::example(),
-      Spacetime::example(), Expr::example())
+    LetBindingBase::new(String::from("<name>"), JType::example(),
+      Expr::example())
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LetStmt {
-  pub var: LetBinding,
-  pub body: Box<Stmt>
+pub struct LetBindingModule {
+  pub binding: LetBindingBase
 }
 
-impl LetStmt {
-  pub fn new(var: LetBinding, body: Box<Stmt>) -> Self {
-    LetStmt {
-      var: var,
-      body: body
+impl LetBindingModule {
+  pub fn new(binding: LetBindingBase) -> Self
+  {
+    LetBindingModule {
+      binding: binding
     }
   }
 
-  pub fn imperative(var: LetBinding) -> Self {
-    LetStmt::new(var, Box::new(Stmt::Nothing))
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    LetBindingModule::new(LetBindingBase::example())
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LetInStoreStmt {
-  pub var: LetBinding,
-  pub store: String,
-  pub body: Box<Stmt>
+pub struct LetBindingSpacetime {
+  pub binding: LetBindingBase,
+  pub spacetime: Spacetime
 }
 
-impl LetInStoreStmt {
-  pub fn imperative(var: LetBinding, store: String) -> Self {
-    LetInStoreStmt {
-      var: var,
-      store: store,
-      body: Box::new(Stmt::Nothing),
+impl LetBindingSpacetime {
+  pub fn new(binding: LetBindingBase, sp: Spacetime) -> Self
+  {
+    LetBindingSpacetime {
+      binding: binding,
+      spacetime: sp
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    LetBindingSpacetime::new(LetBindingBase::example(), Spacetime::example())
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LetBindingInStore {
+  pub binding: LetBindingBase,
+  pub store: String
+}
+
+impl LetBindingInStore {
+  pub fn new(binding: LetBindingBase, store: String) -> Self {
+    LetBindingInStore {
+      binding: binding,
+      store: store
     }
   }
 }

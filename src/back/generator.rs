@@ -116,6 +116,8 @@ fn generate_process(fmt: &mut CodeFormatter, context: &Context, process: Process
   fmt.newline();
 }
 
+/// A closure is generated each time we call a Java expression or need the value of a variable.
+/// The closure is needed for retrieving these values from the environment.
 fn generate_closure(fmt: &mut CodeFormatter, context: &Context, return_expr: bool, expr: Expr) {
   fmt.push("(env) -> ");
   let mut variables = HashSet::new();
@@ -141,6 +143,7 @@ fn generate_closure(fmt: &mut CodeFormatter, context: &Context, return_expr: boo
   }
 }
 
+/// Collect all the variables appearing in `expr` and insert them in `variables`.
 fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr: Expr) {
   use ast::Expr::*;
   match expr {
@@ -150,7 +153,7 @@ fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr:
       }
     }
     JavaObjectCall(object, methods) => {
-      if context.is_spacetime_var(&object) {
+      if context.is_bonsai_var(&object) {
         variables.insert(StreamVar::simple(object));
       }
       for method in methods {
@@ -243,8 +246,7 @@ fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
     Seq(branches) => generate_sequence(fmt, context, branches),
     Par(branches) => generate_parallel(fmt, context, branches),
     Space(branches) => generate_space(fmt, context, branches),
-    Let(let_decl) => generate_let(fmt, context, let_decl),
-    LetInStore(let_in_store) => generate_let_in_store(fmt, context, let_in_store),
+    Let(body) => generate_let(fmt, context, body),
     When(entailment, body) => generate_when(fmt, context, entailment, body),
     Pause => generate_pause(fmt),
     Trap(name, body) => generate_trap(fmt, context, name, body),
@@ -305,13 +307,23 @@ fn generate_space(fmt: &mut CodeFormatter, context: &Context, branches: Vec<Stmt
 }
 
 fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
-  let spacetime = generate_spacetime(let_decl.var.spacetime);
-  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, ",
-    let_decl.var.name, spacetime));
-  generate_closure(fmt, context, true, let_decl.var.expr);
+  match let_decl.binding {
+    LetBinding::InStore(decl) => generate_let_in_store(fmt, context, decl.binding, decl.store),
+    LetBinding::Spacetime(decl) => generate_spacetime_binding(fmt, context, decl.binding, decl.spacetime),
+    LetBinding::Module(decl) => generate_spacetime_binding(fmt, context, decl.binding, Spacetime::SingleSpace)
+  }
   fmt.terminate_line(",");
   generate_statement(fmt, context, *let_decl.body);
   fmt.push(")");
+}
+
+fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
+  binding: LetBindingBase, spacetime: Spacetime)
+{
+  let spacetime = generate_spacetime(spacetime);
+  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, ",
+    binding.name, spacetime));
+  generate_closure(fmt, context, true, binding.expr);
 }
 
 fn generate_spacetime(spacetime: Spacetime) -> String {
@@ -323,13 +335,11 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
   }
 }
 
-fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context, let_in_store: LetInStoreStmt) {
+fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
+  binding: LetBindingBase, store: String) {
   fmt.push(&format!("new LocationVar(\"{}\", \"{}\", ",
-    let_in_store.var.name, let_in_store.store));
-  generate_closure(fmt, context, true, let_in_store.var.expr);
-  fmt.terminate_line(",");
-  generate_statement(fmt, context, *let_in_store.body);
-  fmt.push(")");
+    binding.name, store));
+  generate_closure(fmt, context, true, binding.expr);
 }
 
 fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: EntailmentRel) {

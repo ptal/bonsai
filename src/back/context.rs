@@ -12,83 +12,73 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// The context is useful for mapping variable names to their types. This is mainly used when generating the closures because, at that point of the generation process, we do not have access to the type of the variables.
+
+/// TODO: this context does not take into account the scoping rules of variables.
+
 use jast::*;
 use std::collections::HashMap;
 
-struct SpacetimeVar {
-  pub name: String,
-  pub ty: JType
-}
-
-impl SpacetimeVar {
-  pub fn new(name: String, ty: JType) -> Self {
-    SpacetimeVar {
-      name: name,
-      ty: ty
-    }
-  }
-}
-
 pub struct Context {
-  spacetime_vars: HashMap<String, SpacetimeVar>
+  name_to_bindings: HashMap<String, LetBindingBase>
 }
 
 impl Context {
   pub fn new(module: JModule) -> Self {
     let mut context = Context {
-      spacetime_vars: HashMap::new()
+      name_to_bindings: HashMap::new()
     };
-    context.initialize_program(module);
+    context.visit_program(module);
     context
   }
 
-  fn initialize_program(&mut self, module: JModule) {
+  fn visit_program(&mut self, module: JModule) {
     for process in module.processes {
-      self.initialize_stmt(process.body);
+      self.visit_stmt(process.body);
     }
   }
 
-  fn insert_var(&mut self, var: String, ty: JType) {
-    let spacetime_var = SpacetimeVar::new(var.clone(), ty);
-    self.spacetime_vars.insert(
-      var,
-      spacetime_var);
+  fn insert_binding(&mut self, binding: LetBindingBase) {
+    self.name_to_bindings.insert(
+      binding.name.clone(),
+      binding);
   }
 
-  fn initialize_stmts(&mut self, stmts: Vec<Stmt>) {
+  fn visit_stmts(&mut self, stmts: Vec<Stmt>) {
     for stmt in stmts {
-      self.initialize_stmt(stmt);
+      self.visit_stmt(stmt);
     }
   }
 
-  fn initialize_stmt(&mut self, stmt: Stmt) {
+  fn visit_stmt(&mut self, stmt: Stmt) {
     use ast::Stmt::*;
     match stmt {
       Let(decl) => {
-        self.insert_var(decl.var.name, decl.var.ty);
-        self.initialize_stmt(*decl.body);
-      }
-      LetInStore(decl) => {
-        self.insert_var(decl.var.name, decl.var.ty);
-        self.initialize_stmt(*decl.body);
+        let base_binding = match decl.binding {
+          LetBinding::InStore(decl) => decl.binding,
+          LetBinding::Spacetime(decl) => decl.binding,
+          LetBinding::Module(decl) => decl.binding
+        };
+        self.insert_binding(base_binding);
+        self.visit_stmt(*decl.body);
       }
       Seq(branches)
     | Par(branches)
-    | Space(branches) => self.initialize_stmts(branches),
+    | Space(branches) => self.visit_stmts(branches),
       When(_, stmt)
     | Trap(_, stmt)
-    | Loop(stmt) => self.initialize_stmt(*stmt),
+    | Loop(stmt) => self.visit_stmt(*stmt),
       _ => ()
     }
   }
 
   pub fn type_of_var(&self, var: &StreamVar) -> JType {
-    self.spacetime_vars.get(&var.name)
+    self.name_to_bindings.get(&var.name)
       .expect(&format!("Undeclared variable `{}`.", var.name))
       .ty.clone()
   }
 
-  pub fn is_spacetime_var(&self, name: &String) -> bool {
-    self.spacetime_vars.contains_key(name)
+  pub fn is_bonsai_var(&self, name: &String) -> bool {
+    self.name_to_bindings.contains_key(name)
   }
 }

@@ -47,10 +47,6 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
       decl.body = Box::new(lift_stmt(*decl.body));
       Let(decl)
     },
-    LetInStore(mut decl) => {
-      decl.body = Box::new(lift_stmt(*decl.body));
-      LetInStore(decl)
-    },
     x => x
   }
 }
@@ -83,11 +79,6 @@ fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
         decl.body = Box::new(lift_let_sequence(stmts));
         vec![Let(decl)]
       },
-      LetInStore(ref decl) if decl.body.is_nothing() => {
-        let mut decl = decl.clone();
-        decl.body = Box::new(lift_let_sequence(stmts));
-        vec![LetInStore(decl)]
-      },
       mut front => {
         front = lift_stmt(front);
         let mut rest = lift_let(stmts);
@@ -106,7 +97,8 @@ mod test
   #[test]
   fn test_let_lifting() {
     use ast::Stmt::*;
-    let let_stmt = Let(LetStmt::imperative(LetBinding::example()));
+    let let_stmt = Let(LetStmt::imperative(
+      LetBinding::Spacetime(LetBindingSpacetime::example())));
     let ast = Seq(vec![
       Stmt::example(),
       let_stmt.clone(),
@@ -115,8 +107,8 @@ mod test
     let res = super::lift_stmt(ast);
     let expected = Seq(vec![
       Stmt::example(),
-      Let(LetStmt::new(LetBinding::example(),
-        box Let(LetStmt::new(LetBinding::example(),
+      Let(LetStmt::new(LetBinding::Spacetime(LetBindingSpacetime::example()),
+        box Let(LetStmt::new(LetBinding::Spacetime(LetBindingSpacetime::example()),
           box Seq(vec![Stmt::example(), let_stmt.clone()])))))
     ]);
     assert_eq!(res, expected);

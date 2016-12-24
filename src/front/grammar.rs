@@ -44,31 +44,38 @@ grammar! bonsai {
 
   spacetime_attribute = (CHANNEL->())? spacetime_var > make_spacetime_attribute
 
-  spacetime_var = spacetime java_ty identifier (EQ bottom_expr)? SEMI_COLON > make_spacetime_var
+  spacetime_var = spacetime let_binding_base > make_spacetime_var
 
-  bottom_expr = expr > some_expr
-              / BOT > make_bottom_expr
+  let_binding_base = java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_let_binding
 
-  fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
-  fn make_bottom_expr() -> Option<Expr> { None }
-
-  fn make_spacetime_attribute(is_channel: Option<()>, var: LetBinding) -> Item {
-    Item::Attribute(
-      ModuleAttribute {
-        var: var,
-        is_channel: is_channel.is_some(),
-      }
-    )
-  }
-
-  fn make_spacetime_var(spacetime: Spacetime, var_ty: JType,
-    var_name: String, expr: Option<Option<Expr>>) -> LetBinding
+  fn make_let_binding(var_ty: JType,
+    var_name: String, expr: Option<Option<Expr>>) -> LetBindingBase
   {
     let expr = match expr {
       Some(Some(expr)) => expr,
       None | Some(None) => Expr::Bottom(var_ty.clone())
     };
-    LetBinding::new(var_name, var_ty, spacetime, expr)
+    LetBindingBase::new(var_name, var_ty, expr)
+  }
+
+  expr_or_bot = expr > some_expr
+              / BOT > make_bottom_expr
+
+  fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
+  fn make_bottom_expr() -> Option<Expr> { None }
+
+  fn make_spacetime_attribute(is_channel: Option<()>, binding: LetBindingSpacetime) -> Item {
+    Item::Attribute(
+      ModuleAttribute {
+        binding: binding,
+        is_channel: is_channel.is_some(),
+      }
+    )
+  }
+
+  fn make_spacetime_var(spacetime: Spacetime, binding: LetBindingBase) -> LetBindingSpacetime
+  {
+    LetBindingSpacetime::new(binding, spacetime)
   }
 
   fn make_process_item(name: String, params: JParameters, body: Stmt) -> Item {
@@ -169,8 +176,7 @@ grammar! bonsai {
   stmt
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / spacetime_var > make_let_stmt
-    / spacetime_var_in_store
+    / let_binding > make_let_stmt
     / WHEN entailment block > make_when
     / PAUSE SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
@@ -189,20 +195,29 @@ grammar! bonsai {
     Stmt::Space(extend_front(first, rest))
   }
 
-  spacetime_var_in_store =
-    java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store_stmt
-
-  fn make_let_in_store_stmt(loc_ty: JType, location: String,
-    store: String, expr: Expr) -> Stmt
-  {
-    let binding = LetBinding::new(
-      location, loc_ty, Spacetime::SingleTime, expr);
-    Stmt::LetInStore(
-      LetInStoreStmt::imperative(binding, store))
+  fn make_let_stmt(binding: LetBinding) -> Stmt {
+    Stmt::Let(LetStmt::imperative(binding))
   }
 
-  fn make_let_stmt(var: LetBinding) -> Stmt {
-    Stmt::Let(LetStmt::imperative(var))
+  let_binding
+    = spacetime_var > make_spacetime_binding
+    / MODULE let_binding_base > make_module_binding
+    / java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store_binding
+
+  fn make_spacetime_binding(binding: LetBindingSpacetime) -> LetBinding {
+    LetBinding::Spacetime(binding)
+  }
+
+  fn make_module_binding(binding: LetBindingBase) -> LetBinding {
+    LetBinding::Module(LetBindingModule::new(binding))
+  }
+
+  fn make_let_in_store_binding(loc_ty: JType, location: String,
+    store: String, expr: Expr) -> LetBinding
+  {
+    let binding = LetBindingBase::new(location, loc_ty, expr);
+    LetBinding::InStore(
+      LetBindingInStore::new(binding, store))
   }
 
   fn make_when(entailment: EntailmentRel, body: Stmt) -> Stmt {
@@ -392,7 +407,7 @@ grammar! bonsai {
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "trap" / "exit" / "in" / "world_line"
-    / "single_time" / "single_space" / "bot" / "top" / "channel" / java_kw
+    / "single_time" / "single_space" / "bot" / "top" / "channel" / "module" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -414,6 +429,7 @@ grammar! bonsai {
   BOT = "bot" kw_tail
   TOP = "top" kw_tail
   CHANNEL = "channel" kw_tail
+  MODULE = "module" kw_tail
 
   // Java keyword
   java_kw

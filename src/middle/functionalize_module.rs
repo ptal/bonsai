@@ -54,20 +54,22 @@ fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   let mut mod_attrs = vec![];
   for attr in attrs {
     if attr.is_channel {
-      channel_attrs.push(attr.var);
+      channel_attrs.push(attr.binding);
     }
     else {
-      mod_attrs.push(attr.var);
+      mod_attrs.push(attr.binding);
     }
   }
 
   let mut stmts: Vec<_> = mod_attrs.into_iter()
-    .map(|attr| Stmt::Let(LetStmt::imperative(attr)))
+    .map(|binding| LetBinding::Spacetime(binding))
+    .map(|binding| Stmt::Let(LetStmt::imperative(binding)))
     .collect();
 
   let mut seq_branches: Vec<_> = channel_attrs.into_iter()
-    .filter(|attr| !attr.expr.is_bottom())
-    .map(|attr| Stmt::Tell(Var::simple(attr.name), attr.expr))
+    .map(|attr| attr.binding)
+    .filter(|binding| !binding.expr.is_bottom())
+    .map(|binding| Stmt::Tell(Var::simple(binding.name), binding.expr))
     .collect();
   seq_branches.push(body);
   stmts.push(Stmt::Seq(seq_branches));
