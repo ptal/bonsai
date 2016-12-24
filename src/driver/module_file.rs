@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use std::io::prelude::*;
 use std::fs::{File, OpenOptions, DirBuilder};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ModuleFile
 {
   input_path: PathBuf,

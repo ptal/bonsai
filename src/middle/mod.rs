@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod functionalize_module;
+pub mod functionalize_module;
 
 use jast::*;
-use middle::functionalize_module::*;
+pub use middle::functionalize_module::*;
 use partial::*;
 
-pub fn analyse_bonsai(ast: Program) -> Partial<JModule> {
-  functionalize_module(ast)
+pub fn analyse_bonsai(jcrate: JCrate) -> Partial<JCrate> {
+  Partial::Value(jcrate)
 }

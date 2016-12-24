@@ -15,13 +15,15 @@
 /// We create a module, ensure that an entry point exists (`execute` method) and move module attributes as `let` declarations wrapping the `execute` code.
 
 use jast::*;
+use driver::module_file::ModuleFile;
 use front::let_lifting::*;
 use partial::*;
 
-pub fn functionalize_module(ast: Program) -> Partial<JModule> {
+pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> {
   let mut module = Module {
     attributes: vec![],
     processes: vec![],
+    file: file,
     host: JClass::new(ast.header, ast.class_name)
   };
 

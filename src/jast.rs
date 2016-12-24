@@ -36,8 +36,8 @@ impl JClass {
   }
 }
 
+pub type JCrate = Crate<JClass>;
 pub type JModule = Module<JClass>;
-
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JMethod {

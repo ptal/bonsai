@@ -13,11 +13,25 @@
 // limitations under the License.
 
 use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JVisibility,JavaCall};
+use driver::module_file::ModuleFile;
+
+pub struct Crate<Host> {
+  pub modules: Vec<Module<Host>>
+}
+
+impl<Host> Crate<Host> {
+  pub fn new() -> Self {
+    Crate {
+      modules: vec![]
+    }
+  }
+}
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
   pub attributes: Vec<ModuleAttribute>,
   pub processes: Vec<Process>,
+  pub file: ModuleFile,
   pub host: Host
 }
 

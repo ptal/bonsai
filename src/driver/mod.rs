@@ -13,7 +13,7 @@
 // limitations under the License.
 
 pub mod config;
-mod module_file;
+pub mod module_file;
 mod project;
 
 pub use self::config::*;
@@ -22,17 +22,39 @@ use partial::*;
 use front;
 use middle;
 use back;
+use jast::JCrate;
+
+static ABORT_MSG: &'static str = "stop due to compilation errors";
 
 pub fn run() {
   let config = Config::new();
-  let project = Project::new(&config);
-
-  for module in project {
-    Partial::Value(module.input_as_string())
-    .and_then(front::parse_bonsai)
-    .and_then(middle::analyse_bonsai)
-    .and_then(|m| back::generate_chococubes(m, &config))
-    .map(|output| module.write_output(output));
-  }
+  run_front(&config)
+    .and_then(|jcrate| run_middle(&config, jcrate))
+    .map(|jcrate| run_back(&config, jcrate));
 }
 
+fn run_front(config: &Config) -> Partial<JCrate> {
+  let project = Project::new(config);
+  let mut jcrate = JCrate::new();
+  for file in project {
+    Partial::Value(file.input_as_string())
+      .and_then(front::parse_bonsai)
+      .and_then(|ast| middle::functionalize_module(file, ast))
+      .map(|module| jcrate.modules.push(module))
+      .expect(ABORT_MSG);
+  }
+  Partial::Value(jcrate)
+}
+
+fn run_middle(_config: &Config, jcrate: JCrate) -> Partial<JCrate> {
+  middle::analyse_bonsai(jcrate)
+}
+
+fn run_back(config: &Config, jcrate: JCrate) {
+  for module in jcrate.modules {
+    let file = module.file.clone();
+    back::generate_chococubes(module, &config)
+      .map(|output| file.write_output(output))
+      .expect(ABORT_MSG);
+  }
+}
