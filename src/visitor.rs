@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![macro_use]
+
 use ast::*;
 use ast::Stmt::*;
 
 pub trait Visitor<H, R>
 {
-  fn visit_crate(&mut self, bcrate: Crate<H>) -> Vec<R> {
-    walk_modules(self, bcrate.modules)
-  }
+  fn visit_crate(&mut self, bcrate: Crate<H>) -> R;
 
   fn visit_module(&mut self, module: Module<H>) -> R;
 
@@ -46,7 +46,7 @@ pub trait Visitor<H, R>
   fn visit_tell(&mut self, _var: Var, _expr: Expr) -> R;
   fn visit_pause(&mut self) -> R;
 
-  fn visit_trap(&mut self, name: String, child: Stmt) -> R {
+  fn visit_trap(&mut self, _name: String, child: Stmt) -> R {
     self.visit_stmt(child)
   }
 
@@ -126,7 +126,7 @@ pub fn walk_binding<H, R, V: ?Sized>(visitor: &mut V, binding: LetBinding) -> R 
 
 /// We need this macro for factorizing the code since we can not specialize a trait on specific type parameter (we would need to specialize on `()` here).
 macro_rules! unit_visitor_impl {
-  (module) => (
+  (module, H) => (
     fn visit_module(&mut self, module: Module<H>) {
       walk_processes(self, module.processes);
     }
@@ -148,29 +148,32 @@ macro_rules! unit_visitor_impl {
   );
   (let_binding) => (
     fn visit_let(&mut self, binding: LetBinding, child: Stmt) {
-      walk_binding(binding);
+      walk_binding(self, binding);
       self.visit_stmt(child);
     }
   );
-  (binding_base) => (fn visit_binding(&mut self, binding: LetBindingBase) {});
+  (binding_base) => (fn visit_binding(&mut self, _binding: LetBindingBase) {});
   (tell) => (fn visit_tell(&mut self, _var: Var, _expr: Expr) {});
   (pause) => (fn visit_pause(&mut self) {});
-  (exit) => (fn visit_exit(&mut self, name: String) {});
-  (proc_call) => (fn visit_proc_call(&mut self, name: String, args: Vec<Expr>) {});
-  (fn_call) => (fn visit_fn_call(&mut self, expr: Expr) {});
+  (exit) => (fn visit_exit(&mut self, _name: String) {});
+  (proc_call) => (fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {});
+  (fn_call) => (fn visit_fn_call(&mut self, _expr: Expr) {});
   (nothing) => (fn visit_nothing(&mut self) {});
-  (all) => (
-    unit_visitor_impl!(module)
-    unit_visitor_impl!(sequence)
-    unit_visitor_impl!(parallel)
-    unit_visitor_impl!(space)
-    unit_visitor_impl!(let_binding)
-    unit_visitor_impl!(binding_base)
-    unit_visitor_impl!(tell)
-    unit_visitor_impl!(pause)
-    unit_visitor_impl!(exit)
-    unit_visitor_impl!(proc_call)
-    unit_visitor_impl!(fn_call)
-    unit_visitor_impl!(nothing)
+  (all, H) => (
+    unit_visitor_impl!(module, H);
+    unit_visitor_impl!(all_stmt);
+  );
+  (all_stmt) => (
+    unit_visitor_impl!(sequence);
+    unit_visitor_impl!(parallel);
+    unit_visitor_impl!(space);
+    unit_visitor_impl!(let_binding);
+    unit_visitor_impl!(binding_base);
+    unit_visitor_impl!(tell);
+    unit_visitor_impl!(pause);
+    unit_visitor_impl!(exit);
+    unit_visitor_impl!(proc_call);
+    unit_visitor_impl!(fn_call);
+    unit_visitor_impl!(nothing);
   );
 }

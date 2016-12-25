@@ -28,6 +28,9 @@ impl Context {
     let mut context = Context {
       name_to_bindings: HashMap::new()
     };
+    for channel_attr in module.channel_attrs() {
+      context.insert_binding(channel_attr.base());
+    }
     context.visit_program(module);
     context
   }

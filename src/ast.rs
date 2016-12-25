@@ -15,6 +15,7 @@
 use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JVisibility,JavaCall};
 use driver::module_file::ModuleFile;
 
+#[derive(Clone, Debug)]
 pub struct Crate<Host> {
   pub modules: Vec<Module<Host>>
 }
