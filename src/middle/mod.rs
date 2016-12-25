@@ -13,11 +13,14 @@
 // limitations under the License.
 
 pub mod functionalize_module;
+mod matching_channel;
 
 use jast::*;
 pub use middle::functionalize_module::*;
+use middle::matching_channel::*;
 use partial::*;
 
 pub fn analyse_bonsai(jcrate: JCrate) -> Partial<JCrate> {
   Partial::Value(jcrate)
+    .and_then(|jcrate| matching_channel(jcrate))
 }

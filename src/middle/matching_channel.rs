@@ -12,21 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+/// We create a module, ensure that an entry point exists (`execute` method) and move module attributes as `let` declarations wrapping the `execute` code.
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
+use jast::*;
+use partial::*;
 
-mod driver;
-mod ast;
-mod visitor;
-mod jast;
-mod front;
-mod middle;
-mod back;
+pub fn matching_channel(jcrate: JCrate) -> Partial<JCrate> {
+  Partial::Value(jcrate)
 
-fn main() {
-  driver::run();
+  // for module in jcrate.modules.iter() {
+
+  // }
 }

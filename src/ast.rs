@@ -19,11 +19,16 @@ pub struct Crate<Host> {
   pub modules: Vec<Module<Host>>
 }
 
-impl<Host> Crate<Host> {
+impl<Host> Crate<Host> where Host: Clone {
   pub fn new() -> Self {
     Crate {
       modules: vec![]
     }
+  }
+
+  pub fn find_mod_by_name(&self, name: String) -> Option<Module<Host>> {
+    self.modules.iter()
+      .find(|m| m.file.mod_name() == name).cloned()
   }
 }
 
@@ -33,6 +38,23 @@ pub struct Module<Host> {
   pub processes: Vec<Process>,
   pub file: ModuleFile,
   pub host: Host
+}
+
+impl<Host> Module<Host> {
+  pub fn channel_attrs(&self) -> Vec<LetBinding> {
+    self.attributes.iter()
+      .filter(|a| a.is_channel)
+      .cloned()
+      .map(|a| a.binding)
+      .collect()
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ModuleAttribute {
+  pub visibility: JVisibility,
+  pub binding: LetBinding,
+  pub is_channel: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -99,13 +121,6 @@ impl Stmt {
   pub fn example() -> Self {
     Stmt::Tell(Var::simple(String::from("x")), Expr::example())
   }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ModuleAttribute {
-  pub visibility: JVisibility,
-  pub binding: LetBinding,
-  pub is_channel: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
