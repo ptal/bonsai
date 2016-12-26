@@ -170,6 +170,7 @@ grammar! bonsai {
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
     / TILDE java_call_expr SEMI_COLON > make_java_call_stmt
+    / RUN run_expr SEMI_COLON > make_run
     / var LEFT_ARROW expr SEMI_COLON > make_tell
     / identifier list_args SEMI_COLON > make_proc_call
     / block
@@ -251,6 +252,22 @@ grammar! bonsai {
     Stmt::ProcCall(process, args)
   }
 
+  fn make_run(run_expr: RunExpr) -> Stmt {
+    Stmt::ModuleCall(run_expr)
+  }
+
+  run_expr
+    = identifier DOT identifier LPAREN RPAREN > make_run_expr
+    / identifier > make_identifier_run
+
+  fn make_identifier_run(module: String) -> RunExpr {
+    RunExpr::main(module)
+  }
+
+  fn make_run_expr(module: String, process: String) -> RunExpr {
+    RunExpr::new(module, process)
+  }
+
   expr
     = java_expr
     / stream_var > make_stream_var_expr
@@ -282,13 +299,15 @@ grammar! bonsai {
   list_args = LPAREN list_expr RPAREN
 
   java_expr
-    = NEW java_ty list_args > java_new
+    = java_new_expr
     / java_call_expr
     / number > make_number_expr
     / string_literal > make_string_literal
 
+  java_new_expr = NEW java_ty list_args > java_new
+
   java_call_expr
-    = identifier java_method_call+ > java_object_calls
+    = identifier java_property_call+ > java_object_calls
     / java_call > java_this_call
 
   fn java_new(class_ty: JType, args: Vec<Expr>) -> Expr {
@@ -307,7 +326,7 @@ grammar! bonsai {
   fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
 
   java_call = identifier list_args > make_java_method_call
-  java_method_call = DOT identifier (list_args)? > make_java_property
+  java_property_call = DOT identifier (list_args)? > make_java_property
 
   fn make_java_method_call(name: String, args: Vec<Expr>) -> JavaCall {
     make_java_call(name, false, args)
@@ -406,7 +425,8 @@ grammar! bonsai {
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "trap" / "exit" / "in" / "world_line"
-    / "single_time" / "single_space" / "bot" / "top" / "channel" / "module" / java_kw
+    / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
+    / "run" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -429,6 +449,7 @@ grammar! bonsai {
   TOP = "top" kw_tail
   CHANNEL = "channel" kw_tail
   MODULE = "module" kw_tail
+  RUN = "run" kw_tail
 
   // Java keyword
   java_kw

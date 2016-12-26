@@ -254,6 +254,7 @@ fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
     Loop(body) => generate_loop(fmt, context, body),
     FnCall(java_call) => generate_java_call(fmt, context, java_call),
     ProcCall(process, args) => generate_fun_call(fmt, process, args),
+    ModuleCall(run_expr) => generate_module_call(fmt, context, run_expr),
     Tell(var, expr) => generate_tell(fmt, context, var, expr),
     Nothing => generate_nothing(fmt)
   }
@@ -360,6 +361,13 @@ fn generate_when(fmt: &mut CodeFormatter, context: &Context,
   fmt.terminate_line(",");
   fmt.push("SC.nothing())");
   fmt.unindent();
+}
+
+fn generate_module_call(fmt: &mut CodeFormatter, context: &Context, run_expr: RunExpr) {
+  fmt.push(&format!("new RunModule("));
+  let expr = run_expr.to_expr();
+  generate_closure(fmt, context, true, expr);
+  fmt.push(")");
 }
 
 fn generate_tell(fmt: &mut CodeFormatter, context: &Context, var: Var, expr: Expr) {

@@ -102,17 +102,19 @@ impl<H: Clone> Visitor<H, ()> for MatchingChannel<H> {
     }
   }
 
-  fn visit_binding_module(&mut self, binding: LetBindingBase) {
+  fn visit_binding_module(&mut self, mod_binding: LetBindingModule) {
     let mod_a = self.bcrate.modules[self.current_mod].clone();
-    let mod_b = self.bcrate.find_mod_by_name(binding.name.clone())
-      .expect(&format!("The bonsai module {} does not exist.", binding.name));
+    let mod_a_name = mod_a.file.mod_name();
+    let mod_b_name = mod_binding.module_name();
+    let mod_b = self.bcrate.find_mod_by_name(mod_b_name.clone())
+      .expect(&format!("The bonsai module {} does not exist.", mod_b_name.clone()));
     let channel_attrs = mod_b.channel_attrs();
     for attr_b in channel_attrs {
       let attr_a = self.find_attr_by_name(&mod_a, attr_b.base().name);
       let attr_a = attr_a.expect(&format!(
         "The module attribute {} could not be found in {} but is marked with `channel` in {}.",
-        attr_b.base().name, mod_a.file.mod_name(), mod_b.file.mod_name()));
-      self.cmp_binding(attr_a, attr_b, mod_a.file.mod_name(), mod_b.file.mod_name());
+        attr_b.base().name, mod_a_name.clone(), mod_b_name.clone()));
+      self.cmp_binding(attr_a, attr_b, mod_a_name.clone(), mod_b_name.clone());
     }
   }
 }

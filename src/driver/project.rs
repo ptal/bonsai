@@ -24,6 +24,7 @@ use std::vec;
 use std::collections::HashMap;
 use clap::{Error, ErrorKind};
 
+#[derive(Debug, Clone)]
 pub struct Project
 {
   mod_to_files: HashMap<String, ModuleFile>

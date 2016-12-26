@@ -130,3 +130,13 @@ pub struct JavaCall {
   pub is_attribute: bool,
   pub args: Vec<Expr>
 }
+
+impl JavaCall {
+  pub fn empty_method(name: String) -> Self {
+    JavaCall {
+      property: name,
+      is_attribute: false,
+      args: vec![]
+    }
+  }
+}

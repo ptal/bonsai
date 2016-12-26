@@ -58,18 +58,19 @@ pub trait Visitor<H, R>
 
   fn visit_proc_call(&mut self, name: String, args: Vec<Expr>) -> R;
   fn visit_fn_call(&mut self, expr: Expr) -> R;
+  fn visit_module_call(&mut self, expr: RunExpr) -> R;
   fn visit_nothing(&mut self) -> R;
 
-  fn visit_binding_in_store(&mut self, binding: LetBindingBase, _store: String) -> R {
-    self.visit_binding(binding)
+  fn visit_binding_in_store(&mut self, in_store: LetBindingInStore) -> R {
+    self.visit_binding(in_store.binding)
   }
 
-  fn visit_binding_spacetime(&mut self, binding: LetBindingBase, _spacetime: Spacetime) -> R {
-    self.visit_binding(binding)
+  fn visit_binding_spacetime(&mut self, sp: LetBindingSpacetime) -> R {
+    self.visit_binding(sp.binding)
   }
 
-  fn visit_binding_module(&mut self, binding: LetBindingBase) -> R {
-    self.visit_binding(binding)
+  fn visit_binding_module(&mut self, module: LetBindingModule) -> R {
+    self.visit_binding(module.binding)
   }
 
   fn visit_binding(&mut self, binding: LetBindingBase) -> R;
@@ -103,6 +104,7 @@ pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
     Loop(body) => visitor.visit_loop(*body),
     ProcCall(name, args) => visitor.visit_proc_call(name, args),
     FnCall(expr) => visitor.visit_fn_call(expr),
+    ModuleCall(expr) => visitor.visit_module_call(expr),
     Nothing => visitor.visit_nothing()
   }
 }
@@ -118,9 +120,9 @@ pub fn walk_binding<H, R, V: ?Sized>(visitor: &mut V, binding: LetBinding) -> R 
 {
   use ast::LetBinding::*;
   match binding {
-    InStore(in_store) => visitor.visit_binding_in_store(in_store.binding, in_store.store),
-    Spacetime(spacetime) => visitor.visit_binding_spacetime(spacetime.binding, spacetime.spacetime),
-    Module(module) => visitor.visit_binding_module(module.binding)
+    InStore(in_store) => visitor.visit_binding_in_store(in_store),
+    Spacetime(spacetime) => visitor.visit_binding_spacetime(spacetime),
+    Module(module) => visitor.visit_binding_module(module)
   }
 }
 
@@ -158,6 +160,7 @@ macro_rules! unit_visitor_impl {
   (exit) => (fn visit_exit(&mut self, _name: String) {});
   (proc_call) => (fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {});
   (fn_call) => (fn visit_fn_call(&mut self, _expr: Expr) {});
+  (module_call) => (fn visit_module_call(&mut self, _expr: RunExpr) {});
   (nothing) => (fn visit_nothing(&mut self) {});
   (all, H) => (
     unit_visitor_impl!(module, H);
@@ -174,6 +177,7 @@ macro_rules! unit_visitor_impl {
     unit_visitor_impl!(exit);
     unit_visitor_impl!(proc_call);
     unit_visitor_impl!(fn_call);
+    unit_visitor_impl!(module_call);
     unit_visitor_impl!(nothing);
   );
 }

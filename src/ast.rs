@@ -107,6 +107,7 @@ pub enum Stmt {
   Loop(Box<Stmt>),
   ProcCall(String, Vec<Expr>),
   FnCall(Expr),
+  ModuleCall(RunExpr),
   Nothing // This is a facility for parsing, passing from imperative to functional representation. (see let_lifting.rs).
 }
 
@@ -121,6 +122,31 @@ impl Stmt {
   #[allow(dead_code)]
   pub fn example() -> Self {
     Stmt::Tell(Var::simple(String::from("x")), Expr::example())
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RunExpr {
+  pub module_name: String,
+  pub process: String
+}
+
+impl RunExpr {
+  pub fn main(module_name: String) -> Self {
+    RunExpr::new(module_name, String::from("execute"))
+  }
+
+  pub fn new(module_name: String, process: String) -> Self {
+    RunExpr {
+      module_name: module_name,
+      process: process
+    }
+  }
+
+  pub fn to_expr(self) -> Expr {
+    Expr::JavaObjectCall(
+      self.module_name,
+      vec![JavaCall::empty_method(self.process)])
   }
 }
 
@@ -191,11 +217,14 @@ pub struct LetBindingModule {
 }
 
 impl LetBindingModule {
-  pub fn new(binding: LetBindingBase) -> Self
-  {
+  pub fn new(binding: LetBindingBase) -> Self {
     LetBindingModule {
       binding: binding
     }
+  }
+
+  pub fn module_name(&self) -> String {
+    self.binding.ty.name.clone()
   }
 
   #[allow(dead_code)]

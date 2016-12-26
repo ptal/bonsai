@@ -32,6 +32,7 @@ public class NQueens implements Executable
     par
     || first_fail_middle();
     || propagation();
+    || all_solution();
     end
   }
 
