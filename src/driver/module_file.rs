@@ -53,7 +53,7 @@ impl ModuleFile
   fn core_file(config: &Config, file_path: PathBuf, mod_name: String) -> Self {
     ModuleFile {
       input_path: file_path.clone(),
-      output_path: Some(Self::build_output_path(config, file_path)),
+      output_path: Some(Self::build_output_path(config, file_path, mod_name.clone())),
       module_name: mod_name
     }
   }
@@ -66,10 +66,12 @@ impl ModuleFile
     }
   }
 
-  fn build_output_path(config: &Config, file_path: PathBuf) -> PathBuf {
-    config.output.join(
-      file_path.strip_prefix(&config.input)
-      .expect("`file_path` should start with `config.input` when building output path of core files."))
+  fn build_output_path(config: &Config, mut file_path: PathBuf, mod_name: String) -> PathBuf {
+    file_path.pop();
+    config.output.join(file_path
+      .join(mod_name)
+      .with_extension("java")
+      .strip_prefix(&config.input).unwrap())
   }
 
   pub fn mod_name(&self) -> String {

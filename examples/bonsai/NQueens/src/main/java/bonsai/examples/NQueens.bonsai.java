@@ -28,9 +28,11 @@ public class NQueens implements Executable
     this.n = 8;
   }
 
-  proc execute() {
+  public proc execute() {
     model();
-    engine();
+    trap FoundSolution {
+      engine();
+    }
     ~printVariables("Solution", consistent, domains);
   }
 
