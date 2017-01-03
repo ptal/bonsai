@@ -34,6 +34,11 @@
       <artifactId>ChocoCubes</artifactId>
       <version>1.0</version>
     </dependency>
+    <dependency>
+      <groupId>bonsai</groupId>
+      <artifactId>libstd</artifactId>
+      <version>1.0</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -64,6 +69,7 @@
               <executable>bonsai</executable>
               <arguments>
                 <argument>--main=NQueens</argument>
+                <argument>--lib=../../../libstd/src/</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
                 <argument>${project.build.sourceDirectory}/chococubes</argument>
               </arguments>

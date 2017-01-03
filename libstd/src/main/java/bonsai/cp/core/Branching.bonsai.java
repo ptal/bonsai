@@ -24,6 +24,10 @@ public class Branching implements Executable
     return new Branching(new FirstFail(model), new IntDomainMiddle(true));
   }
 
+  public static Branching inputOrderMin(Model model) {
+    return new Branching(new InputOrder(model), new IntDomainMin());
+  }
+
   public Branching(VariableSelector<IntVar> var, IntValueSelector val) {
     this.var = var;
     this.val = val;

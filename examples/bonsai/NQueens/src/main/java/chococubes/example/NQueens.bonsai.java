@@ -10,6 +10,7 @@ import org.chocosolver.solver.search.strategy.selectors.values.*;
 import bonsai.chococubes.core.*;
 import bonsai.chococubes.choco.*;
 import bonsai.chococubes.sugarcubes.*;
+import bonsai.cp.core.*;
 
 public class NQueens implements Executable
 {
@@ -39,45 +40,14 @@ public class NQueens implements Executable
   }
 
   proc engine() {
-    trap FoundSolution {
-      par
-      || first_fail_middle();
-      || propagation();
-      || one_solution();
-      end
-    }
-  }
-
-  proc first_fail_middle() {
-    single_space FirstFail var = new FirstFail(domains.model());
-    single_space IntDomainMiddle val = new IntDomainMiddle(IntDomainMiddle.FLOOR);
-    loop {
-      when consistent |= Consistent.Unknown {
-        single_time IntVar x = var.getVariable(domains.vars());
-        single_time Integer mid = val.selectValue(x);
-        space
-        || constraints <- x.le(mid);
-        || constraints <- x.gt(mid);
-        end
-      }
-      pause;
-    }
-  }
-
-  proc propagation() {
-    loop {
-      consistent <- PropagatorEngine.propagate(domains, constraints);
-      pause;
-    }
-  }
-
-  proc one_solution() {
-    loop {
-      when consistent |= Consistent.True {
-        exit FoundSolution;
-      }
-      pause;
-    }
+    module Branching branching = Branching.firstFailMiddle(domains.model());
+    module Propagation propagation = new Propagation();
+    module OneSolution oneSolution = new OneSolution();
+    par
+    || run branching.split();
+    || run propagation;
+    || run oneSolution;
+    end
   }
 
   private void modelChoco(VarStore domains,

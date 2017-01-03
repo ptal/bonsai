@@ -52,9 +52,11 @@ fn run_middle(_config: &Config, jcrate: JCrate) -> Partial<JCrate> {
 
 fn run_back(config: &Config, jcrate: JCrate) {
   for module in jcrate.modules {
-    let file = module.file.clone();
-    back::generate_chococubes(module, &config)
-      .map(|output| file.write_output(output))
-      .expect(ABORT_MSG);
+    if !module.file.is_lib() {
+      let file = module.file.clone();
+      back::generate_chococubes(module, &config)
+        .map(|output| file.write_output(output))
+        .expect(ABORT_MSG);
+    }
   }
 }

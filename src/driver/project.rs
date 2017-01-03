@@ -36,28 +36,30 @@ impl Project
     let mut package = Project {
       mod_to_files: HashMap::new()
     };
-    package.find_bonsai_files(config, PathBuf::new()).unwrap();
+    package.collect_bonsai_files(config, false, config.input.clone()).unwrap();
+    for lib in &config.libs {
+      package.collect_bonsai_files(config, true, lib.clone()).unwrap();
+    }
     package
   }
 
-  /// config.input ⁺ current_path = full path to the current directory.
-  /// `current_path` is the current path relative to the root of the project.
-  fn find_bonsai_files(&mut self, config: &Config, current_path: PathBuf) -> io::Result<()> {
-    let current_dir = config.input.join(current_path.clone());
+  fn collect_bonsai_files(&mut self, config: &Config, lib: bool,
+    current_dir: PathBuf) -> io::Result<()>
+  {
     for entry in read_dir(current_dir)? {
-      let entry = entry?;
-      let full_path = entry.path();
-      let project_path = current_path.join(entry.file_name());
-      if full_path.is_dir() {
-        self.find_bonsai_files(config, project_path)?;
+      let entry = entry?.path();
+      if entry.is_dir() {
+        self.collect_bonsai_files(config, lib, entry)?;
       }
-      else if let Some(mod_file) = ModuleFile::new(config, project_path) {
-        let mod_name = mod_file.mod_name();
-        if self.mod_to_files.contains_key(&mod_name) {
-          self.conflicting_module_error(mod_name, mod_file);
-        }
-        else {
-          self.mod_to_files.insert(mod_name, mod_file);
+      else {
+        if let Some(mod_file) = ModuleFile::new(config, entry, lib) {
+          let mod_name = mod_file.mod_name();
+          if self.mod_to_files.contains_key(&mod_name) {
+            self.conflicting_module_error(mod_name, mod_file);
+          }
+          else {
+            self.mod_to_files.insert(mod_name, mod_file);
+          }
         }
       }
     }

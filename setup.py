@@ -6,10 +6,12 @@ rust_nightly_version = "nightly-2016-10-21"
 sugarcubes_jar = "/tmp/SugarCubesv4.0.0a5.jar"
 chococubes_jar = "target/ChocoCubes-1.0-SNAPSHOT.jar"
 chococubes_src = "ChocoCubes/"
+bonsai_libstd_src = "libstd/"
+bonsai_libstd_jar = "target/libstd-1.0-SNAPSHOT.jar"
 
 startup_script = "unknown"
 lib_path = "unknown"
-ending_message = "\nSuccesfully installed bonsai, SugarCubes and ChocoCubes.\n"
+ending_message = "\nSuccesfully installed bonsai (and its standard library), SugarCubes and ChocoCubes.\n"
 
 if platform.system() == 'Darwin':
   startup_script = "~/.bash_profile"
@@ -42,6 +44,7 @@ mvn_package_cmd = ["mvn", "package", "-quiet", "--fail-fast"]
 
 install_sugarcubes_cmd = mvn_install_cmd("inria.meije.rc", "SugarCubes", "4.0.0a5", sugarcubes_jar)
 install_chococubes_cmd = mvn_install_cmd("bonsai", "ChocoCubes", "1.0", chococubes_jar)
+install_bonsai_libstd_cmd = mvn_install_cmd("bonsai", "libstd", "1.0", bonsai_libstd_jar)
 
 def install_rust():
   try:
@@ -107,6 +110,13 @@ def install_bonsai():
     add_export_bug()
     print("`bonsai` compiler has been installed.")
 
+def install_bonsai_libstd():
+  print("Installing Bonsai standard libary...")
+  with cd(bonsai_libstd_src):
+    subprocess.run(mvn_package_cmd).check_returncode()
+    subprocess.run(install_bonsai_libstd_cmd).check_returncode()
+    print("`Bonsai libstd` has been installed.")
+
 def install_sugarcubes():
   print("Installing SugarCubes Java libary...")
   subprocess.run(download_sugarcubes_cmd)
@@ -128,6 +138,7 @@ def install_chococubes():
 def installing_chain():
   install_rust()
   install_bonsai()
+  install_bonsai_libstd()
   install_sugarcubes()
   install_chococubes()
   print(ending_message)

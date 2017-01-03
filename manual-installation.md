@@ -30,6 +30,15 @@ You can verify everything is working by running `bonsai --help` in your terminal
 
 *Alternatively* (without the export), you can run `bonsai` with `cargo run -- --help`.
 
+## Installing Bonsai standard library
+
+It provides several modules to ease the development of Bonsai application.
+
+```sh
+cd libstd # (inside the bonsai repository)
+./install.sh
+```
+
 ## Installing the ChocoCubes runtime
 
 The ChocoCubes runtime has two dependencies: [SugarCubes](http://jeanferdysusini.free.fr/index.php?action=SC) for synchronous and reactive programming and [Choco](http://www.choco-solver.org) for constraint programming.
@@ -42,6 +51,5 @@ The ChocoCubes runtime has two dependencies: [SugarCubes](http://jeanferdysusini
 2. Installing ChocoCubes in the local Maven database:
   ```sh
   cd ChocoCubes/ # (inside the bonsai repository)
-  mvn package
-  mvn install:install-file -DgroupId=bonsai -DartifactId=ChocoCubes -Dversion=1.0 -Dpackaging=jar -Dfile=target/ChocoCubes-1.0-SNAPSHOT.jar
+  ./install.sh
   ```

@@ -21,6 +21,7 @@ pub struct Config
 {
   pub input: PathBuf,
   pub output: PathBuf,
+  pub libs: Vec<PathBuf>,
   pub main_method: Option<String>,
   pub debug: bool
 }
@@ -38,8 +39,13 @@ impl Config
         "-o, --output=[directory] 'Write compiled bonsai files to [directory]. The directory structure of the input project is preserved.'
         --main=[classname]        'Generate a method main in the class [classname] for immediate testing.'
         --debug                   'Generate code with debug facility.'
+        --lib=[directory]...      'Paths to bonsai libraries used inside this project. The code is not compiled to Java so you still have to import the .jar of this library in your project.'
         <input>                   'Root of the bonsai project to compile. All files terminating with the `.bonsai` extension are compiled.'")
       .get_matches();
+
+    let libs: Vec<_> = matches.values_of("lib")
+      .map(|libs| libs.map(PathBuf::from).collect())
+      .unwrap_or(vec![]);
 
     let input = PathBuf::from(matches.value_of("input").unwrap());
     let output = matches.value_of("output")
@@ -49,6 +55,7 @@ impl Config
     let config = Config {
       input: input,
       output: output,
+      libs: libs,
       main_method: matches.value_of("main").map(String::from),
       debug: matches.is_present("debug")
     };
@@ -63,6 +70,9 @@ impl Config
   fn validate(&self) {
     Config::check_is_dir(&self.input, "input", true);
     Config::check_is_dir(&self.output, "output", false);
+    for lib in &self.libs {
+      Config::check_is_dir(lib, "library", true);
+    }
   }
 
   fn check_is_dir(path: &PathBuf, name: &str, must_exist: bool) {
