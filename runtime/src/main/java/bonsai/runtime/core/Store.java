@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.core;
 
-pub use back::generator::generate_runtime;
+// A store is a lattice-based variable with two additional methods: `alloc` and `index` where:
+//  * `alloc` allocates an object in the store and returns its location.
+//  * `index` retrieve an object from a location in the store.
+
+public abstract class Store extends LatticeVar {
+  public abstract Object alloc(Object value);
+  public abstract Object index(Object location);
+}

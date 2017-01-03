@@ -12,8 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.core;
 
-pub use back::generator::generate_runtime;
+public class RInteger implements Restorable
+{
+  private Integer value;
+
+  public RInteger(int value) {
+    this.value = new Integer(value);
+  }
+
+  public Object label() {
+    return new Integer(this.value);
+  }
+
+  public void restore(Object label) {
+    this.value = (Integer) label;
+  }
+
+  public String toString() {
+    return value.toString();
+  }
+}

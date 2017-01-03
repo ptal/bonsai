@@ -12,8 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.core;
 
-pub use back::generator::generate_runtime;
+public enum Spacetime {
+  SingleTime,
+  SingleSpace,
+  WorldLine;
+
+  public String toString() {
+    if (this == SingleTime) {
+      return "single_time";
+    }
+    else if (this == SingleSpace) {
+      return "single_space";
+    }
+    else {
+      return "world_line";
+    }
+  }
+}

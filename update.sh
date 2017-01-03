@@ -1,8 +1,9 @@
 #!/bin/sh
 
 cargo install --force
-cd ChocoCubes/
+cd runtime/
 ./install.sh
 cd ..
-cd stdlib/
+cd libstd/
 ./install.sh
+cd ..

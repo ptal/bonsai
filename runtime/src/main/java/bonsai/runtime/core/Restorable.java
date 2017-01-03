@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.core;
 
-pub use back::generator::generate_runtime;
+public interface Restorable
+{
+  Object label();
+  void restore(Object label);
+}

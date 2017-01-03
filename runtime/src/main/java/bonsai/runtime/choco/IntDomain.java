@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.choco;
 
-pub use back::generator::generate_runtime;
+public class IntDomain {
+  public int lb, ub;
+  public boolean bounded;
+
+  public IntDomain(int lb, int ub) {
+    this(lb, ub, false);
+  }
+
+  public IntDomain(int lb, int ub, boolean bounded) {
+    this.lb = lb;
+    this.ub = ub;
+    this.bounded = bounded;
+  }
+}

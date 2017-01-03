@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.core;
 
-pub use back::generator::generate_runtime;
+public class EntailmentResult extends FlatLattice<Boolean> {
+
+  public static EntailmentResult TRUE = new EntailmentResult(new Boolean(true));
+  public static EntailmentResult FALSE = new EntailmentResult(new Boolean(false));
+  public static EntailmentResult UNKNOWN = new EntailmentResult();
+
+  public EntailmentResult() {
+    super();
+  }
+
+  public EntailmentResult(Boolean b) {
+    super(b);
+  }
+}

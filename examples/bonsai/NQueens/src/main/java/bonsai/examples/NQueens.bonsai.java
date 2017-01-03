@@ -1,4 +1,4 @@
-package benchmark.bonsai;
+package bonsai.examples;
 
 import java.util.*;
 import inria.meije.rc.sugarcubes.*;
@@ -10,6 +10,7 @@ import org.chocosolver.solver.search.strategy.selectors.values.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
+import bonsai.cp.core.*;
 
 public class NQueens implements Executable
 {
@@ -17,59 +18,39 @@ public class NQueens implements Executable
   world_line ConstraintStore constraints = bot;
   single_time FlatLattice<Consistent> consistent = bot;
 
-  private static int n = 14;
+  private int n;
+
+  public NQueens(int n) {
+    this.n = n;
+  }
+
+  public NQueens() {
+    this.n = 8;
+  }
 
   proc execute() {
     model();
     engine();
+    ~printVariables("Solution", consistent, domains);
   }
 
   proc model() {
     ~modelChoco(domains, constraints);
+    ~printModel("After initialization", consistent, domains);
   }
 
   proc engine() {
+    module Branching branching = Branching.firstFailMiddle(domains.model());
+    module Propagation propagation = new Propagation();
+    module OneSolution oneSolution = new OneSolution();
     par
-    || first_fail_middle();
-    || propagation();
-    || all_solution();
+    || run branching.split();
+    || run propagation;
+    || run oneSolution;
     end
   }
 
-  proc first_fail_middle() {
-    single_space FirstFail var = new FirstFail(domains.model());
-    single_space IntDomainMin val = new IntDomainMin();
-    loop {
-      when consistent |= Consistent.Unknown {
-        single_time IntVar x = var.getVariable(domains.vars());
-        single_time Integer min = val.selectValue(x);
-        space
-        || constraints <- x.eq(min);
-        || constraints <- x.ne(min);
-        end
-      }
-      pause;
-    }
-  }
-
-  proc propagation() {
-    loop {
-      consistent <- PropagatorEngine.propagate(domains, constraints);
-      pause;
-    }
-  }
-
-  proc all_solution() {
-    loop {
-      when consistent |= Consistent.True {
-        ~incSolution();
-        ~printNumberSolution();
-      }
-      pause;
-    }
-  }
-
-  private static void modelChoco(VarStore domains,
+  private void modelChoco(VarStore domains,
     ConstraintStore constraints)
   {
     IntVar[] vars = new IntVar[n];
@@ -107,14 +88,5 @@ public class NQueens implements Executable
       System.out.print(v + ", ");
     }
     System.out.println("]");
-  }
-
-  private static void printNumberSolution() {
-    System.out.println("Number of solutions: " + sol);
-  }
-
-  private static int sol = 0;
-  private static void incSolution() {
-    sol = sol + 1;
   }
 }

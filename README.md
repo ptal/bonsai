@@ -8,7 +8,7 @@
 Bonsai is a programming language on top of Java inspired by synchronous programming and aims at be used to solve Constraint Satisfaction Problems (CSP). The project is decomposed into two parts:
 
 * *Bonsai* is the compiler of the Java extension and is written in Rust.
-* *ChocoCubes* is the Java runtime used by the code compiled by bonsai.
+* *Bonsai runtime* is the Java runtime used by the code compiled by bonsai.
 
 # Getting Started
 
@@ -21,7 +21,7 @@ Bonsai is a programming language on top of Java inspired by synchronous programm
 
 ## Installation
 
-You need to install both the compiler and the ChocoCubes runtime.
+You need to install both the compiler and the runtime using the `setup.py` script.
 
 ```sh
 git clone https://github.com/ptal/bonsai.git
@@ -55,43 +55,12 @@ Remove the following export line in your profile:
 
 # Example
 
-The following command will compile and execute the NQueens problem as described in the file [NQueens.bonsai.java](examples/bonsai/NQueens/src/main/java/chococubes/example/NQueens.bonsai.java):
+The following command will compile and execute the NQueens problem as described in the file [NQueens.bonsai.java](examples/bonsai/NQueens/src/main/java/bonsai/example/NQueens.bonsai.java):
 
 ```sh
 cd examples/bonsai/NQueens
 mvn compile
-mvn exec:java -Dexec.mainClass="chococubes.example.NQueens"
+mvn exec:java -Dexec.mainClass="bonsai.examples.NQueens"
 ```
 
-Copy this project and create as much bonsai file (`.bonsai.java`) as you want. For each file created add an `execution` section in your `pom.xml`:
-
-```xml
-<plugin>
-  <groupId>org.codehaus.mojo</groupId>
-  <artifactId>exec-maven-plugin</artifactId>
-  <version>1.5.0</version>
-  <executions>
-    <execution>
-      <id>SomeFile.bonsai.java</id>
-      ...
-    </execution>
-    <!-- Add an execution section as follow: -->
-    <execution>
-      <id>NQueens.bonsai.java</id>
-      <phase>generate-sources</phase>
-      <goals>
-        <goal>exec</goal>
-      </goals>
-      <configuration>
-        <executable>bonsai</executable>
-        <arguments>
-          <argument>--main</argument>
-          <argument>-o ${project.build.directory}/generated-sources/bonsai/NQueens.java</argument>
-          <argument>${project.build.sourceDirectory}/chococubes/example/NQueens.bonsai.java</argument>
-        </arguments>
-      </configuration>
-    </execution>
-  </executions>
-```
-
-Do not forget to modify the `<id>` and the names of the files in the `<argument>`.
+Copy this project and create as much bonsai file (`.bonsai.java`) as you want. Do not forget to modify the `<id>` and the names of the files in the `<argument>`. Also, note that it includes the Bonsai standard library (in `/libstd`), you can modify its path in `<argument>--lib=...</argument>`.

@@ -12,8 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.choco;
 
-pub use back::generator::generate_runtime;
+//  Lattice represented by this class is:
+//        Top
+//     /   |   \
+//    /    |    \
+// True Unknown False
+//     \   |    /
+//      \  |   /
+//       Bottom
+
+public enum Consistent {
+  Unknown,
+  True,
+  False;
+
+  public String toString() {
+    switch(this) {
+      case Unknown: return "unknown";
+      case True: return "true";
+      default: return "false";
+    }
+  }
+}

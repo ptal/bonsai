@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>chococubes.example</groupId>
-  <artifactId>NQueens</artifactId>
+  <groupId>bonsai</groupId>
+  <artifactId>examples</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
   <name>NQueens</name>
@@ -31,7 +31,7 @@
     </dependency>
     <dependency>
       <groupId>bonsai</groupId>
-      <artifactId>ChocoCubes</artifactId>
+      <artifactId>runtime</artifactId>
       <version>1.0</version>
     </dependency>
     <dependency>
@@ -71,7 +71,7 @@
                 <argument>--main=NQueens</argument>
                 <argument>--lib=../../../libstd/src/</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
-                <argument>${project.build.sourceDirectory}/chococubes</argument>
+                <argument>${project.build.sourceDirectory}</argument>
               </arguments>
             </configuration>
           </execution>

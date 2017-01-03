@@ -1,6 +1,6 @@
 # Manual installation procedure
 
-Step-by-step installation of the bonsai compiler and its runtime ChocoCubes. Before attempting the manual installation, you should try the `setup.py` script as described in [README.md](README.md).
+Step-by-step installation of the bonsai compiler and its runtime. Before attempting the manual installation, you should try the `setup.py` script as described in [README.md](README.md).
 
 ## Prerequisites
 
@@ -39,17 +39,17 @@ cd libstd # (inside the bonsai repository)
 ./install.sh
 ```
 
-## Installing the ChocoCubes runtime
+## Installing the Bonsai runtime
 
-The ChocoCubes runtime has two dependencies: [SugarCubes](http://jeanferdysusini.free.fr/index.php?action=SC) for synchronous and reactive programming and [Choco](http://www.choco-solver.org) for constraint programming.
+The Bonsai runtime has two dependencies: [SugarCubes](http://jeanferdysusini.free.fr/index.php?action=SC) for synchronous and reactive programming and [Choco](http://www.choco-solver.org) for constraint programming.
 
 1. Installing SugarCubes in the local Maven database:
   ```sh
   curl http://jeanferdysusini.free.fr/v4.0/SugarCubesv4.0.0a5.jar > /tmp/SugarCubesv4.0.0a5.jar
   mvn install:install-file -DgroupId=inria.meije.rc -DartifactId=SugarCubes -Dversion=4.0.0a5 -Dpackaging=jar -Dfile=/tmp/SugarCubesv4.0.0a5.jar
   ```
-2. Installing ChocoCubes in the local Maven database:
+2. Installing Bonsai runtime in the local Maven database:
   ```sh
-  cd ChocoCubes/ # (inside the bonsai repository)
+  cd runtime/ # (inside the bonsai repository)
   ./install.sh
   ```

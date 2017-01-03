@@ -8,9 +8,9 @@ import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.nary.alldifferent.*;
 import org.chocosolver.solver.search.strategy.selectors.variables.*;
 import org.chocosolver.solver.search.strategy.selectors.values.*;
-import bonsai.chococubes.core.*;
-import bonsai.chococubes.choco.*;
-import bonsai.chococubes.sugarcubes.*;
+import bonsai.runtime.core.*;
+import bonsai.runtime.choco.*;
+import bonsai.runtime.sugarcubes.*;
 
 public class LatinSquare implements Executable
 {

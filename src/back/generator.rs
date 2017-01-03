@@ -19,7 +19,7 @@ use back::code_formatter::*;
 use back::context::*;
 use std::collections::HashSet;
 
-pub fn generate_chococubes(module: JModule, config: &Config) -> Partial<String> {
+pub fn generate_runtime(module: JModule, config: &Config) -> Partial<String> {
   let context = Context::new(module.clone());
   let mut fmt = CodeFormatter::new();
   fmt.push_block(module.host.header);

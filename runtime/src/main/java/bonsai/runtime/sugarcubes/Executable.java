@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod code_formatter;
-mod context;
-mod generator;
+package bonsai.runtime.sugarcubes;
 
-pub use back::generator::generate_runtime;
+import java.util.*;
+import bonsai.runtime.core.*;
+import inria.meije.rc.sugarcubes.implementation.*;
+import inria.meije.rc.sugarcubes.*;
+
+public interface Executable
+{
+  public Program execute();
+}

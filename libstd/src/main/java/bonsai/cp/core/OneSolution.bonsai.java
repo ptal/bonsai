@@ -3,9 +3,9 @@ package bonsai.cp.core;
 import java.util.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
-import bonsai.chococubes.core.*;
-import bonsai.chococubes.choco.*;
-import bonsai.chococubes.sugarcubes.*;
+import bonsai.runtime.core.*;
+import bonsai.runtime.choco.*;
+import bonsai.runtime.sugarcubes.*;
 
 public class OneSolution implements Executable
 {
