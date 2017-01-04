@@ -17,12 +17,12 @@ There is a bug where `bonsai` do not link statically to the standard library, th
 
 1. Linux:
   ```sh
-  echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:~/.multirust/toolchains/nightly-2016-10-21-x86_64-unknown-linux-gnu/lib" >> ~/.bashrc
+  echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:~/.multirust/toolchains/nightly-2016-12-28-x86_64-unknown-linux-gnu/lib" >> ~/.bashrc
   source ~/.bashrc
   ```
 2. MacOSX:
   ```sh
-  echo "export DYLD_LIBRARY_PATH=\$DYLD_LIBRARY_PATH:~/.multirust/toolchains/nightly-2016-10-21-x86_64-apple-darwin/lib" >> ~/.bash_profile
+  echo "export DYLD_LIBRARY_PATH=\$DYLD_LIBRARY_PATH:~/.multirust/toolchains/nightly-2016-12-28-x86_64-apple-darwin/lib" >> ~/.bash_profile
   source ~/.bash_profile
   ```
 

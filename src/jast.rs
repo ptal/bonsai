@@ -139,4 +139,12 @@ impl JavaCall {
       args: vec![]
     }
   }
+
+  pub fn attribute(name: String) -> Self {
+    JavaCall {
+      property: name,
+      is_attribute: true,
+      args: vec![]
+    }
+  }
 }

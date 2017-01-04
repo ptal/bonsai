@@ -14,6 +14,7 @@
 
 use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JVisibility,JavaCall};
 use driver::module_file::ModuleFile;
+use std::fmt::{Display, Error, Formatter};
 
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
@@ -100,7 +101,7 @@ pub enum Stmt {
   Space(Vec<Stmt>),
   Let(LetStmt),
   When(EntailmentRel, Box<Stmt>),
-  Tell(Var, Expr),
+  Tell(StreamVar, Expr),
   Pause,
   Trap(String, Box<Stmt>),
   Exit(String),
@@ -121,32 +122,33 @@ impl Stmt {
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Stmt::Tell(Var::simple(String::from("x")), Expr::example())
+    Stmt::Tell(StreamVar::example(), Expr::example())
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RunExpr {
-  pub module_name: String,
+  pub module_path: VarPath,
   pub process: String
 }
 
 impl RunExpr {
-  pub fn main(module_name: String) -> Self {
-    RunExpr::new(module_name, String::from("execute"))
+  pub fn main(module_path: VarPath) -> Self {
+    RunExpr::new(module_path, String::from("execute"))
   }
 
-  pub fn new(module_name: String, process: String) -> Self {
+  pub fn new(module_path: VarPath, process: String) -> Self {
     RunExpr {
-      module_name: module_name,
+      module_path: module_path,
       process: process
     }
   }
 
-  pub fn to_expr(self) -> Expr {
-    Expr::JavaObjectCall(
-      self.module_name,
-      vec![JavaCall::empty_method(self.process)])
+  pub fn to_expr(mut self) -> Expr {
+    let head_var = self.module_path.properties.remove(0);
+    let mut jcalls = self.module_path.to_java_calls();
+    jcalls.push(JavaCall::empty_method(self.process));
+    Expr::JavaObjectCall(head_var, jcalls)
   }
 }
 
@@ -185,12 +187,21 @@ impl LetBinding {
       Module(base) => base.binding
     }
   }
+  pub fn base_mut<'a>(&'a mut self) -> &'a mut LetBindingBase {
+    use self::LetBinding::*;
+    match self {
+      &mut InStore(ref mut base) => &mut base.binding,
+      &mut Spacetime(ref mut base) => &mut base.binding,
+      &mut Module(ref mut base) => &mut base.binding
+    }
+  }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetBindingBase {
   pub name: String,
   pub ty: JType,
+  pub is_module_attr: bool,
   pub expr: Expr
 }
 
@@ -200,6 +211,7 @@ impl LetBindingBase {
     LetBindingBase {
       name: name,
       ty: ty,
+      is_module_attr: false,
       expr: expr
     }
   }
@@ -257,11 +269,11 @@ impl LetBindingSpacetime {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetBindingInStore {
   pub binding: LetBindingBase,
-  pub store: String
+  pub store: VarPath
 }
 
 impl LetBindingInStore {
-  pub fn new(binding: LetBindingBase, store: String) -> Self {
+  pub fn new(binding: LetBindingBase, store: VarPath) -> Self {
     LetBindingInStore {
       binding: binding,
       store: store
@@ -275,35 +287,70 @@ pub struct EntailmentRel {
   pub right: Expr
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Var {
-  pub name: String,
-  pub args: Vec<Var>
+/// A variable path can be `x`, `m.x`, `m.m2.y`,... where `m` and `m2` must be checked to be module.
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct VarPath {
+  pub properties: Vec<String>
 }
 
-impl Var {
-  pub fn simple(name: String) -> Self {
-    Var {
-      name: name,
-      args: vec![]
+impl VarPath {
+  pub fn new(properties: Vec<String>) -> Self {
+    VarPath {
+      properties: properties
     }
+  }
+  pub fn to_java_calls(&self) -> Vec<JavaCall> {
+    self.properties.clone().into_iter()
+      .map(|p| JavaCall::attribute(p))
+      .collect()
+  }
+
+  pub fn name(&self) -> String {
+    self.properties.last().unwrap().clone()
+  }
+}
+
+impl Display for VarPath {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    let mut i = 0;
+    while i < self.properties.len() - 1 {
+      fmt.write_fmt(format_args!("{}.", self.properties[i]))?;
+      i += 1;
+    }
+    fmt.write_str(self.properties[i].as_str())
   }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct StreamVar {
-  pub name: String,
+  pub path: VarPath,
   pub past: usize,
   pub args: Vec<StreamVar>
 }
 
 impl StreamVar {
-  pub fn simple(name: String) -> Self {
+  pub fn new(path: VarPath, args: Vec<StreamVar>, past: usize) -> Self {
     StreamVar {
-      name: name,
-      past: 0,
-      args: vec![]
+      path: path,
+      past: past,
+      args: args
     }
+  }
+  pub fn simple(name: String) -> Self {
+    Self::present(VarPath::new(vec![name]), vec![])
+  }
+
+  pub fn present(path: VarPath, args: Vec<StreamVar>) -> Self {
+    Self::new(path, args, 0)
+  }
+
+  pub fn name(&self) -> String {
+    self.path.name()
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Self::simple(String::from("x"))
   }
 }
 

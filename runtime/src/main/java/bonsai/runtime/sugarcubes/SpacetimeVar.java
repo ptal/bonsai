@@ -22,16 +22,18 @@ import inria.meije.rc.sugarcubes.implementation.*;
 public class SpacetimeVar extends UnaryInstruction
 {
   protected String name;
+  protected boolean isModuleAttr;
   protected Spacetime spacetime;
   protected Function<SpaceEnvironment, Object> initValue;
   protected Object value;
   private boolean firstActivation;
 
-  public SpacetimeVar(String name, Spacetime spacetime,
+  public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
     super(body);
     this.name = name;
+    this.isModuleAttr = isModuleAttr;
     this.spacetime = spacetime;
     this.initValue = initValue;
     this.firstActivation = true;
@@ -42,12 +44,16 @@ public class SpacetimeVar extends UnaryInstruction
   }
 
   public Instruction copy() {
-    return new SpacetimeVar(name, spacetime, initValue, body.copy());
+    return new SpacetimeVar(name, isModuleAttr, spacetime, initValue, body.copy());
   }
 
   public Instruction prepareFor(Environment env) {
-    SpacetimeVar copy = new SpacetimeVar(name, spacetime, initValue, body.prepareFor(env));
+    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime, initValue, body.prepareFor(env));
     copy.body.setParent(copy);
+    /// If this variable is a module attribute, we must initialise it now in case it is used by parallel process before being run, consider `run o || when o.attr`. Also, it is safe to initialise it now because it should not use the environment.
+    if (isModuleAttr) {
+      firstActivation((SpaceEnvironment) env);
+    }
     return copy;
   }
 

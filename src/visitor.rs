@@ -43,7 +43,7 @@ pub trait Visitor<H, R>
     self.visit_stmt(child)
   }
 
-  fn visit_tell(&mut self, _var: Var, _expr: Expr) -> R;
+  fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) -> R;
   fn visit_pause(&mut self) -> R;
 
   fn visit_trap(&mut self, _name: String, child: Stmt) -> R {
@@ -155,7 +155,7 @@ macro_rules! unit_visitor_impl {
     }
   );
   (binding_base) => (fn visit_binding(&mut self, _binding: LetBindingBase) {});
-  (tell) => (fn visit_tell(&mut self, _var: Var, _expr: Expr) {});
+  (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
   (pause) => (fn visit_pause(&mut self) {});
   (exit) => (fn visit_exit(&mut self, _name: String) {});
   (proc_call) => (fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {});

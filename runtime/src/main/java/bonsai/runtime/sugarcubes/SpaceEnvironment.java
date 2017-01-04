@@ -34,7 +34,7 @@ public class SpaceEnvironment extends Clock {
     Program body)
   {
     super(clockID, anInternalIdentifierGenerator, body);
-    vars = new HashMap();
+    // vars = new HashMap(); // FIXME, cf. declareVar
     futures = new ArrayDeque();
     // branches = new ArrayList(); // FIXME, cf. registerSpaceBranch
     activatedBranches = new ArrayList();
@@ -128,6 +128,10 @@ public class SpaceEnvironment extends Clock {
   }
 
   public void declareVar(String name, SpacetimeVar v) {
+    // FIXME: similar problem than with `registerSpaceBranch`.
+    if (vars == null) {
+      vars = new HashMap();
+    }
     vars.put(name, v);
   }
 

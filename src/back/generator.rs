@@ -129,7 +129,7 @@ fn generate_closure(fmt: &mut CodeFormatter, context: &Context, return_expr: boo
       let ty = context.type_of_var(&var);
       fmt.push_line(&format!(
         "{} {} = ({}) env.var(\"{}\");",
-        ty, var.name, ty, var.name));
+        ty, var.name(), ty, var.name()));
     }
     if return_expr {
       fmt.push("return ");
@@ -233,7 +233,7 @@ fn generate_literal(fmt: &mut CodeFormatter, lit: String) {
 }
 
 fn generate_stream_var(fmt: &mut CodeFormatter, var: StreamVar) {
-  fmt.push(&var.name);
+  fmt.push(&var.name());
 }
 
 fn generate_bottom(fmt: &mut CodeFormatter, ty: JType) {
@@ -322,8 +322,8 @@ fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
   binding: LetBindingBase, spacetime: Spacetime)
 {
   let spacetime = generate_spacetime(spacetime);
-  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, ",
-    binding.name, spacetime));
+  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, {}, ",
+    binding.name, binding.is_module_attr, spacetime));
   generate_closure(fmt, context, true, binding.expr);
 }
 
@@ -337,15 +337,17 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
 }
 
 fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
-  binding: LetBindingBase, store: String) {
+  binding: LetBindingBase, store: VarPath)
+{
   fmt.push(&format!("new LocationVar(\"{}\", \"{}\", ",
-    binding.name, store));
+    binding.name, store.name()));
   generate_closure(fmt, context, true, binding.expr);
 }
 
 fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: EntailmentRel) {
-  fmt.push(&format!("new EntailmentConfig(\"{}\", ",
-    entailment.left.name));
+  fmt.push("new EntailmentConfig(\"");
+  generate_stream_var(fmt, entailment.left);
+  fmt.push("\", ");
   generate_closure(fmt, context, true, entailment.right);
   fmt.push(")");
 }
@@ -370,8 +372,10 @@ fn generate_module_call(fmt: &mut CodeFormatter, context: &Context, run_expr: Ru
   fmt.push(")");
 }
 
-fn generate_tell(fmt: &mut CodeFormatter, context: &Context, var: Var, expr: Expr) {
-  fmt.push(&format!("new Tell(\"{}\", ", var.name));
+fn generate_tell(fmt: &mut CodeFormatter, context: &Context, var: StreamVar, expr: Expr) {
+  fmt.push("new Tell(\"");
+  generate_stream_var(fmt, var);
+  fmt.push("\", ");
   generate_closure(fmt, context, true, expr);
   fmt.push(")");
 }

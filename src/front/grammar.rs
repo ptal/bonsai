@@ -51,8 +51,9 @@ grammar! bonsai {
   fn make_bottom_expr() -> Option<Expr> { None }
 
   fn make_module_attribute(visibility: Option<JVisibility>, is_channel: Option<()>,
-    binding: LetBinding) -> Item
+    mut binding: LetBinding) -> Item
   {
+    binding.base_mut().is_module_attr = true;
     Item::Attribute(
       ModuleAttribute {
         visibility: visibility.unwrap_or(JVisibility::Private),
@@ -190,7 +191,7 @@ grammar! bonsai {
   let_binding
     = spacetime let_binding_base > make_spacetime_binding
     / MODULE let_binding_base > make_module_binding
-    / java_ty identifier EQ identifier LEFT_ARROW expr SEMI_COLON > make_let_in_store_binding
+    / java_ty identifier EQ var_path LEFT_ARROW expr SEMI_COLON > make_let_in_store_binding
 
   let_binding_base = java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_let_binding
 
@@ -213,7 +214,7 @@ grammar! bonsai {
   }
 
   fn make_let_in_store_binding(loc_ty: JType, location: String,
-    store: String, expr: Expr) -> LetBinding
+    store: VarPath, expr: Expr) -> LetBinding
   {
     let binding = LetBindingBase::new(location, loc_ty, expr);
     LetBinding::InStore(
@@ -244,7 +245,7 @@ grammar! bonsai {
     Stmt::FnCall(java_call)
   }
 
-  fn make_tell(var: Var, expr: Expr) -> Stmt {
+  fn make_tell(var: StreamVar, expr: Expr) -> Stmt {
     Stmt::Tell(var, expr)
   }
 
@@ -257,15 +258,17 @@ grammar! bonsai {
   }
 
   run_expr
-    = identifier DOT identifier LPAREN RPAREN > make_run_expr
-    / identifier > make_identifier_run
+    = var_path DOT identifier parens > make_run_expr
+    / var_path > make_identifier_run
 
-  fn make_identifier_run(module: String) -> RunExpr {
-    RunExpr::main(module)
+  parens = LPAREN RPAREN
+
+  fn make_identifier_run(module_path: VarPath) -> RunExpr {
+    RunExpr::main(module_path)
   }
 
-  fn make_run_expr(module: String, process: String) -> RunExpr {
-    RunExpr::new(module, process)
+  fn make_run_expr(module_path: VarPath, process: String) -> RunExpr {
+    RunExpr::new(module_path, process)
   }
 
   expr
@@ -365,33 +368,28 @@ grammar! bonsai {
     }
   }
 
-  stream_var = PRE* identifier (LBRACKET list_stream_var RBRACKET)? > make_stream_var
+  var_path = identifier (DOT identifier !parens)* > make_var_path
+
+  fn make_var_path(first: String, rest: Vec<String>) -> VarPath {
+    VarPath::new(extend_front(first, rest))
+  }
+
+  stream_var = PRE* var_path (LBRACKET list_stream_var RBRACKET)? > make_stream_var
   list_stream_var = stream_var (COMMA stream_var)* > concat_list_stream_var
 
-  fn make_stream_var(past: Vec<()>, name: String, args: Option<Vec<StreamVar>>) -> StreamVar {
-    StreamVar {
-      name: name,
-      past: past.len(),
-      args: args.unwrap_or(vec![])
-    }
+  fn make_stream_var(past: Vec<()>, var_path: VarPath, args: Option<Vec<StreamVar>>) -> StreamVar {
+    StreamVar::new(var_path, args.unwrap_or(vec![]), past.len())
   }
 
   fn concat_list_stream_var(first: StreamVar, rest: Vec<StreamVar>) -> Vec<StreamVar> {
     extend_front(first, rest)
   }
 
-  var = identifier (LBRACKET list_var RBRACKET)? > make_var
-  list_var = var (COMMA var)* > concat_list_var
+  var = var_path (LBRACKET list_var RBRACKET)? > make_var
+  list_var = var (COMMA var)* > concat_list_stream_var
 
-  fn make_var(name: String, args: Option<Vec<Var>>) -> Var {
-    Var {
-      name: name,
-      args: args.unwrap_or(vec![])
-    }
-  }
-
-  fn concat_list_var(first: Var, rest: Vec<Var>) -> Vec<Var> {
-    extend_front(first, rest)
+  fn make_var(var_path: VarPath, args: Option<Vec<StreamVar>>) -> StreamVar {
+    StreamVar::present(var_path, args.unwrap_or(vec![]))
   }
 
   spacetime

@@ -70,7 +70,7 @@ fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   let mut seq_branches: Vec<_> = channel_attrs.into_iter()
     .map(|binding| binding.base())
     .filter(|binding| !binding.expr.is_bottom())
-    .map(|binding| Stmt::Tell(Var::simple(binding.name), binding.expr))
+    .map(|binding| Stmt::Tell(StreamVar::simple(binding.name), binding.expr))
     .collect();
   seq_branches.push(body);
   stmts.push(Stmt::Seq(seq_branches));

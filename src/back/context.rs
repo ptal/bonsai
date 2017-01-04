@@ -72,8 +72,8 @@ impl Context {
   }
 
   pub fn type_of_var(&self, var: &StreamVar) -> JType {
-    self.name_to_bindings.get(&var.name)
-      .expect(&format!("Undeclared variable `{}`.", var.name))
+    self.name_to_bindings.get(&var.name())
+      .expect(&format!("Undeclared variable `{}`.", var.name()))
       .ty.clone()
   }
 
