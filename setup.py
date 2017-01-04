@@ -2,7 +2,7 @@ import os
 import platform
 import subprocess
 
-rust_nightly_version = "nightly-2016-10-21"
+rust_nightly_version = "nightly-2016-12-28"
 sugarcubes_jar = "/tmp/SugarCubesv4.0.0a5.jar"
 bonsai_runtime_jar = "target/runtime-1.0-SNAPSHOT.jar"
 bonsai_runtime_src = "runtime/"
