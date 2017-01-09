@@ -151,7 +151,11 @@ public class SpaceEnvironment extends Clock {
         return value.get();
       }
     }
-    return vars.get(name).value();
+    SpacetimeVar v = vars.get(name);
+    if (v == null) {
+      throw new RuntimeException("The variable " + name + " is not registered in the environment.");
+    }
+    return v.value();
   }
 
   public boolean isEmpty() {

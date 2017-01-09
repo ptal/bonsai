@@ -44,8 +44,9 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
       Item::JavaConstructor(decl) => module.host.java_constructors.push(decl)
     }
   }
-  let mut exec_proc = executable_proc.expect(
-    "Missing process `execute`. It is the entry point of the reactive module.");
+  let mut exec_proc = executable_proc.expect(&format!(
+    "Missing process `execute` in `{}`. It is the entry point of the reactive module.",
+    module.file.mod_name()));
   exec_proc.body = functionalize_attrs(module.attributes.clone(), exec_proc.body);
   module.processes.insert(0, exec_proc);
   Partial::Value(module)

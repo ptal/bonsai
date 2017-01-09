@@ -71,13 +71,17 @@ impl<H: Clone> MatchingChannel<H> {
   fn cmp_spacetime_binding(&self, b1: LetBindingSpacetime, b2: LetBindingSpacetime,
     mod_a_name: String, mod_b_name: String)
   {
+    let msg_err = |specifier| panic!(
+      "{} specifier must match the one of the channel variable.\
+       It occurs in module {} when instantiating module {}.",
+       specifier, mod_a_name, mod_b_name);
     if b1.spacetime != b2.spacetime {
-      panic!(
-        "Spacetime specifier must match the one of the channel variable.\
-         It occurs in module {} when instantiating module {}.",
-         mod_a_name, mod_b_name);
+      msg_err("Spacetime");
     }
-    self.cmp_base_binding(b1.binding, b2.binding, mod_a_name, mod_b_name);
+    if b1.is_transient != b2.is_transient {
+      msg_err("Transient");
+    }
+    self.cmp_base_binding(b1.binding, b2.binding, mod_a_name.clone(), mod_b_name.clone());
   }
 
   fn cmp_base_binding(&self, b1: LetBindingBase, b2: LetBindingBase,

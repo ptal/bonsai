@@ -189,7 +189,7 @@ grammar! bonsai {
   }
 
   let_binding
-    = spacetime let_binding_base > make_spacetime_binding
+    = spacetime TRANSIENT? let_binding_base > make_spacetime_binding
     / MODULE let_binding_base > make_module_binding
     / java_ty identifier EQ var_path LEFT_ARROW expr SEMI_COLON > make_let_in_store_binding
 
@@ -205,8 +205,10 @@ grammar! bonsai {
     LetBindingBase::new(var_name, var_ty, expr)
   }
 
-  fn make_spacetime_binding(spacetime: Spacetime, binding: LetBindingBase) -> LetBinding {
-    LetBinding::Spacetime(LetBindingSpacetime::new(binding, spacetime))
+  fn make_spacetime_binding(spacetime: Spacetime, is_transient: Option<()>,
+    binding: LetBindingBase) -> LetBinding
+  {
+    LetBinding::Spacetime(LetBindingSpacetime::new(binding, spacetime, is_transient.is_some()))
   }
 
   fn make_module_binding(binding: LetBindingBase) -> LetBinding {
@@ -565,6 +567,9 @@ mod test
         channel single_time int c1 = bot;
         protected channel single_space int c2 = 0;
         channel world_line int c3 = bot;
+
+        channel single_time transient int t1 = bot;
+        single_space transient int t2 = bot;
       }
      "#.into_state());
     let result = state.into_result();

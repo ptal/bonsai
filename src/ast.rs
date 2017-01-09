@@ -248,21 +248,23 @@ impl LetBindingModule {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetBindingSpacetime {
   pub binding: LetBindingBase,
-  pub spacetime: Spacetime
+  pub spacetime: Spacetime,
+  pub is_transient: bool,
 }
 
 impl LetBindingSpacetime {
-  pub fn new(binding: LetBindingBase, sp: Spacetime) -> Self
+  pub fn new(binding: LetBindingBase, sp: Spacetime, is_transient: bool) -> Self
   {
     LetBindingSpacetime {
       binding: binding,
-      spacetime: sp
+      spacetime: sp,
+      is_transient: is_transient,
     }
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    LetBindingSpacetime::new(LetBindingBase::example(), Spacetime::example())
+    LetBindingSpacetime::new(LetBindingBase::example(), Spacetime::example(), false)
   }
 }
 

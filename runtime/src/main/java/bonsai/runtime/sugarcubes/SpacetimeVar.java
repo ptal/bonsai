@@ -23,18 +23,20 @@ public class SpacetimeVar extends UnaryInstruction
 {
   protected String name;
   protected boolean isModuleAttr;
+  protected boolean isTransient;
   protected Spacetime spacetime;
   protected Function<SpaceEnvironment, Object> initValue;
   protected Object value;
   private boolean firstActivation;
 
-  public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
+  public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime, Boolean isTransient,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
     super(body);
     this.name = name;
     this.isModuleAttr = isModuleAttr;
     this.spacetime = spacetime;
+    this.isTransient = isTransient;
     this.initValue = initValue;
     this.firstActivation = true;
   }
@@ -44,11 +46,11 @@ public class SpacetimeVar extends UnaryInstruction
   }
 
   public Instruction copy() {
-    return new SpacetimeVar(name, isModuleAttr, spacetime, initValue, body.copy());
+    return new SpacetimeVar(name, isModuleAttr, spacetime, isTransient, initValue, body.copy());
   }
 
   public Instruction prepareFor(Environment env) {
-    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime, initValue, body.prepareFor(env));
+    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime, isTransient, initValue, body.prepareFor(env));
     copy.body.setParent(copy);
     /// If this variable is a module attribute, we must initialise it now in case it is used by parallel process before being run, consider `run o || when o.attr`. Also, it is safe to initialise it now because it should not use the environment.
     if (isModuleAttr) {
@@ -65,6 +67,7 @@ public class SpacetimeVar extends UnaryInstruction
     return res;
   }
 
+  /// If the current var is transient, we reinitialized its value at each step. We need `beginningInstant` because `firstActivation` is only relevant to the scope or the spacetime attribute, not the current instant.
   public void firstActivation(SpaceEnvironment env) {
     if (firstActivation) {
       firstActivation = false;
@@ -73,6 +76,7 @@ public class SpacetimeVar extends UnaryInstruction
     }
   }
 
+  /// Check if the variable exit its scope.
   public void lastActivation(SpaceEnvironment env, byte res) {
     if (TERM == res || EXCP == res) {
       firstActivation = true;
@@ -96,7 +100,7 @@ public class SpacetimeVar extends UnaryInstruction
     if (spacetime == Spacetime.WorldLine) {
       snapshot.restoreWorldLineVar(name, value);
     }
-    else if (spacetime == Spacetime.SingleTime) {
+    if (spacetime == Spacetime.SingleTime || isTransient) {
       if (!firstActivation) {
         value = initValue.apply(env);
       }

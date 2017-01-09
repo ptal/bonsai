@@ -14,9 +14,9 @@ import bonsai.cp.core.*;
 
 public class NQueens implements Executable
 {
-  world_line VarStore domains = bot;
-  world_line ConstraintStore constraints = bot;
-  single_time FlatLattice<Consistent> consistent = bot;
+  private world_line VarStore domains = bot;
+  private world_line ConstraintStore constraints = bot;
+  private single_time FlatLattice<Consistent> consistent = bot;
 
   private int n;
 
@@ -30,6 +30,7 @@ public class NQueens implements Executable
 
   public proc execute() {
     model();
+    module Statistics statistics = new Statistics();
     trap FoundSolution {
       engine();
     }

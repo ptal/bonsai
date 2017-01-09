@@ -310,8 +310,8 @@ fn generate_space(fmt: &mut CodeFormatter, context: &Context, branches: Vec<Stmt
 fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
   match let_decl.binding {
     LetBinding::InStore(decl) => generate_let_in_store(fmt, context, decl.binding, decl.store),
-    LetBinding::Spacetime(decl) => generate_spacetime_binding(fmt, context, decl.binding, decl.spacetime),
-    LetBinding::Module(decl) => generate_spacetime_binding(fmt, context, decl.binding, Spacetime::SingleSpace)
+    LetBinding::Spacetime(decl) => generate_spacetime_binding(fmt, context, decl.binding, decl.spacetime, decl.is_transient),
+    LetBinding::Module(decl) => generate_spacetime_binding(fmt, context, decl.binding, Spacetime::SingleSpace, false)
   }
   fmt.terminate_line(",");
   generate_statement(fmt, context, *let_decl.body);
@@ -319,11 +319,11 @@ fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
 }
 
 fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
-  binding: LetBindingBase, spacetime: Spacetime)
+  binding: LetBindingBase, spacetime: Spacetime, is_transient: bool)
 {
   let spacetime = generate_spacetime(spacetime);
-  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, {}, ",
-    binding.name, binding.is_module_attr, spacetime));
+  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, {}, {}, ",
+    binding.name, binding.is_module_attr, spacetime, is_transient));
   generate_closure(fmt, context, true, binding.expr);
 }
 
