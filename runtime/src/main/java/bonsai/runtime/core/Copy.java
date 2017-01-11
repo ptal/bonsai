@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,27 +14,7 @@
 
 package bonsai.runtime.core;
 
-public class RInteger implements Restorable, Copy<RInteger>
+public interface Copy<T>
 {
-  private Integer value;
-
-  public RInteger(int value) {
-    this.value = new Integer(value);
-  }
-
-  public Object label() {
-    return copy();
-  }
-
-  public void restore(Object label) {
-    this.value = (Integer) label;
-  }
-
-  public RInteger copy() {
-    return new RInteger(this.value);
-  }
-
-  public String toString() {
-    return value.toString();
-  }
+  T copy();
 }

@@ -16,8 +16,8 @@ package bonsai.runtime.core;
 
 import java.util.Optional;
 
-public class RFlatLattice<T extends Restorable> extends FlatLattice<T>
-  implements Restorable
+public class RFlatLattice<T extends Restorable & Copy<T>> extends FlatLattice<T>
+  implements Restorable, Copy<RFlatLattice<T>>
 {
   public RFlatLattice(T value) {
     super(value);
@@ -27,13 +27,9 @@ public class RFlatLattice<T extends Restorable> extends FlatLattice<T>
     super();
   }
 
-  // public static <E extends Restorable> RFlatLattice<E> bottom() {
-  //   return new RFlatLattice<E>();
-  // }
-
   public Object label() {
     if (isBottom()) {
-      return Optional.empty();
+      return new RFlatLattice();
     }
     else {
       return Optional.of(value.get().label());
@@ -47,6 +43,15 @@ public class RFlatLattice<T extends Restorable> extends FlatLattice<T>
     }
     else {
       this.value = l;
+    }
+  }
+
+  public RFlatLattice<T> copy() {
+    if (isBottom()) {
+      return new RFlatLattice();
+    }
+    else {
+      return new RFlatLattice(value.get().copy());
     }
   }
 }

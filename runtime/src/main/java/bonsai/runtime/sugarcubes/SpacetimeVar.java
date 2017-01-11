@@ -25,11 +25,13 @@ public class SpacetimeVar extends UnaryInstruction
   protected boolean isModuleAttr;
   protected boolean isTransient;
   protected Spacetime spacetime;
+  protected int preMax;
   protected Function<SpaceEnvironment, Object> initValue;
   protected Object value;
   private boolean firstActivation;
 
-  public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime, Boolean isTransient,
+  public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
+    Boolean isTransient, int preMax,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
     super(body);
@@ -37,6 +39,7 @@ public class SpacetimeVar extends UnaryInstruction
     this.isModuleAttr = isModuleAttr;
     this.spacetime = spacetime;
     this.isTransient = isTransient;
+    this.preMax = preMax;
     this.initValue = initValue;
     this.firstActivation = true;
   }
@@ -46,11 +49,13 @@ public class SpacetimeVar extends UnaryInstruction
   }
 
   public Instruction copy() {
-    return new SpacetimeVar(name, isModuleAttr, spacetime, isTransient, initValue, body.copy());
+    return new SpacetimeVar(name, isModuleAttr, spacetime, isTransient,
+      preMax, initValue, body.copy());
   }
 
   public Instruction prepareFor(Environment env) {
-    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime, isTransient, initValue, body.prepareFor(env));
+    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime, isTransient,
+      preMax, initValue, body.prepareFor(env));
     copy.body.setParent(copy);
     /// If this variable is a module attribute, we must initialise it now in case it is used by parallel process before being run, consider `run o || when o.attr`. Also, it is safe to initialise it now because it should not use the environment.
     if (isModuleAttr) {

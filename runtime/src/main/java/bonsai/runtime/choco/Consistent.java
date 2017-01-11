@@ -14,6 +14,8 @@
 
 package bonsai.runtime.choco;
 
+import bonsai.runtime.core.Copy;
+
 //  Lattice represented by this class is:
 //        Top
 //     /   |   \
@@ -23,7 +25,7 @@ package bonsai.runtime.choco;
 //      \  |   /
 //       Bottom
 
-public enum Consistent {
+public enum Consistent implements Copy<Consistent> {
   Unknown,
   True,
   False;
@@ -34,5 +36,9 @@ public enum Consistent {
       case True: return "true";
       default: return "false";
     }
+  }
+
+  public Consistent copy() {
+    return Consistent.valueOf(this.name());
   }
 }
