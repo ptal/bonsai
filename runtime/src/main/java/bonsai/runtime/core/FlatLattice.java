@@ -39,8 +39,8 @@ public class FlatLattice<T> extends LatticeVar {
     this.value = Optional.empty();
   }
 
-  public static <E> FlatLattice<E> bottom() {
-    return new FlatLattice<E>();
+  public FlatLattice<T> bottom() {
+    return new FlatLattice();
   }
 
   public boolean isBottom() {

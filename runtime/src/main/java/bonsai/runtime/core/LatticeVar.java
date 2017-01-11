@@ -19,6 +19,7 @@ package bonsai.runtime.core;
 public abstract class LatticeVar {
   public abstract void join(Object o);
   public abstract EntailmentResult entail(Object o);
+  public abstract LatticeVar bottom();
 
   public boolean equals (Object other) {
     if (other == null) {

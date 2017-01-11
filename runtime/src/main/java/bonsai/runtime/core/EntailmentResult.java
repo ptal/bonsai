@@ -27,4 +27,8 @@ public class EntailmentResult extends FlatLattice<Boolean> {
   public EntailmentResult(Boolean b) {
     super(b);
   }
+
+  public EntailmentResult bottom() {
+    return new EntailmentResult();
+  }
 }

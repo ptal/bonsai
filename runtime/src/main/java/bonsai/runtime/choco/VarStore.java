@@ -22,7 +22,7 @@ public class VarStore extends Store implements Restorable {
   private Model model;
   private Integer depth;
 
-  static public VarStore bottom() {
+  public VarStore bottom() {
     return new VarStore();
   }
 

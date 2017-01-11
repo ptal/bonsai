@@ -16,7 +16,7 @@ package bonsai.runtime.choco;
 
 import bonsai.runtime.core.Copy;
 
-//  Lattice represented by this class is:
+//  Lattice represented by `FlatLattice<Consistent>` is:
 //        Top
 //     /   |   \
 //    /    |    \

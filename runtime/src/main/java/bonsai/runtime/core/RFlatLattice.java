@@ -29,7 +29,7 @@ public class RFlatLattice<T extends Restorable & Copy<T>> extends FlatLattice<T>
 
   public Object label() {
     if (isBottom()) {
-      return new RFlatLattice();
+      return bottom();
     }
     else {
       return Optional.of(value.get().label());
@@ -48,10 +48,14 @@ public class RFlatLattice<T extends Restorable & Copy<T>> extends FlatLattice<T>
 
   public RFlatLattice<T> copy() {
     if (isBottom()) {
-      return new RFlatLattice();
+      return bottom();
     }
     else {
       return new RFlatLattice(value.get().copy());
     }
+  }
+
+  public RFlatLattice<T> bottom() {
+    return new RFlatLattice<T>();
   }
 }

@@ -24,7 +24,7 @@ public class ConstraintStore extends LatticeVar implements Restorable {
 
   public ArrayDeque<Constraint> constraints;
 
-  public static ConstraintStore bottom() {
+  public ConstraintStore bottom() {
     return new ConstraintStore();
   }
 
