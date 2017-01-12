@@ -30,7 +30,6 @@ public class NQueens implements Executable
 
   public proc execute() {
     model();
-    module Statistics statistics = new Statistics();
     trap FoundSolution {
       engine();
     }
