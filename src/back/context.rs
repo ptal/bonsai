@@ -20,13 +20,15 @@ use jast::*;
 use std::collections::HashMap;
 
 pub struct Context {
-  name_to_bindings: HashMap<String, LetBindingBase>
+  name_to_bindings: HashMap<String, LetBindingBase>,
+  stream_bound: HashMap<String, usize>
 }
 
 impl Context {
-  pub fn new(module: JModule) -> Self {
+  pub fn new(module: JModule, stream_bound: HashMap<String, usize>) -> Self {
     let mut context = Context {
-      name_to_bindings: HashMap::new()
+      name_to_bindings: HashMap::new(),
+      stream_bound: stream_bound,
     };
     for channel_attr in module.channel_attrs() {
       context.insert_binding(channel_attr.base());
@@ -71,13 +73,22 @@ impl Context {
     }
   }
 
+  pub fn binding_of(&self, name: &String) -> LetBindingBase {
+    self.name_to_bindings.get(name)
+    .expect(&format!("Undeclared variable `{}`.", name))
+    .clone()
+  }
+
   pub fn type_of_var(&self, var: &StreamVar) -> JType {
-    self.name_to_bindings.get(&var.name())
-      .expect(&format!("Undeclared variable `{}`.", var.name()))
-      .ty.clone()
+    self.binding_of(&var.name()).ty.clone()
   }
 
   pub fn is_bonsai_var(&self, name: &String) -> bool {
     self.name_to_bindings.contains_key(name)
+  }
+
+  pub fn stream_bound_of(&self, name: &String) -> usize {
+    *self.stream_bound.get(name)
+    .expect(&format!("Undeclared variable `{}`.", name))
   }
 }

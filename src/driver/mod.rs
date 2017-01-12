@@ -54,7 +54,7 @@ fn run_back(config: &Config, jcrate: JCrate) {
   for module in jcrate.modules {
     if !module.file.is_lib() {
       let file = module.file.clone();
-      back::generate_runtime(module, &config)
+      back::generate_runtime(module, jcrate.stream_bound.clone(), &config)
         .map(|output| file.write_output(output))
         .expect(ABORT_MSG);
     }

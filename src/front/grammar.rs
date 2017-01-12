@@ -71,7 +71,7 @@ grammar! bonsai {
   }
 
   java_method
-    = java_visibility (STATIC->())? java_ty identifier java_param_list java_block kw_tail > make_java_method
+    = java_visibility (STATIC->())? !PROC java_ty identifier java_param_list java_block kw_tail > make_java_method
 
   java_constructor
     = java_visibility identifier java_param_list java_block kw_tail > make_java_constructor

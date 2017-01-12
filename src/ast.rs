@@ -15,16 +15,19 @@
 use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JVisibility,JavaCall};
 use driver::module_file::ModuleFile;
 use std::fmt::{Display, Error, Formatter};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
-  pub modules: Vec<Module<Host>>
+  pub modules: Vec<Module<Host>>,
+  pub stream_bound: HashMap<String, usize>
 }
 
 impl<Host> Crate<Host> where Host: Clone {
   pub fn new() -> Self {
     Crate {
-      modules: vec![]
+      modules: vec![],
+      stream_bound: HashMap::new()
     }
   }
 
@@ -255,6 +258,7 @@ pub struct LetBindingSpacetime {
 impl LetBindingSpacetime {
   pub fn new(binding: LetBindingBase, sp: Spacetime, is_transient: bool) -> Self
   {
+    let is_transient = if sp == Spacetime::SingleTime { true } else { is_transient };
     LetBindingSpacetime {
       binding: binding,
       spacetime: sp,

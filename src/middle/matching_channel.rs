@@ -97,7 +97,8 @@ impl<H: Clone> MatchingChannel<H> {
 }
 
 impl<H: Clone> Visitor<H, ()> for MatchingChannel<H> {
-  unit_visitor_impl!(all, H);
+  unit_visitor_impl!(module, H);
+  unit_visitor_impl!(all_stmt);
 
   fn visit_crate(&mut self, bcrate: Crate<H>) {
     for (i, module) in bcrate.modules.into_iter().enumerate() {

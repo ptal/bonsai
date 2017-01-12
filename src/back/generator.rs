@@ -17,10 +17,12 @@ use partial::*;
 use driver::config::*;
 use back::code_formatter::*;
 use back::context::*;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
-pub fn generate_runtime(module: JModule, config: &Config) -> Partial<String> {
-  let context = Context::new(module.clone());
+pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
+  config: &Config) -> Partial<String>
+{
+  let context = Context::new(module.clone(), stream_bound);
   let mut fmt = CodeFormatter::new();
   fmt.push_block(module.host.header);
   fmt.push_line(&format!("public class {} implements Executable", module.host.class_name));
@@ -128,8 +130,8 @@ fn generate_closure(fmt: &mut CodeFormatter, context: &Context, return_expr: boo
     for var in variables {
       let ty = context.type_of_var(&var);
       fmt.push_line(&format!(
-        "{} {} = ({}) env.var(\"{}\");",
-        ty, var.name(), ty, var.name()));
+        "{} {} = ({}) env.var(\"{}\", {});",
+        ty, var.name(), ty, var.name(), var.past));
     }
     if return_expr {
       fmt.push("return ");
@@ -322,8 +324,9 @@ fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
   binding: LetBindingBase, spacetime: Spacetime, is_transient: bool)
 {
   let spacetime = generate_spacetime(spacetime);
-  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, {}, {}, ",
-    binding.name, binding.is_module_attr, spacetime, is_transient));
+  let stream_bound = context.stream_bound_of(&binding.name);
+  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, {}, {}, {}, ",
+    binding.name, binding.is_module_attr, spacetime, is_transient, stream_bound));
   generate_closure(fmt, context, true, binding.expr);
 }
 
@@ -346,8 +349,8 @@ fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
 
 fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: EntailmentRel) {
   fmt.push("new EntailmentConfig(\"");
-  generate_stream_var(fmt, entailment.left);
-  fmt.push("\", ");
+  generate_stream_var(fmt, entailment.left.clone());
+  fmt.push(&format!("\", {}, ", entailment.left.past));
   generate_closure(fmt, context, true, entailment.right);
   fmt.push(")");
 }
