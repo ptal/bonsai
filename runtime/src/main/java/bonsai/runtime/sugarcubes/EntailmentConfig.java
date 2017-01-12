@@ -25,13 +25,17 @@ import inria.meije.rc.sugarcubes.implementation.*;
 public class EntailmentConfig extends ConfigImpl implements Precursor
 {
   private String leftSide;
+  private int preLeft;
   private Function<SpaceEnvironment, Object> rightSide;
-  private Event event;
   private Precursor parent;
+  private Event event;
   private boolean posted;
 
-  public EntailmentConfig(String leftSide, Function<SpaceEnvironment, Object> rightSide) {
+  public EntailmentConfig(String leftSide, int preLeft,
+    Function<SpaceEnvironment, Object> rightSide)
+  {
     this.leftSide = leftSide;
+    this.preLeft = preLeft;
     this.rightSide = rightSide;
     this.posted = false;
   }
@@ -41,13 +45,19 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
   }
 
   public Config copy() {
-    return new EntailmentConfig(leftSide, rightSide);
+    return new EntailmentConfig(leftSide, preLeft, rightSide);
   }
 
   public Config prepareFor(Environment env) {
     EntailmentConfig copy = (EntailmentConfig)copy();
-    copy.event = env.getDirectAccessToEvent(new StringID(leftSide));
+    if (!pastLeftValue()) {
+      copy.event = env.getDirectAccessToEvent(new StringID(leftSide));
+    }
     return copy;
+  }
+
+  public boolean pastLeftValue() {
+    return preLeft > 0;
   }
 
   public void setPrecursor(Precursor p, byte waikUpOn) {
@@ -56,9 +66,9 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
 
   public byte evaluate(Environment env) {
     // Change happened on the domain of the variable `leftSide`.
-    if(event.isGenerated(env)){
+    if(pastLeftValue() || event.isGenerated(env)){
       SpaceEnvironment space_env = (SpaceEnvironment) env;
-      LatticeVar lhs = space_env.latticeVar(leftSide);
+      LatticeVar lhs = space_env.latticeVar(leftSide, preLeft);
       Object rhs = rightSide.apply(space_env);
       EntailmentResult res = lhs.entail(rhs);
       if (res == EntailmentResult.TRUE) {

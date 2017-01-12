@@ -26,9 +26,9 @@ public class LocationVar extends SpacetimeVar
   public LocationVar(String name, String storeName,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
-    super(name, false, Spacetime.SingleSpace, false, 0,
+    super(name, false, Spacetime.SingleSpace, false, 1,
       (env) -> {
-        Store store = (Store) env.var(storeName);
+        Store store = (Store) env.var(storeName, 0);
         Object value = initValue.apply(env);
         return store.alloc(value);
       },
@@ -37,7 +37,8 @@ public class LocationVar extends SpacetimeVar
   }
 
   public LocationVar(LocationVar var) {
-    super(var.name, var.isModuleAttr, var.spacetime, var.isTransient, var.preMax, var.initValue, var.body.copy());
+    super(var.name, var.isModuleAttr, var.spacetime,
+      var.initValue, var.stream, var.body.copy());
     this.storeName = var.storeName;
   }
 

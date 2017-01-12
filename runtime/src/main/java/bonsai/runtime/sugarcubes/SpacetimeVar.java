@@ -23,41 +23,48 @@ public class SpacetimeVar extends UnaryInstruction
 {
   protected String name;
   protected boolean isModuleAttr;
-  protected boolean isTransient;
   protected Spacetime spacetime;
-  protected int preMax;
+  protected Stream stream;
   protected Function<SpaceEnvironment, Object> initValue;
-  protected Object value;
   private boolean firstActivation;
 
   public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
-    Boolean isTransient, int preMax,
+    Boolean isTransient, int streamSize,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
+    this(name, isModuleAttr, spacetime, initValue,
+      new Stream(name, streamSize, isTransient), body);
+  }
+
+  protected SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
+    Function<SpaceEnvironment, Object> initValue, Stream stream, Program body)
+  {
     super(body);
+    if (stream.capacity() != 1 && spacetime == Spacetime.SingleTime) {
+      throw new RuntimeException(
+        "Single time variable must have a maximum size of stream of 1. This is a bug.");
+    }
     this.name = name;
     this.isModuleAttr = isModuleAttr;
     this.spacetime = spacetime;
-    this.isTransient = isTransient;
-    this.preMax = preMax;
+    this.stream = stream;
     this.initValue = initValue;
     this.firstActivation = true;
   }
 
   public String actualToString() {
-    return name + " in " + spacetime + " = " + value + ";\n" + body;
+    return name + " in " + spacetime + " = " + value(0) + ";\n" + body;
   }
 
   public Instruction copy() {
-    return new SpacetimeVar(name, isModuleAttr, spacetime, isTransient,
-      preMax, initValue, body.copy());
+    return new SpacetimeVar(name, isModuleAttr, spacetime, initValue, stream, body.copy());
   }
 
   public Instruction prepareFor(Environment env) {
-    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime, isTransient,
-      preMax, initValue, body.prepareFor(env));
+    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime,
+      initValue, stream, body.prepareFor(env));
     copy.body.setParent(copy);
-    /// If this variable is a module attribute, we must initialise it now in case it is used by parallel process before being run, consider `run o || when o.attr`. Also, it is safe to initialise it now because it should not use the environment.
+    /// If this variable is a module attribute, we must initialise it now in case it is used by parallel process before being run, consider `run o || when o.attr`. Also, it is safe to initialise it now because module attribute should not use the environment.
     if (isModuleAttr) {
       firstActivation((SpaceEnvironment) env);
     }
@@ -72,13 +79,17 @@ public class SpacetimeVar extends UnaryInstruction
     return res;
   }
 
-  /// If the current var is transient, we reinitialized its value at each step. We need `beginningInstant` because `firstActivation` is only relevant to the scope or the spacetime attribute, not the current instant.
   public void firstActivation(SpaceEnvironment env) {
     if (firstActivation) {
       firstActivation = false;
-      value = initValue.apply(env);
+      initialiseCurrentValue(env);
       env.declareVar(name, this);
     }
+  }
+
+  public void initialiseCurrentValue(SpaceEnvironment env) {
+    Object value = initValue.apply(env);
+    stream.reset(value);
   }
 
   /// Check if the variable exit its scope.
@@ -88,27 +99,26 @@ public class SpacetimeVar extends UnaryInstruction
     }
   }
 
-  public Object value() {
-    return value;
+  public Object value(int time) {
+    return stream.pre(time);
   }
 
   public void save(Snapshot snapshot) {
     if (spacetime == Spacetime.WorldLine) {
-      snapshot.saveWorldLineVar(name, value);
+      snapshot.saveWorldLineVar(name, stream);
     }
     else if (spacetime == Spacetime.SingleTime) {
-      snapshot.saveSingleTimeVar(name, value);
+      snapshot.saveSingleTimeVar(name, value(0));
     }
   }
 
   public void restore(SpaceEnvironment env, Snapshot snapshot) {
-    if (spacetime == Spacetime.WorldLine) {
-      snapshot.restoreWorldLineVar(name, value);
-    }
-    if (spacetime == Spacetime.SingleTime || isTransient) {
-      if (!firstActivation) {
-        value = initValue.apply(env);
+    // We only restore variable that are activated (in scope).
+    if (!firstActivation) {
+      if (spacetime == Spacetime.WorldLine) {
+        snapshot.restoreWorldLineVar(name, stream);
       }
+      stream.next(() -> initValue.apply(env));
     }
   }
 }

@@ -16,7 +16,7 @@ package bonsai.runtime.core;
 
 public class RInteger implements Restorable, Copy<RInteger>
 {
-  private Integer value;
+  public Integer value;
 
   public RInteger(int value) {
     this.value = new Integer(value);

@@ -35,34 +35,20 @@ public class Snapshot
     return branchIndex;
   }
 
-  public void saveWorldLineVar(String name, Object value) {
-    assertClass(name, value, Restorable.class, "world_line");
-    Restorable var = (Restorable) value;
-    worldLineVars.put(name, var.label());
+  public void saveWorldLineVar(String name, Stream stream) {
+    worldLineVars.put(name, stream.label());
   }
 
   public void saveSingleTimeVar(String name, Object value) {
     singleTimeVars.put(name, value);
   }
 
-  public void restoreWorldLineVar(String name, Object value) {
-    assertClass(name, value, Restorable.class, "world_line");
-    Restorable var = (Restorable) value;
-    var.restore(worldLineVars.get(name));
+  public void restoreWorldLineVar(String name, Stream stream) {
+    stream.restore(worldLineVars.get(name));
   }
 
   public Optional<Object> getSingleTimeValue(String name) {
     Object val = singleTimeVars.get(name);
     return Optional.ofNullable(val);
-  }
-
-  private void assertClass(String name, Object value,
-    Class expectedTy, String spacetime)
-  {
-    if (!expectedTy.isInstance(value)) {
-      throw new RuntimeException(
-        "Variable `" + name + "` does not implement `" + expectedTy.getCanonicalName() +
-        "` which is required for variables in the `" + spacetime + "` spacetime.");
-    }
   }
 }

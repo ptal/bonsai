@@ -49,7 +49,7 @@ public class Tell extends PureGenerateIdentifier
 
   public boolean action(Environment e){
     SpaceEnvironment env = (SpaceEnvironment) e;
-    LatticeVar lhs = env.latticeVar(leftSide);
+    LatticeVar lhs = env.latticeVar(leftSide, 0);
     Object rhs = rightSide.apply(env);
     lhs.join(rhs);
     return super.action(env);

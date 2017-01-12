@@ -135,16 +135,12 @@ public class SpaceEnvironment extends Clock {
     vars.put(name, v);
   }
 
-  public LatticeVar latticeVar(String name) {
-    Object value = var(name);
-    if (!(value instanceof LatticeVar)) {
-      throw new RuntimeException(
-        "Try to use `v <- e` or `v |= e` on a variable that do not implement LatticeVar.");
-    }
-    return (LatticeVar) value;
+  public LatticeVar latticeVar(String name, int time) {
+    Object value = var(name, time);
+    return Cast.toLattice(name, value);
   }
 
-  public Object var(String name) {
+  public Object var(String name, int time) {
     if (inSnapshot) {
       Optional<Object> value = currentSnapshot.getSingleTimeValue(name);
       if (value.isPresent()) {
@@ -153,9 +149,10 @@ public class SpaceEnvironment extends Clock {
     }
     SpacetimeVar v = vars.get(name);
     if (v == null) {
-      throw new RuntimeException("The variable " + name + " is not registered in the environment.");
+      throw new RuntimeException("The variable `" + name
+        + "` is not registered in the environment.");
     }
-    return v.value();
+    return v.value(time);
   }
 
   public boolean isEmpty() {

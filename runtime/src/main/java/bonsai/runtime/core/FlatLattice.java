@@ -90,7 +90,8 @@ public class FlatLattice<T> extends LatticeVar {
       assertSameInnerTypes(self, other);
       if(!self.equals(other)) {
         throw new RuntimeException(
-          "Reached TOP element in flat lattice.");
+          "Reached TOP element in flat lattice due to `"
+          + self + "` join `" + other + "`");
       }
     }
   }
@@ -123,5 +124,9 @@ public class FlatLattice<T> extends LatticeVar {
     else {
       return value.get().toString();
     }
+  }
+
+  public T unwrap() {
+    return value.get();
   }
 }
