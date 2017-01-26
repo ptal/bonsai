@@ -9,30 +9,15 @@ See [README.md](README.md)
 ## Installing the bonsai compiler
 
 ```sh
-rustup override set nightly-2016-12-28
+rustup override set nightly-2017-01-24
 cargo install
 ```
 
-There is a bug where `bonsai` do not link statically to the standard library, therefore you need to specify the link to the library as follow:
-
-1. Linux:
-  ```sh
-  echo "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:~/.multirust/toolchains/nightly-2016-12-28-x86_64-unknown-linux-gnu/lib" >> ~/.bashrc
-  source ~/.bashrc
-  ```
-2. MacOSX:
-  ```sh
-  echo "export DYLD_LIBRARY_PATH=\$DYLD_LIBRARY_PATH:~/.multirust/toolchains/nightly-2016-12-28-x86_64-apple-darwin/lib" >> ~/.bash_profile
-  source ~/.bash_profile
-  ```
-
 You can verify everything is working by running `bonsai --help` in your terminal.
-
-*Alternatively* (without the export), you can run `bonsai` with `cargo run -- --help`.
 
 ## Installing Bonsai standard library
 
-It provides several modules to ease the development of Bonsai application.
+The standard library provides several modules to ease the development of Bonsai application.
 
 ```sh
 cd libstd # (inside the bonsai repository)

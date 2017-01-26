@@ -2,7 +2,7 @@ import os
 import platform
 import subprocess
 
-rust_nightly_version = "nightly-2016-12-28"
+rust_nightly_version = "nightly-2017-01-24"
 sugarcubes_jar = "/tmp/SugarCubesv4.0.0a5.jar"
 bonsai_runtime_jar = "target/runtime-1.0-SNAPSHOT.jar"
 bonsai_runtime_src = "runtime/"
@@ -12,13 +12,6 @@ bonsai_libstd_jar = "target/libstd-1.0-SNAPSHOT.jar"
 startup_script = "unknown"
 lib_path = "unknown"
 ending_message = "\nSuccesfully installed bonsai (and its standard library), SugarCubes and bonsai runtime.\n"
-
-if platform.system() == 'Darwin':
-  startup_script = "~/.bash_profile"
-  lib_path = "DYLD_LIBRARY_PATH"
-elif platform.system() == 'Linux':
-  startup_script = "~/.bashrc"
-  lib_path = "LD_LIBRARY_PATH"
 
 install_rust_cmd = ["rustup", "override", "set", rust_nightly_version]
 list_target_rustup_cmd = ["rustup", "target", "list"]
@@ -86,28 +79,12 @@ def rustup_target():
       return rust_nightly_version + "-" + target
   input('Unknown target directory (enter the name of the target directory, it is in `~/.multirust/toolchains/`): ')
 
-def rustlib_export():
-  target = rustup_target()
-  return "export {0}=${0}:~/.multirust/toolchains/{1}/lib".format(lib_path, target)
-
-def add_export_bug():
-  global ending_message
-  export_line = rustlib_export()
-  print("\nDue to a bug, the following should be appended to `{}`:\n".format(startup_script))
-  print("  ", export_line)
-  answer = input("\nWould you like to proceed (you can set it up manually after the installation) [Y/n]? ").lower()
-  if answer.startswith('y') or answer == "":
-    with open(os.path.expanduser(startup_script), 'a') as file:
-      file.write("\n" + export_line)
-      ending_message += "Do not forget to reload your profile with `source {}`\n".format(startup_script)
-
 def install_bonsai():
   try:
     subprocess.run(try_bonsai, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   except OSError:
     print("Installing bonsai compiler...")
     subprocess.run(install_bonsai_cmd, stdout=subprocess.DEVNULL).check_returncode()
-    add_export_bug()
     print("`bonsai` compiler has been installed.")
 
 def install_bonsai_libstd():
