@@ -165,7 +165,7 @@ grammar! bonsai {
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / let_binding > make_let_stmt
-    / WHEN entailment block > make_when
+    / WHEN condition block > make_when
     / PAUSE SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
@@ -223,8 +223,8 @@ grammar! bonsai {
       LetBindingInStore::new(binding, store))
   }
 
-  fn make_when(entailment: EntailmentRel, body: Stmt) -> Stmt {
-    Stmt::When(entailment, Box::new(body))
+  fn make_when(condition: Condition, body: Stmt) -> Stmt {
+    Stmt::When(condition, Box::new(body))
   }
 
   fn make_pause() -> Stmt {
@@ -306,6 +306,7 @@ grammar! bonsai {
   java_expr
     = java_new_expr
     / java_call_expr
+    / boolean > make_boolean_expr
     / number > make_number_expr
     / string_literal > make_string_literal
 
@@ -327,6 +328,7 @@ grammar! bonsai {
     Expr::JavaThisCall(java_call)
   }
 
+  fn make_boolean_expr(b: bool) -> Expr { Expr::Boolean(b) }
   fn make_number_expr(n: u64) -> Expr { Expr::Number(n) }
   fn make_string_literal(lit: String) -> Expr { Expr::StringLiteral(lit) }
 
@@ -361,10 +363,29 @@ grammar! bonsai {
     vec![]
   }
 
+  condition
+    = meta_entailment > make_meta_condition
+    / entailment > make_condition
+
+  meta_entailment = LPAREN entailment RPAREN ENTAILMENT boolean > make_meta_entailment_rel
   entailment = stream_var ENTAILMENT expr > make_entailment_rel
+
+  fn make_meta_condition(entailment: MetaEntailmentRel) -> Condition {
+    Condition::MetaEntailment(entailment)
+  }
+  fn make_condition(entailment: EntailmentRel) -> Condition {
+    Condition::Entailment(entailment)
+  }
 
   fn make_entailment_rel(left: StreamVar, right: Expr) -> EntailmentRel {
     EntailmentRel {
+      left: left,
+      right: right
+    }
+  }
+
+  fn make_meta_entailment_rel(left: EntailmentRel, right: bool) -> MetaEntailmentRel {
+    MetaEntailmentRel {
       left: left,
       right: right
     }
@@ -422,11 +443,18 @@ grammar! bonsai {
   // TODO: proper escape mechanism
   string_literal = "\"" (!"\"" .)* "\"" > to_string
 
+  boolean
+    = TRUE > make_true
+    / FALSE > make_false
+
+  fn make_true() -> bool { true }
+  fn make_false() -> bool { false }
+
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
-    / "run" / java_kw
+    / "run" / "true" / "false" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -450,6 +478,8 @@ grammar! bonsai {
   CHANNEL = "channel" kw_tail
   MODULE = "module" kw_tail
   RUN = "run" kw_tail
+  TRUE = "true" kw_tail
+  FALSE = "false" kw_tail
 
   // Java keyword
   java_kw
@@ -537,6 +567,10 @@ mod test
 
           constraints <- queen1.ne(queen2);
           single_time Fake fake = new Fake(pre pre queens1[pre queens, queen2], new Object());
+
+          when (pre x |= x) |= false {
+            pause;
+          }
         }
 
         public Test(int i, Integer x) {

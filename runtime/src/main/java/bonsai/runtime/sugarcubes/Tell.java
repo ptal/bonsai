@@ -37,12 +37,12 @@ public class Tell extends PureGenerateIdentifier
     return leftSide + " <- <expression>;\n";
   }
 
-  public Instruction copy(){
+  public Tell copy(){
     return new Tell(leftSide, rightSide);
   }
 
-  public Instruction prepareFor(final Environment env){
-    Tell copy = (Tell) this.copy();
+  public Tell prepareFor(final Environment env){
+    Tell copy = copy();
     copy.event = env.getDirectAccessToEvent(eventIdentifier);
     return copy;
   }

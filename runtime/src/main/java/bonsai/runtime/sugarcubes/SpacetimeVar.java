@@ -56,11 +56,11 @@ public class SpacetimeVar extends UnaryInstruction
     return name + " in " + spacetime + " = " + value(0) + ";\n" + body;
   }
 
-  public Instruction copy() {
+  public SpacetimeVar copy() {
     return new SpacetimeVar(name, isModuleAttr, spacetime, initValue, stream, body.copy());
   }
 
-  public Instruction prepareFor(Environment env) {
+  public SpacetimeVar prepareFor(Environment env) {
     SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime,
       initValue, stream, body.prepareFor(env));
     copy.body.setParent(copy);

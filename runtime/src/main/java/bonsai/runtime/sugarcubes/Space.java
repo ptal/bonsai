@@ -37,7 +37,7 @@ public class Space extends Atom
       + " end\n";
   }
 
-  public Instruction copy() {
+  public Space copy() {
     ArrayList<SpaceBranch> branchesCopy = new ArrayList();
     for (SpaceBranch b : branches) {
       branchesCopy.add((SpaceBranch) b.copy());
@@ -45,7 +45,7 @@ public class Space extends Atom
     return new Space(branchesCopy);
   }
 
-  public Instruction prepareFor(Environment e) {
+  public Space prepareFor(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
     for (SpaceBranch branch : branches) {
       Integer branchIndex = env.registerSpaceBranch(branch);

@@ -180,6 +180,7 @@ fn generate_expr(fmt: &mut CodeFormatter, expr: Expr) {
     JavaNew(ty, args) => generate_java_new(fmt, ty, args),
     JavaObjectCall(object, methods) => generate_java_object_call(fmt, object, methods),
     JavaThisCall(method) => generate_java_this_call(fmt, method),
+    Boolean(b) => generate_boolean(fmt, b),
     Number(n) => generate_number(fmt, n),
     StringLiteral(lit) => generate_literal(fmt, lit),
     Variable(var) => generate_stream_var(fmt, var),
@@ -224,6 +225,10 @@ fn generate_java_this_call(fmt: &mut CodeFormatter, method: JavaCall) {
   else {
     generate_fun_call(fmt, method.property, method.args);
   }
+}
+
+fn generate_boolean(fmt: &mut CodeFormatter, b: bool) {
+  fmt.push(&format!("{}", b));
 }
 
 fn generate_number(fmt: &mut CodeFormatter, n: u64) {
@@ -355,11 +360,24 @@ fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: E
   fmt.push(")");
 }
 
+fn generate_meta_entailment(fmt: &mut CodeFormatter, context: &Context, rel: MetaEntailmentRel) {
+  fmt.push("new MetaEntailmentConfig(");
+  generate_entailment(fmt, context, rel.left);
+  fmt.push(&format!(", {})", rel.right));
+}
+
+fn generate_condition(fmt: &mut CodeFormatter, context: &Context, condition: Condition) {
+  match condition {
+    Condition::Entailment(rel) => generate_entailment(fmt, context, rel),
+    Condition::MetaEntailment(rel) => generate_meta_entailment(fmt, context, rel)
+  }
+}
+
 fn generate_when(fmt: &mut CodeFormatter, context: &Context,
-  entailment: EntailmentRel, body: Box<Stmt>)
+  condition: Condition, body: Box<Stmt>)
 {
   fmt.push("SC.when(");
-  generate_entailment(fmt, context, entailment);
+  generate_condition(fmt, context, condition);
   fmt.terminate_line(",");
   fmt.indent();
   generate_statement(fmt, context, *body);

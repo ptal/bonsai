@@ -95,9 +95,10 @@ impl<H: Clone> Visitor<H, ()> for StreamBound<H> {
     self.visit_expr(expr);
   }
 
-  fn visit_when(&mut self, cond: EntailmentRel, child: Stmt) {
-    self.visit_stream_var(cond.left);
-    self.visit_expr(cond.right);
+  fn visit_when(&mut self, cond: Condition, child: Stmt) {
+    let rel = cond.unwrap();
+    self.visit_stream_var(rel.left);
+    self.visit_expr(rel.right);
     self.visit_stmt(child)
   }
 }

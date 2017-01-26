@@ -35,12 +35,12 @@ public class RunModule extends UnaryInstruction
     return "run " + invokeModule;
   }
 
-  public Instruction copy() {
+  public RunModule copy() {
     return new RunModule(invokeModule);
   }
 
-  public Instruction prepareFor(Environment e) {
-    RunModule copy = new RunModule(invokeModule);
+  public RunModule prepareFor(Environment e) {
+    RunModule copy = copy();
     copy.body.setParent(copy);
     return copy;
   }

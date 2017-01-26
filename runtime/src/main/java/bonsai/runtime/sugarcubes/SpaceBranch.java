@@ -28,12 +28,12 @@ public class SpaceBranch extends UnaryInstruction
     return super.body.toString();
   }
 
-  public Instruction copy() {
+  public SpaceBranch copy() {
     return new SpaceBranch(body.copy());
   }
 
   // Do not copy the branch here because it is kept in SpaceEnvironment.
-  public Instruction prepareFor(Environment env) {
+  public SpaceBranch prepareFor(Environment env) {
     body = body.prepareFor(env);
     body.setParent(this);
     return this;

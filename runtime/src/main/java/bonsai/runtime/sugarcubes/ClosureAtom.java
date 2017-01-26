@@ -30,11 +30,11 @@ public class ClosureAtom extends Atom
     return "<closure atom>";
   }
 
-  public Instruction copy() {
+  public ClosureAtom copy() {
     return new ClosureAtom(closure);
   }
 
-  public Instruction prepareFor(Environment env) {
+  public ClosureAtom prepareFor(Environment env) {
     return copy();
   }
 

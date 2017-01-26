@@ -39,7 +39,7 @@ pub trait Visitor<H, R>
     self.visit_stmt(child)
   }
 
-  fn visit_when(&mut self, _cond: EntailmentRel, child: Stmt) -> R {
+  fn visit_when(&mut self, _cond: Condition, child: Stmt) -> R {
     self.visit_stmt(child)
   }
 

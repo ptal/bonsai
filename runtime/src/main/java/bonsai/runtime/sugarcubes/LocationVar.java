@@ -46,11 +46,11 @@ public class LocationVar extends SpacetimeVar
     return name + " = " + storeName + " <- <expression>;\n" + body;
   }
 
-  public Instruction copy() {
+  public LocationVar copy() {
     return new LocationVar(this);
   }
 
-  public Instruction prepareFor(Environment env) {
+  public LocationVar prepareFor(Environment env) {
     LocationVar copy = new LocationVar(this);
     copy.body = copy.body.prepareFor(env);
     copy.body.setParent(copy);

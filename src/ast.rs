@@ -103,7 +103,7 @@ pub enum Stmt {
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
   Let(LetStmt),
-  When(EntailmentRel, Box<Stmt>),
+  When(Condition, Box<Stmt>),
   Tell(StreamVar, Expr),
   Pause,
   Trap(String, Box<Stmt>),
@@ -288,9 +288,30 @@ impl LetBindingInStore {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Condition {
+  Entailment(EntailmentRel),
+  MetaEntailment(MetaEntailmentRel)
+}
+
+impl Condition {
+  pub fn unwrap(self) -> EntailmentRel {
+    match self {
+      Condition::Entailment(rel) => rel,
+      Condition::MetaEntailment(meta) => meta.left
+    }
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntailmentRel {
   pub left: StreamVar,
   pub right: Expr
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MetaEntailmentRel {
+  pub left: EntailmentRel,
+  pub right: bool
 }
 
 /// A variable path can be `x`, `m.x`, `m.m2.y`,... where `m` and `m2` must be checked to be module.
@@ -379,6 +400,7 @@ pub enum Expr {
   JavaNew(JType, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
   JavaThisCall(JavaCall),
+  Boolean(bool),
   Number(u64),
   StringLiteral(String),
   Variable(StreamVar),

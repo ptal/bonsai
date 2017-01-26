@@ -44,20 +44,23 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
     return leftSide.toString() + " |= <expression>";
   }
 
-  public Config copy() {
+  public EntailmentConfig copy() {
     return new EntailmentConfig(leftSide, preLeft, rightSide);
   }
 
-  public Config prepareFor(Environment env) {
-    EntailmentConfig copy = (EntailmentConfig)copy();
-    if (!pastLeftValue()) {
+  public EntailmentConfig prepareFor(Environment env) {
+    EntailmentConfig copy = copy();
+    if (canChange()) {
       copy.event = env.getDirectAccessToEvent(new StringID(leftSide));
     }
     return copy;
   }
 
-  public boolean pastLeftValue() {
-    return preLeft > 0;
+  public boolean cannotChange() {
+    return !canChange();
+  }
+  public boolean canChange() {
+    return preLeft == 0;
   }
 
   public void setPrecursor(Precursor p, byte waikUpOn) {
@@ -66,7 +69,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
 
   public byte evaluate(Environment env) {
     // Change happened on the domain of the variable `leftSide`.
-    if(pastLeftValue() || event.isGenerated(env)){
+    if(cannotChange() || event.isGenerated(env)){
       SpaceEnvironment space_env = (SpaceEnvironment) env;
       LatticeVar lhs = space_env.latticeVar(leftSide, preLeft);
       Object rhs = rightSide.apply(space_env);
@@ -78,7 +81,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
         return UNSATISFIED;
       }
     }
-    if(!posted){
+    if(!posted && canChange()){
       event.postPrecursor(this);
       posted = true;
     }
