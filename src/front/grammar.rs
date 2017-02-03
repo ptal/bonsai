@@ -280,12 +280,13 @@ grammar! bonsai {
   fn make_stream_var_expr(var: StreamVar) -> Expr { Expr::Variable(var) }
 
   java_ty
-    = identifier java_generic_list > make_java_ty
+    = identifier java_generic_list (LBRACKET RBRACKET -> ())? > make_java_ty
 
-  fn make_java_ty(name: String, generics: Vec<JType>) -> JType {
+  fn make_java_ty(name: String, generics: Vec<JType>, is_array: Option<()>) -> JType {
     JType {
       name: name,
-      generics: generics
+      generics: generics,
+      is_array: is_array.is_some()
     }
   }
 
@@ -519,8 +520,23 @@ grammar! bonsai {
   LT = "<" !"-" spacing
   GT = ">" spacing
 
-  spacing = blanks -> (^)
-  blanks = [" \n\r\t"]*
+  spacing = (blank+ -> () / comment)* -> (^)
+  blank = [" \n\r\t"]
+  blanks = blank*
+  line_break = ["\r\n"]
+  comment
+    = oneline_comment -> (^)
+    / multiline_comment -> (^)
+
+  oneline_comment
+    = SLASH_SLASH (!line_break .)* spacing
+
+  multiline_comment
+    = LCOMMENT ((!(LCOMMENT/RCOMMENT) .)+ (&LCOMMENT multiline_comment)?)* RCOMMENT
+
+  SLASH_SLASH = "//"
+  LCOMMENT = "/*" blanks
+  RCOMMENT = "*/" blanks
 
   fn to_string(raw_text: Vec<char>) -> String {
     raw_text.into_iter().collect()
@@ -558,6 +574,11 @@ mod test
     let state = bonsai::recognize_program(r#"
       public class Test implements Executable
       {
+        // This is a test grammar.
+        /* We can do multi-line comments
+           . /* even inlined comments */
+           .
+        */
         proc test() {
           IntVar queen1 = domains <- new IntDomain(0,1);
           IntVar queen2 = domains <- new IntDomain(0,1);
@@ -567,7 +588,7 @@ mod test
 
           constraints <- queen1.ne(queen2);
           single_time Fake fake = new Fake(pre pre queens1[pre queens, queen2], new Object());
-
+          // Testing meta-entailment
           when (pre x |= x) |= false {
             pause;
           }
@@ -577,6 +598,8 @@ mod test
           this.m1 = i + x;
           module Propagation prop = new Propagation();
         }
+        /* Different way of declaring the variables. */
+        private Integer[] array1;
 
         public void test1() {}
         protected void test2() {}

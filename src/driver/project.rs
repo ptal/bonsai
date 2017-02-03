@@ -36,9 +36,12 @@ impl Project
     let mut package = Project {
       mod_to_files: HashMap::new()
     };
-    package.collect_bonsai_files(config, false, config.input.clone()).unwrap();
+    let err_msg = "Failed to collect bonsai files.";
+    package.collect_bonsai_files(config, false, config.input.clone())
+      .expect(&format!("{:?}: {}", config.input, err_msg));
     for lib in &config.libs {
-      package.collect_bonsai_files(config, true, lib.clone()).unwrap();
+      package.collect_bonsai_files(config, true, lib.clone())
+        .expect(&format!("{:?}: {}", lib, err_msg));
     }
     package
   }

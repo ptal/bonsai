@@ -22,6 +22,7 @@ import inria.meije.rc.sugarcubes.*;
 public class SpaceMachine extends StdMachine
 {
   private boolean debug;
+  private int numReactions;
 
   public static final InternalIdentifiers INTERNAL_STRING_IDENTIFIERS =
     new InternalStringIdentifiers();
@@ -44,6 +45,7 @@ public class SpaceMachine extends StdMachine
   public SpaceMachine(SpaceEnvironment env) {
     super(env);
     debug = false;
+    numReactions = 1;
   }
 
   // Returns `true` if it stops because no more nodes are on the queue, otherwise `false` if the program terminated without consuming all nodes.
@@ -52,19 +54,23 @@ public class SpaceMachine extends StdMachine
     if (debug) {
       System.out.println("[Start of execution]");
     }
-    int numReactions;
-    for (numReactions = 1; true; numReactions++) {
-      if (debug) {
-        System.out.println("[Reaction " + numReactions + "] Starting. Size of the reaction queue: " + env.queueSize());
-      }
-      if (react() || env.isEmpty()) {
-        break;
-      }
-    }
+    while(step()) {}
     if (debug) {
       System.out.println("[End of execution] After " + numReactions + " reactions due to " +
         ((env.isEmpty()) ? "empty reaction queue.":"program termination."));
     }
     return env.isEmpty();
+  }
+
+  public boolean step() {
+    SpaceEnvironment env = (SpaceEnvironment) clock0;
+    numReactions++;
+    if (debug) {
+      System.out.println("[Reaction " + numReactions + "] Starting. Size of the reaction queue: " + env.queueSize());
+    }
+    if (react() || env.isEmpty()) {
+      return false;
+    }
+    return true;
   }
 }

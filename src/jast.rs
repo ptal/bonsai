@@ -72,14 +72,16 @@ pub type JParameters = String;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JType {
   pub name: String,
-  pub generics: Vec<JType>
+  pub generics: Vec<JType>,
+  pub is_array: bool
 }
 
 impl JType {
   pub fn simple(name: String) -> Self {
     JType {
       name: name,
-      generics: vec![]
+      generics: vec![],
+      is_array: false
     }
   }
 
@@ -101,6 +103,9 @@ impl Display for JType
       generics_str.pop();
       generics_str.pop();
       formatter.write_fmt(format_args!("{}>", generics_str))?;
+    }
+    if self.is_array {
+      formatter.write_str("[]")?;
     }
     Ok(())
   }
