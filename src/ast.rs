@@ -16,6 +16,7 @@ use jast::{JParameters,JMethod,JConstructor,JAttribute,JType,JVisibility,JavaCal
 use driver::module_file::ModuleFile;
 use std::fmt::{Display, Error, Formatter};
 use std::collections::HashMap;
+pub use syntex_pos::Span;
 
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
@@ -105,7 +106,7 @@ pub enum Stmt {
   Let(LetStmt),
   When(Condition, Box<Stmt>),
   Tell(StreamVar, Expr),
-  Pause,
+  Pause(Span),
   Trap(String, Box<Stmt>),
   Exit(String),
   Loop(Box<Stmt>),

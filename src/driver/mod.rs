@@ -14,11 +14,12 @@
 
 pub mod config;
 pub mod module_file;
-mod project;
+mod file_filter;
 
 pub use self::config::*;
-use self::project::*;
+use self::file_filter::*;
 use partial::*;
+use session::*;
 use front;
 use middle;
 use back;
@@ -27,17 +28,17 @@ use jast::JCrate;
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
 pub fn run() {
-  let config = Config::new();
-  run_front(&config)
-    .and_then(|jcrate| run_middle(&config, jcrate))
-    .map(|jcrate| run_back(&config, jcrate));
+  let mut session = Session::new(Config::new());
+  run_front(&mut session)
+    .and_then(|jcrate| run_middle(session.config(), jcrate))
+    .map(|jcrate| run_back(session.config(), jcrate));
 }
 
-fn run_front(config: &Config) -> Partial<JCrate> {
-  let project = Project::new(config);
+fn run_front(session: &mut Session) -> Partial<JCrate> {
+  let file_filter = FileFilter::new(session.config());
   let mut jcrate = JCrate::new();
-  for file in project {
-    Partial::Value(file.input_as_string())
+  for file in file_filter {
+    Partial::Value(session.load_file(file.input_path()))
       .and_then(front::parse_bonsai)
       .and_then(|ast| middle::functionalize_module(file, ast))
       .map(|module| jcrate.modules.push(module))

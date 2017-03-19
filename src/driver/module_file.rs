@@ -15,7 +15,7 @@
 use driver::Config;
 use std::path::{Path, PathBuf};
 use std::io::prelude::*;
-use std::fs::{File, OpenOptions, DirBuilder};
+use std::fs::{OpenOptions, DirBuilder};
 
 #[derive(Clone, Debug)]
 pub struct ModuleFile
@@ -80,16 +80,12 @@ impl ModuleFile
     self.module_name.clone()
   }
 
-  pub fn input_path(&self) -> String {
+  pub fn input_path_str(&self) -> String {
     format!("{}", self.input_path.display())
   }
 
-  pub fn input_as_string(&self) -> String {
-    let mut file = File::open(self.input_path.clone())
-      .expect(&format!("Input file ({})", self.input_path.to_str().unwrap_or("<invalid UTF8>")));
-    let mut res = String::new();
-    file.read_to_string(&mut res).unwrap();
-    res
+  pub fn input_path<'a>(&'a self) -> &'a Path {
+    self.input_path.as_path()
   }
 
   pub fn write_output(&self, output: String) {

@@ -255,7 +255,7 @@ fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
     Space(branches) => generate_space(fmt, context, branches),
     Let(body) => generate_let(fmt, context, body),
     When(entailment, body) => generate_when(fmt, context, entailment, body),
-    Pause => generate_pause(fmt),
+    Pause(_) => generate_pause(fmt),
     Trap(name, body) => generate_trap(fmt, context, name, body),
     Exit(name) => generate_exit(fmt, name),
     Loop(body) => generate_loop(fmt, context, body),

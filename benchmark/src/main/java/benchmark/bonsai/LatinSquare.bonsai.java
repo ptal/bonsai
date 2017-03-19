@@ -20,7 +20,7 @@ public class LatinSquare implements Executable
 
   private static int m = 60;
 
-  proc execute() {
+  public proc execute() {
     model();
     engine();
   }

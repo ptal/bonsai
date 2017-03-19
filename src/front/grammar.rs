@@ -18,6 +18,9 @@ grammar! bonsai {
   // #![show_api]
   use std::str::FromStr;
   use jast::*;
+  use oak_runtime::file_map_stream::FileMapStream;
+
+  type Stream<'a> = FileMapStream<'a>;
 
   program = java_header java_class > make_java_program
 
@@ -166,7 +169,7 @@ grammar! bonsai {
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / let_binding > make_let_stmt
     / WHEN condition block > make_when
-    / PAUSE SEMI_COLON > make_pause
+    / (.. PAUSE) SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
@@ -227,8 +230,8 @@ grammar! bonsai {
     Stmt::When(condition, Box::new(body))
   }
 
-  fn make_pause() -> Stmt {
-    Stmt::Pause
+  fn make_pause(sp: Span) -> Stmt {
+    Stmt::Pause(sp)
   }
 
   fn make_trap(name: String, body: Stmt) -> Stmt {

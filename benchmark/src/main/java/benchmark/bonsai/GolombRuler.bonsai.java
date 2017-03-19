@@ -21,7 +21,7 @@ public class GolombRuler implements Executable
 
   private static int m = 11;
 
-  proc execute() {
+  public proc execute() {
     model();
     engine();
   }
@@ -69,6 +69,8 @@ public class GolombRuler implements Executable
         ~incSolution();
         ~printNumberSolution(rulerLength(domains));
       }
+      ~incNodes();
+      ~printNodes();
       pause;
     }
   }
@@ -152,5 +154,12 @@ public class GolombRuler implements Executable
   private static int sol = 0;
   private static void incSolution() {
     sol = sol + 1;
+  }
+  private static int nodes = 0;
+  private static void incNodes() {
+    nodes = nodes + 1;
+  }
+  private static void printNodes() {
+    System.out.println("Number of nodes: " + nodes);
   }
 }

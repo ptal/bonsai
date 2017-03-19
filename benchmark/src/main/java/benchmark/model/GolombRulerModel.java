@@ -47,7 +47,7 @@ import static org.chocosolver.solver.search.strategy.Search.inputOrderLBSearch;
  * @author Charles Prud'homme
  * @since 31/03/11
  */
-public class GolombRulerChoco {
+public class GolombRulerModel {
 
     private int m = 11;
 
@@ -110,6 +110,6 @@ public class GolombRulerChoco {
     }
 
     public static void main(String[] args) {
-        new GolombRulerChoco().solve();
+        new GolombRulerModel().solve();
     }
 }

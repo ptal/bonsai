@@ -34,7 +34,7 @@ import org.chocosolver.solver.variables.IntVar;
 
 import static org.chocosolver.solver.search.strategy.Search.inputOrderLBSearch;
 
-public class LatinSquareChoco {
+public class LatinSquareModel {
 
     private int m = 60;
 
@@ -84,6 +84,6 @@ public class LatinSquareChoco {
     }
 
     public static void main(String[] args) {
-        new LatinSquareChoco().solve();
+        new LatinSquareModel().solve();
     }
 }

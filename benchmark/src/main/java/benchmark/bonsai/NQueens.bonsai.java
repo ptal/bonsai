@@ -17,9 +17,9 @@ public class NQueens implements Executable
   world_line ConstraintStore constraints = bot;
   single_time FlatLattice<Consistent> consistent = bot;
 
-  private static int n = 14;
+  private static int n = 13;
 
-  proc execute() {
+  public proc execute() {
     model();
     engine();
   }
@@ -64,7 +64,9 @@ public class NQueens implements Executable
       when consistent |= Consistent.True {
         ~incSolution();
         ~printNumberSolution();
+        ~printNodes();
       }
+      ~incNodes();
       pause;
     }
   }
@@ -116,5 +118,12 @@ public class NQueens implements Executable
   private static int sol = 0;
   private static void incSolution() {
     sol = sol + 1;
+  }
+  private static int nodes = 0;
+  private static void incNodes() {
+    nodes = nodes + 1;
+  }
+  private static void printNodes() {
+    System.out.println("Number of nodes: " + nodes);
   }
 }

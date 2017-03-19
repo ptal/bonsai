@@ -20,8 +20,10 @@ use self::let_lifting::*;
 use ast::Program;
 use partial::*;
 use oak_runtime::*;
+use oak_runtime::file_map_stream::*;
+use std::rc::Rc;
 
-pub fn parse_bonsai(input: String) -> Partial<Program> {
+pub fn parse_bonsai(input: Rc<FileMap>) -> Partial<Program> {
   let state = bonsai::parse_program(input.into_state());
   let ast = match state.into_result() {
     ParseResult::Success(program) => Partial::Value(program),

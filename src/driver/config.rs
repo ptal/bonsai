@@ -39,7 +39,7 @@ impl Config
         "-o, --output=[directory] 'Write compiled bonsai files to [directory]. The directory structure of the input project is preserved.'
         --main=[classname]        'Generate a method main in the class [classname] for immediate testing.'
         --debug                   'Generate code with debug facility.'
-        --lib=[directory]...      'Paths to bonsai libraries used inside this project. The code is not compiled to Java so you still have to import the .jar of this library in your project.'
+        --lib=[directory]...      'Paths to bonsai libraries used inside this project. The code is not compiled to Java so you still have to import the .jar of these libraries in your project.'
         <input>                   'Root of the bonsai project to compile. All files terminating with the `.bonsai` extension are compiled.'")
       .get_matches();
 

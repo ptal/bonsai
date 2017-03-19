@@ -41,8 +41,8 @@ import static org.chocosolver.solver.search.strategy.Search.minDomLBSearch;
  * @author Charles Prud'homme
  * @since 31/03/11
  */
-public class NQueenGlobal {
-    int n = 14;
+public class NQueensModel {
+    int n = 13;
     IntVar[] vars;
 
     protected Model model;
@@ -85,6 +85,6 @@ public class NQueenGlobal {
     }
 
     public static void main(String[] args) {
-        new NQueenGlobal().solve();
+        new NQueensModel().solve();
     }
 }

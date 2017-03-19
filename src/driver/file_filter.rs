@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// `Project` collects the `.bonsai` files of the input directory.
+/// `FileFilter` collects the `.bonsai` files of the input directory.
 
 use driver::Config;
 use driver::module_file::ModuleFile;
@@ -25,15 +25,15 @@ use std::collections::HashMap;
 use clap::{Error, ErrorKind};
 
 #[derive(Debug, Clone)]
-pub struct Project
+pub struct FileFilter
 {
   mod_to_files: HashMap<String, ModuleFile>
 }
 
-impl Project
+impl FileFilter
 {
   pub fn new(config: &Config) -> Self {
-    let mut package = Project {
+    let mut package = FileFilter {
       mod_to_files: HashMap::new()
     };
     let err_msg = "Failed to collect bonsai files.";
@@ -76,16 +76,16 @@ impl Project
                  {} ({})\n\
                  {} ({})\n\
                Explanation: Modules must have a distinct name because bonsai does not have a namespace mechanism.\n\
-               Resolution: Rename one of these modules.",
+               Solution: Rename one of these modules.",
         conflict_mod,
-        conflict_mod, mod_file.input_path(),
-        conflict_mod, existing_file.input_path()),
+        conflict_mod, mod_file.input_path_str(),
+        conflict_mod, existing_file.input_path_str()),
       ErrorKind::ValueValidation
     ).exit();
   }
 }
 
-impl IntoIterator for Project
+impl IntoIterator for FileFilter
 {
   type Item = ModuleFile;
   type IntoIter = vec::IntoIter<ModuleFile>;
