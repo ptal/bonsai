@@ -14,7 +14,7 @@
 
 /// We create a module, ensure that an entry point exists (`execute` method) and move module attributes as `let` declarations wrapping the `execute` code.
 
-use jast::*;
+use ast::*;
 use driver::module_file::ModuleFile;
 use front::let_lifting::*;
 use partial::*;

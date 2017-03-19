@@ -16,7 +16,7 @@
 
 /// TODO: this context does not take into account the scoping rules of variables.
 
-use jast::*;
+use ast::*;
 use std::collections::HashMap;
 
 pub struct Context {

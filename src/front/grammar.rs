@@ -17,7 +17,7 @@
 grammar! bonsai {
   // #![show_api]
   use std::str::FromStr;
-  use jast::*;
+  use ast::*;
   use oak_runtime::file_map_stream::FileMapStream;
 
   type Stream<'a> = FileMapStream<'a>;

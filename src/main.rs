@@ -26,7 +26,6 @@ mod session;
 mod driver;
 mod ast;
 mod visitor;
-mod jast;
 mod front;
 mod middle;
 mod back;

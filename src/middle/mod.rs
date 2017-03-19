@@ -16,7 +16,7 @@ pub mod functionalize_module;
 mod matching_channel;
 mod stream_bound;
 
-use jast::*;
+use ast::*;
 pub use middle::functionalize_module::*;
 use middle::matching_channel::*;
 use middle::stream_bound::*;

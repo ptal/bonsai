@@ -17,7 +17,7 @@
 /// `single_time Type var = expr in <code-following>`.
 /// The code following the variable declaration is lifted inside the structure of the let statement. It replaces the `Unknown` statements by the statement following inside the AST.
 
-use jast::*;
+use ast::*;
 
 pub fn let_lifting(mut ast: Program) -> Program {
   ast.items = ast.items.into_iter()

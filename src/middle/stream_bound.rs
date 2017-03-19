@@ -14,7 +14,7 @@
 
 /// For each binding, we compute its maximum stream bound. It is the maximum number of `pre` occuring before the variable.
 
-use jast::*;
+use ast::*;
 use visitor::*;
 use partial::*;
 use std::cmp::max;

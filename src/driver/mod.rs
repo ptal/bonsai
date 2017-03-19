@@ -23,7 +23,7 @@ use session::*;
 use front;
 use middle;
 use back;
-use jast::JCrate;
+use ast::JCrate;
 
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
