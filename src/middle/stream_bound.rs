@@ -47,8 +47,8 @@ impl<H: Clone> StreamBound<H> {
   }
 
   fn visit_expr(&mut self, expr: Expr) {
-    use ast::Expr::*;
-    match expr {
+    use ast::ExprKind::*;
+    match expr.node {
       JavaNew(_, args) => {
         for arg in args {
           self.visit_expr(arg);

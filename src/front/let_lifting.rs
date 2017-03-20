@@ -35,9 +35,9 @@ fn lift_item(item: Item) -> Item {
 }
 
 fn lift_stmt(stmt: Stmt) -> Stmt {
-  use ast::Stmt::*;
-  match stmt {
-    Seq(branches) => lift_let_sequence(branches),
+  use ast::StmtKind::*;
+  let node = match stmt.node {
+    Seq(branches) => lift_let_sequence(branches).node,
     Par(branches) => Par(lift_stmts(branches)),
     Space(branches) => Space(lift_stmts(branches)),
     When(entailment, body) => When(entailment, Box::new(lift_stmt(*body))),
@@ -48,7 +48,8 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
       Let(decl)
     },
     x => x
-  }
+  };
+  Stmt::new(stmt.span, node)
 }
 
 fn lift_stmts(stmts: Vec<Stmt>) -> Vec<Stmt> {
@@ -56,28 +57,27 @@ fn lift_stmts(stmts: Vec<Stmt>) -> Vec<Stmt> {
 }
 
 pub fn lift_let_sequence(mut stmts: Vec<Stmt>) -> Stmt {
-  use ast::Stmt::*;
   stmts = lift_let(stmts);
   if stmts.len() == 1 {
     lift_stmt(stmts.pop().unwrap())
   }
   else {
-    Seq(stmts)
+    Stmt::seq(stmts)
   }
 }
 
 fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
-  use ast::Stmt::*;
+  use ast::StmtKind::*;
   if stmts.len() == 1 {
     stmts
   }
   else {
     // If the first statement of the list is a let-decl, then lift the rest of the list in the let-decl.
     match stmts.remove(0) {
-      Let(ref decl) if decl.body.is_nothing() => {
+      Stmt { node: Let(ref decl), span: _ } if decl.body.is_nothing() => {
         let mut decl = decl.clone();
         decl.body = Box::new(lift_let_sequence(stmts));
-        vec![Let(decl)]
+        vec![Stmt::new(decl.span, Let(decl))]
       },
       mut front => {
         front = lift_stmt(front);
@@ -96,20 +96,20 @@ mod test
 
   #[test]
   fn test_let_lifting() {
-    use ast::Stmt::*;
-    let let_stmt = Let(LetStmt::imperative(
-      LetBinding::Spacetime(LetBindingSpacetime::example())));
-    let ast = Seq(vec![
+    use ast::StmtKind::*;
+    let let_stmt = Stmt::new(DUMMY_SP, Let(LetStmt::imperative(
+      LetBinding::Spacetime(LetBindingSpacetime::example()))));
+    let ast = Stmt::seq(vec![
       Stmt::example(),
       let_stmt.clone(),
-      Seq(vec![let_stmt.clone(), Stmt::example(), let_stmt.clone()])
+      Stmt::seq(vec![let_stmt.clone(), Stmt::example(), let_stmt.clone()])
     ]);
     let res = super::lift_stmt(ast);
-    let expected = Seq(vec![
+    let expected = Stmt::seq(vec![
       Stmt::example(),
-      Let(LetStmt::new(LetBinding::Spacetime(LetBindingSpacetime::example()),
-        box Let(LetStmt::new(LetBinding::Spacetime(LetBindingSpacetime::example()),
-          box Seq(vec![Stmt::example(), let_stmt.clone()])))))
+      Stmt::new(DUMMY_SP, Let(LetStmt::new(DUMMY_SP, LetBinding::Spacetime(LetBindingSpacetime::example()),
+        box Stmt::new(DUMMY_SP, Let(LetStmt::new(DUMMY_SP, LetBinding::Spacetime(LetBindingSpacetime::example()),
+          box Stmt::seq(vec![Stmt::example(), let_stmt.clone()])))))))
     ]);
     assert_eq!(res, expected);
   }

@@ -147,8 +147,8 @@ fn generate_closure(fmt: &mut CodeFormatter, context: &Context, return_expr: boo
 
 /// Collect all the variables appearing in `expr` and insert them in `variables`.
 fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr: Expr) {
-  use ast::Expr::*;
-  match expr {
+  use ast::ExprKind::*;
+  match expr.node {
     JavaNew(_, args) => {
       for arg in args {
         collect_variable(context, variables, arg);
@@ -156,7 +156,7 @@ fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr:
     }
     JavaObjectCall(object, methods) => {
       if context.is_bonsai_var(&object) {
-        variables.insert(StreamVar::simple(object));
+        variables.insert(StreamVar::simple(expr.span, object));
       }
       for method in methods {
         for arg in method.args {
@@ -175,8 +175,8 @@ fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr:
 }
 
 fn generate_expr(fmt: &mut CodeFormatter, expr: Expr) {
-  use ast::Expr::*;
-  match expr {
+  use ast::ExprKind::*;
+  match expr.node {
     JavaNew(ty, args) => generate_java_new(fmt, ty, args),
     JavaObjectCall(object, methods) => generate_java_object_call(fmt, object, methods),
     JavaThisCall(method) => generate_java_this_call(fmt, method),
@@ -248,14 +248,14 @@ fn generate_bottom(fmt: &mut CodeFormatter, ty: JType) {
 }
 
 fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
-  use ast::Stmt::*;
-  match stmt {
+  use ast::StmtKind::*;
+  match stmt.node {
     Seq(branches) => generate_sequence(fmt, context, branches),
     Par(branches) => generate_parallel(fmt, context, branches),
     Space(branches) => generate_space(fmt, context, branches),
     Let(body) => generate_let(fmt, context, body),
     When(entailment, body) => generate_when(fmt, context, entailment, body),
-    Pause(_) => generate_pause(fmt),
+    Pause => generate_pause(fmt),
     Trap(name, body) => generate_trap(fmt, context, name, body),
     Exit(name) => generate_exit(fmt, name),
     Loop(body) => generate_loop(fmt, context, body),

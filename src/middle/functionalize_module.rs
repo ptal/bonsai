@@ -65,15 +65,17 @@ fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   }
 
   let mut stmts: Vec<_> = mod_attrs.into_iter()
-    .map(|binding| Stmt::Let(LetStmt::imperative(binding)))
+    .map(|binding| Stmt::imperative_let(binding))
     .collect();
 
   let mut seq_branches: Vec<_> = channel_attrs.into_iter()
     .map(|binding| binding.base())
-    .filter(|binding| !binding.expr.is_bottom())
-    .map(|binding| Stmt::Tell(StreamVar::simple(binding.name), binding.expr))
+    .filter(|binding| !binding.expr.node.is_bottom())
+    .map(|binding| Stmt::new(binding.span,
+      StmtKind::Tell(StreamVar::simple(binding.span, binding.name), binding.expr)))
     .collect();
+  let body_sp = body.span;
   seq_branches.push(body);
-  stmts.push(Stmt::Seq(seq_branches));
+  stmts.push(Stmt::new(body_sp, StmtKind::Seq(seq_branches)));
   lift_let_sequence(stmts)
 }

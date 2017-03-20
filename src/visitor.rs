@@ -15,7 +15,7 @@
 #![macro_use]
 
 use ast::*;
-use ast::Stmt::*;
+use ast::StmtKind::*;
 
 pub trait Visitor<H, R>
 {
@@ -44,7 +44,7 @@ pub trait Visitor<H, R>
   }
 
   fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) -> R;
-  fn visit_pause(&mut self, _sp: Span) -> R;
+  fn visit_pause(&mut self) -> R;
 
   fn visit_trap(&mut self, _name: String, child: Stmt) -> R {
     self.visit_stmt(child)
@@ -91,14 +91,14 @@ pub fn walk_processes<H, R, V: ?Sized>(visitor: &mut V, processes: Vec<Process>)
 pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
   V: Visitor<H, R>
 {
-  match stmt {
+  match stmt.node {
     Seq(branches) => visitor.visit_seq(branches),
     Par(branches) => visitor.visit_par(branches),
     Space(branches) => visitor.visit_space(branches),
     Let(stmt) => visitor.visit_let(stmt.binding, *(stmt.body)),
     When(cond, body) => visitor.visit_when(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
-    Pause(sp) => visitor.visit_pause(sp),
+    Pause => visitor.visit_pause(),
     Trap(name, body) => visitor.visit_trap(name, *body),
     Exit(name) => visitor.visit_exit(name),
     Loop(body) => visitor.visit_loop(*body),
@@ -161,7 +161,7 @@ macro_rules! unit_visitor_impl {
   );
   (binding_base) => (fn visit_binding(&mut self, _binding: LetBindingBase) {});
   (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
-  (pause) => (fn visit_pause(&mut self, _sp: Span) {});
+  (pause) => (fn visit_pause(&mut self) {});
   (exit) => (fn visit_exit(&mut self, _name: String) {});
   (proc_call) => (fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {});
   (fn_call) => (fn visit_fn_call(&mut self, _expr: Expr) {});

@@ -16,6 +16,7 @@ use driver::module_file::ModuleFile;
 use std::fmt::{Display, Error, Formatter};
 use std::collections::HashMap;
 pub use syntex_pos::Span;
+pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
 
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
@@ -60,13 +61,15 @@ pub struct ModuleAttribute {
   pub visibility: JVisibility,
   pub binding: LetBinding,
   pub is_channel: bool,
+  pub span: Span
 }
 
 #[derive(Clone, Debug)]
 pub struct Program {
   pub header: String,
   pub class_name: String,
-  pub items: Vec<Item>
+  pub items: Vec<Item>,
+  pub span: Span
 }
 
 #[derive(Clone, Debug)]
@@ -83,29 +86,72 @@ pub struct Process {
   pub visibility: JVisibility,
   pub name: String,
   pub params: JParameters,
-  pub body: Stmt
+  pub body: Stmt,
+  pub span: Span
 }
 
 impl Process {
-  pub fn new(vis: JVisibility, name: String, params: JParameters, body: Stmt) -> Self {
+  pub fn new(span: Span, vis: JVisibility, name: String,
+   params: JParameters, body: Stmt) -> Self
+  {
     Process {
       visibility: vis,
       name: name,
       params: params,
-      body: body
+      body: body,
+      span: span
     }
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Stmt {
+pub struct Stmt {
+  pub node: StmtKind,
+  pub span: Span
+}
+
+impl Stmt {
+  pub fn new(span: Span, node: StmtKind) -> Self {
+    Stmt {
+      node: node,
+      span: span
+    }
+  }
+
+  pub fn imperative_let(binding: LetBinding) -> Self {
+    Stmt::new(binding.span(),
+      StmtKind::Let(LetStmt::imperative(binding)))
+  }
+
+  pub fn seq(seq: Vec<Stmt>) -> Self {
+    assert!(seq.len() > 0, "Try to create an empty sequence");
+    Stmt::new(
+      mk_sp(seq.first().unwrap().span.lo, seq.last().unwrap().span.hi),
+      StmtKind::Seq(seq))
+  }
+
+  pub fn is_nothing(&self) -> bool {
+    match &self.node {
+      &StmtKind::Nothing => true,
+      _ => false
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Stmt::new(DUMMY_SP, StmtKind::example())
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum StmtKind {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
   Let(LetStmt),
   When(Condition, Box<Stmt>),
   Tell(StreamVar, Expr),
-  Pause(Span),
+  Pause,
   Trap(String, Box<Stmt>),
   Exit(String),
   Loop(Box<Stmt>),
@@ -115,62 +161,59 @@ pub enum Stmt {
   Nothing // This is a facility for parsing, passing from imperative to functional representation. (see let_lifting.rs).
 }
 
-impl Stmt {
-  pub fn is_nothing(&self) -> bool {
-    match self {
-      &Stmt::Nothing => true,
-      _ => false
-    }
-  }
-
+impl StmtKind {
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Stmt::Tell(StreamVar::example(), Expr::example())
+    StmtKind::Tell(StreamVar::example(), Expr::example())
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RunExpr {
   pub module_path: VarPath,
-  pub process: String
+  pub process: String,
+  pub span: Span
 }
 
 impl RunExpr {
-  pub fn main(module_path: VarPath) -> Self {
-    RunExpr::new(module_path, String::from("execute"))
+  pub fn main(span: Span, module_path: VarPath) -> Self {
+    RunExpr::new(span, module_path, String::from("execute"))
   }
 
-  pub fn new(module_path: VarPath, process: String) -> Self {
+  pub fn new(span: Span, module_path: VarPath, process: String) -> Self {
     RunExpr {
       module_path: module_path,
-      process: process
+      process: process,
+      span: span
     }
   }
 
   pub fn to_expr(mut self) -> Expr {
     let head_var = self.module_path.properties.remove(0);
     let mut jcalls = self.module_path.to_java_calls();
-    jcalls.push(JavaCall::empty_method(self.process));
-    Expr::JavaObjectCall(head_var, jcalls)
+    jcalls.push(JavaCall::empty_method(DUMMY_SP, self.process));
+    Expr::new(self.span, ExprKind::JavaObjectCall(head_var, jcalls))
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetStmt {
   pub binding: LetBinding,
-  pub body: Box<Stmt>
+  pub body: Box<Stmt>,
+  pub span: Span,
 }
 
 impl LetStmt {
-  pub fn new(binding: LetBinding, body: Box<Stmt>) -> Self {
+  pub fn new(span: Span, binding: LetBinding, body: Box<Stmt>) -> Self {
     LetStmt {
       binding: binding,
-      body: body
+      body: body,
+      span: span
     }
   }
 
   pub fn imperative(binding: LetBinding) -> Self {
-    LetStmt::new(binding, Box::new(Stmt::Nothing))
+    LetStmt::new(binding.span(), binding, Box::new(Stmt::new(DUMMY_SP, StmtKind::Nothing)))
   }
 }
 
@@ -198,6 +241,14 @@ impl LetBinding {
       &mut Module(ref mut base) => &mut base.binding
     }
   }
+  pub fn span(&self) -> Span {
+    use self::LetBinding::*;
+    match self.clone() {
+      InStore(base) => base.span,
+      Spacetime(base) => base.span,
+      Module(base) => base.span
+    }
+  }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -205,36 +256,40 @@ pub struct LetBindingBase {
   pub name: String,
   pub ty: JType,
   pub is_module_attr: bool,
-  pub expr: Expr
+  pub expr: Expr,
+  pub span: Span
 }
 
 impl LetBindingBase {
-  pub fn new(name: String, ty: JType, expr: Expr) -> Self
+  pub fn new(span: Span, name: String, ty: JType, expr: Expr) -> Self
   {
     LetBindingBase {
       name: name,
       ty: ty,
       is_module_attr: false,
-      expr: expr
+      expr: expr,
+      span: span
     }
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    LetBindingBase::new(String::from("<name>"), JType::example(),
+    LetBindingBase::new(DUMMY_SP, String::from("<name>"), JType::example(),
       Expr::example())
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetBindingModule {
-  pub binding: LetBindingBase
+  pub binding: LetBindingBase,
+  pub span: Span
 }
 
 impl LetBindingModule {
-  pub fn new(binding: LetBindingBase) -> Self {
+  pub fn new(span: Span, binding: LetBindingBase) -> Self {
     LetBindingModule {
-      binding: binding
+      binding: binding,
+      span: span
     }
   }
 
@@ -244,7 +299,7 @@ impl LetBindingModule {
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    LetBindingModule::new(LetBindingBase::example())
+    LetBindingModule::new(DUMMY_SP, LetBindingBase::example())
   }
 }
 
@@ -253,36 +308,40 @@ pub struct LetBindingSpacetime {
   pub binding: LetBindingBase,
   pub spacetime: Spacetime,
   pub is_transient: bool,
+  pub span: Span
 }
 
 impl LetBindingSpacetime {
-  pub fn new(binding: LetBindingBase, sp: Spacetime, is_transient: bool) -> Self
+  pub fn new(span: Span, binding: LetBindingBase, sp: Spacetime, is_transient: bool) -> Self
   {
     let is_transient = if sp == Spacetime::SingleTime { true } else { is_transient };
     LetBindingSpacetime {
       binding: binding,
       spacetime: sp,
       is_transient: is_transient,
+      span: span
     }
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    LetBindingSpacetime::new(LetBindingBase::example(), Spacetime::example(), false)
+    LetBindingSpacetime::new(DUMMY_SP, LetBindingBase::example(), Spacetime::example(), false)
   }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LetBindingInStore {
   pub binding: LetBindingBase,
-  pub store: VarPath
+  pub store: VarPath,
+  pub span: Span
 }
 
 impl LetBindingInStore {
-  pub fn new(binding: LetBindingBase, store: VarPath) -> Self {
+  pub fn new(span: Span, binding: LetBindingBase, store: VarPath) -> Self {
     LetBindingInStore {
       binding: binding,
-      store: store
+      store: store,
+      span: span
     }
   }
 }
@@ -305,30 +364,34 @@ impl Condition {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntailmentRel {
   pub left: StreamVar,
-  pub right: Expr
+  pub right: Expr,
+  pub span: Span
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MetaEntailmentRel {
   pub left: EntailmentRel,
-  pub right: bool
+  pub right: bool,
+  pub span: Span
 }
 
 /// A variable path can be `x`, `m.x`, `m.m2.y`,... where `m` and `m2` must be checked to be module.
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct VarPath {
-  pub properties: Vec<String>
+  pub properties: Vec<String>,
+  pub span: Span
 }
 
 impl VarPath {
-  pub fn new(properties: Vec<String>) -> Self {
+  pub fn new(span: Span, properties: Vec<String>) -> Self {
     VarPath {
-      properties: properties
+      properties: properties,
+      span: span
     }
   }
   pub fn to_java_calls(&self) -> Vec<JavaCall> {
     self.properties.clone().into_iter()
-      .map(|p| JavaCall::attribute(p))
+      .map(|p| JavaCall::attribute(DUMMY_SP, p))
       .collect()
   }
 
@@ -352,23 +415,25 @@ impl Display for VarPath {
 pub struct StreamVar {
   pub path: VarPath,
   pub past: usize,
-  pub args: Vec<StreamVar>
+  pub args: Vec<StreamVar>,
+  pub span: Span
 }
 
 impl StreamVar {
-  pub fn new(path: VarPath, args: Vec<StreamVar>, past: usize) -> Self {
+  pub fn new(span: Span, path: VarPath, args: Vec<StreamVar>, past: usize) -> Self {
     StreamVar {
       path: path,
       past: past,
-      args: args
+      args: args,
+      span: span
     }
   }
-  pub fn simple(name: String) -> Self {
-    Self::present(VarPath::new(vec![name]), vec![])
+  pub fn simple(span: Span, name: String) -> Self {
+    Self::present(span, VarPath::new(span, vec![name]), vec![])
   }
 
-  pub fn present(path: VarPath, args: Vec<StreamVar>) -> Self {
-    Self::new(path, args, 0)
+  pub fn present(span: Span, path: VarPath, args: Vec<StreamVar>) -> Self {
+    Self::new(span, path, args, 0)
   }
 
   pub fn name(&self) -> String {
@@ -377,7 +442,7 @@ impl StreamVar {
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Self::simple(String::from("x"))
+    Self::simple(DUMMY_SP, String::from("x"))
   }
 }
 
@@ -396,7 +461,27 @@ impl Spacetime {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Expr {
+pub struct Expr {
+  pub node: ExprKind,
+  pub span: Span
+}
+
+impl Expr {
+  pub fn new(span: Span, node: ExprKind) -> Self {
+    Expr {
+      node: node,
+      span: span
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Expr::new(DUMMY_SP, ExprKind::example())
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ExprKind {
   JavaNew(JType, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
   JavaThisCall(JavaCall),
@@ -407,20 +492,19 @@ pub enum Expr {
   Bottom(JType)
 }
 
-impl Expr {
+impl ExprKind {
   pub fn is_bottom(&self) -> bool {
     match self {
-      &Expr::Bottom(_) => true,
+      &ExprKind::Bottom(_) => true,
       _ => false
     }
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Expr::Variable(StreamVar::simple(String::from("<expr>")))
+    ExprKind::Variable(StreamVar::simple(DUMMY_SP, String::from("<expr>")))
   }
 }
-
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JClass {
@@ -453,7 +537,8 @@ pub struct JMethod {
   pub return_ty: JType,
   pub name: String,
   pub parameters: JParameters,
-  pub body: JavaBlock
+  pub body: JavaBlock,
+  pub span: Span
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -461,7 +546,8 @@ pub struct JConstructor {
   pub visibility: JVisibility,
   pub name: String,
   pub parameters: JParameters,
-  pub body: JavaBlock
+  pub body: JavaBlock,
+  pub span: Span
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -471,6 +557,7 @@ pub struct JAttribute {
   pub ty: JType,
   pub name: String,
   pub expr: Option<Expr>,
+  pub span: Span
 }
 
 pub type JavaBlock = String;
@@ -480,20 +567,22 @@ pub type JParameters = String;
 pub struct JType {
   pub name: String,
   pub generics: Vec<JType>,
-  pub is_array: bool
+  pub is_array: bool,
+  pub span: Span
 }
 
 impl JType {
-  pub fn simple(name: String) -> Self {
+  pub fn simple(span: Span, name: String) -> Self {
     JType {
       name: name,
       generics: vec![],
-      is_array: false
+      is_array: false,
+      span: span
     }
   }
 
   pub fn example() -> Self {
-    JType::simple(String::from("<Java type>"))
+    JType::simple(DUMMY_SP, String::from("<Java type>"))
   }
 }
 
@@ -540,23 +629,26 @@ impl Display for JVisibility {
 pub struct JavaCall {
   pub property: String, // can be an attribute or a method.
   pub is_attribute: bool,
-  pub args: Vec<Expr>
+  pub args: Vec<Expr>,
+  pub span: Span
 }
 
 impl JavaCall {
-  pub fn empty_method(name: String) -> Self {
+  pub fn empty_method(span: Span, name: String) -> Self {
     JavaCall {
       property: name,
       is_attribute: false,
-      args: vec![]
+      args: vec![],
+      span: span
     }
   }
 
-  pub fn attribute(name: String) -> Self {
+  pub fn attribute(span: Span, name: String) -> Self {
     JavaCall {
       property: name,
       is_attribute: true,
-      args: vec![]
+      args: vec![],
+      span: span
     }
   }
 }

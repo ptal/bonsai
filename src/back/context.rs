@@ -56,8 +56,8 @@ impl Context {
   }
 
   fn visit_stmt(&mut self, stmt: Stmt) {
-    use ast::Stmt::*;
-    match stmt {
+    use ast::StmtKind::*;
+    match stmt.node {
       Let(decl) => {
         let base_binding = decl.binding.base().clone();
         self.insert_binding(base_binding);
