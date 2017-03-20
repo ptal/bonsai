@@ -17,21 +17,24 @@
 use ast::*;
 use visitor::*;
 use partial::*;
+use session::*;
 
-pub fn matching_channel<H: Clone>(bcrate: Crate<H>) -> Partial<Crate<H>> {
-  let matching_channel = MatchingChannel::new(bcrate);
+pub fn matching_channel<H: Clone>(session: &Session, bcrate: Crate<H>) -> Partial<Crate<H>> {
+  let matching_channel = MatchingChannel::new(session, bcrate);
   matching_channel.analyse()
 }
 
-struct MatchingChannel<H> {
+struct MatchingChannel<'a, H> {
   bcrate: Crate<H>,
+  session: &'a Session,
   current_mod: usize
 }
 
-impl<H: Clone> MatchingChannel<H> {
-  pub fn new(bcrate: Crate<H>) -> Self {
+impl<'a, H: Clone> MatchingChannel<'a, H> {
+  pub fn new(session: &'a Session, bcrate: Crate<H>) -> Self {
     MatchingChannel {
       bcrate: bcrate,
+      session: session,
       current_mod: 0
     }
   }
@@ -89,14 +92,14 @@ impl<H: Clone> MatchingChannel<H> {
   {
     if b1.ty != b2.ty {
       panic!(
-        "Type of variables must be the same during instantiation.\
-        It occurs in module {} when instantiating module {}.",
-         mod_a_name, mod_b_name);
+        "Type of variables must be the same during instantiation. \
+        It occurs in module {} with type {} when instantiating module {} with type {}.",
+         mod_a_name, b1.ty, mod_b_name, b2.ty);
     }
   }
 }
 
-impl<H: Clone> Visitor<H, ()> for MatchingChannel<H> {
+impl<'a, H: Clone> Visitor<H, ()> for MatchingChannel<'a, H> {
   unit_visitor_impl!(module, H);
   unit_visitor_impl!(all_stmt);
 
@@ -111,8 +114,12 @@ impl<H: Clone> Visitor<H, ()> for MatchingChannel<H> {
     let mod_a = self.bcrate.modules[self.current_mod].clone();
     let mod_a_name = mod_a.file.mod_name();
     let mod_b_name = mod_binding.module_name();
-    let mod_b = self.bcrate.find_mod_by_name(mod_b_name.clone())
-      .expect(&format!("The bonsai module {} does not exist.", mod_b_name.clone()));
+    let mod_b = self.bcrate.find_mod_by_name(mod_b_name.clone());
+    if mod_b.is_none() {
+      self.session.span_fatal(mod_binding.span,
+        &format!("Cannot find bonsai module `{}`.", mod_b_name.clone()));
+    }
+    let mod_b = mod_b.unwrap();
     let channel_attrs = mod_b.channel_attrs();
     for attr_b in channel_attrs {
       let attr_a = self.find_attr_by_name(&mod_a, attr_b.base().name);

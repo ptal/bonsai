@@ -30,7 +30,7 @@ static ABORT_MSG: &'static str = "stop due to compilation errors";
 pub fn run() {
   let mut session = Session::new(Config::new());
   run_front(&mut session)
-    .and_then(|jcrate| run_middle(session.config(), jcrate))
+    .and_then(|jcrate| run_middle(&session, jcrate))
     .map(|jcrate| run_back(session.config(), jcrate));
 }
 
@@ -47,8 +47,8 @@ fn run_front(session: &mut Session) -> Partial<JCrate> {
   Partial::Value(jcrate)
 }
 
-fn run_middle(_config: &Config, jcrate: JCrate) -> Partial<JCrate> {
-  middle::analyse_bonsai(jcrate)
+fn run_middle(session: &Session, jcrate: JCrate) -> Partial<JCrate> {
+  middle::analyse_bonsai(session, jcrate)
 }
 
 fn run_back(config: &Config, jcrate: JCrate) {

@@ -21,9 +21,10 @@ pub use middle::functionalize_module::*;
 use middle::matching_channel::*;
 use middle::stream_bound::*;
 use partial::*;
+use session::*;
 
-pub fn analyse_bonsai(jcrate: JCrate) -> Partial<JCrate> {
+pub fn analyse_bonsai(session: &Session, jcrate: JCrate) -> Partial<JCrate> {
   Partial::Value(jcrate)
-    .and_then(|jcrate| matching_channel(jcrate))
+    .and_then(|jcrate| matching_channel(session, jcrate))
     .and_then(|jcrate| stream_bound(jcrate))
 }

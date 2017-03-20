@@ -12,22 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(dead_code)]
+
 use driver::config::*;
+use syntex_pos::MultiSpan;
+use syntex_errors::DiagnosticBuilder;
+use syntex_errors::emitter::ColorConfig;
 use syntex_syntax::codemap::{FileMap, CodeMap};
 use std::path::Path;
 use std::rc::Rc;
 
+pub use syntex_errors::Handler as SpanDiagnostic;
+
 pub struct Session {
   pub config: Config,
-  pub codemap: CodeMap,
+  pub codemap: Rc<CodeMap>,
+  pub span_diagnostic: SpanDiagnostic
 }
 
 impl Session
 {
   pub fn new(config: Config) -> Self {
+    let codemap = Rc::new(CodeMap::new());
+    let span_diagnostic = SpanDiagnostic::with_tty_emitter(
+      ColorConfig::Always, true, false, Some(codemap.clone()));
     Session {
       config: config,
-      codemap: CodeMap::new(),
+      codemap: codemap,
+      span_diagnostic: span_diagnostic
     }
   }
 
@@ -37,5 +49,121 @@ impl Session
 
   pub fn load_file(&mut self, path: &Path) -> Rc<FileMap> {
     self.codemap.load_file(path).unwrap()
+  }
+
+  pub fn diagnostic<'a>(&'a self) -> &'a SpanDiagnostic {
+    &self.span_diagnostic
+  }
+
+  /// These methods have been extracted from librustc/session/mod.rs
+  pub fn struct_span_warn<'a, S: Into<MultiSpan>>(&'a self,
+                                                sp: S,
+                                                msg: &str)
+                                                -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_span_warn(sp, msg)
+  }
+  pub fn struct_span_warn_with_code<'a, S: Into<MultiSpan>>(&'a self,
+                                                          sp: S,
+                                                          msg: &str,
+                                                          code: &str)
+                                                          -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_span_warn_with_code(sp, msg, code)
+  }
+  pub fn struct_warn<'a>(&'a self, msg: &str) -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_warn(msg)
+  }
+  pub fn struct_span_err<'a, S: Into<MultiSpan>>(&'a self,
+                                               sp: S,
+                                               msg: &str)
+                                               -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_span_err(sp, msg)
+  }
+  pub fn struct_span_err_with_code<'a, S: Into<MultiSpan>>(&'a self,
+                                                         sp: S,
+                                                         msg: &str,
+                                                         code: &str)
+                                                         -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_span_err_with_code(sp, msg, code)
+  }
+  pub fn struct_err<'a>(&'a self, msg: &str) -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_err(msg)
+  }
+  pub fn struct_span_fatal<'a, S: Into<MultiSpan>>(&'a self,
+                                                 sp: S,
+                                                 msg: &str)
+                                                 -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_span_fatal(sp, msg)
+  }
+  pub fn struct_span_fatal_with_code<'a, S: Into<MultiSpan>>(&'a self,
+                                                           sp: S,
+                                                           msg: &str,
+                                                           code: &str)
+                                                           -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_span_fatal_with_code(sp, msg, code)
+  }
+  pub fn struct_fatal<'a>(&'a self, msg: &str) -> DiagnosticBuilder<'a>  {
+    self.diagnostic().struct_fatal(msg)
+  }
+
+  pub fn span_fatal<S: Into<MultiSpan>>(&self, sp: S, msg: &str) -> ! {
+    panic!(self.diagnostic().span_fatal(sp, msg))
+  }
+  pub fn span_fatal_with_code<S: Into<MultiSpan>>(&self, sp: S, msg: &str, code: &str) -> ! {
+    panic!(self.diagnostic().span_fatal_with_code(sp, msg, code))
+  }
+  pub fn fatal(&self, msg: &str) -> ! {
+    panic!(self.diagnostic().fatal(msg))
+  }
+
+  pub fn span_err<S: Into<MultiSpan>>(&self, sp: S, msg: &str) {
+    self.diagnostic().span_err(sp, msg)
+  }
+  pub fn span_err_with_code<S: Into<MultiSpan>>(&self, sp: S, msg: &str, code: &str) {
+    self.diagnostic().span_err_with_code(sp, &msg, code)
+  }
+  pub fn err(&self, msg: &str) {
+    self.diagnostic().err(msg)
+  }
+  pub fn err_count(&self) -> usize {
+    self.diagnostic().err_count()
+  }
+  pub fn has_errors(&self) -> bool {
+    self.diagnostic().has_errors()
+  }
+  pub fn abort_if_errors(&self) {
+    self.diagnostic().abort_if_errors();
+  }
+
+  pub fn span_warn<S: Into<MultiSpan>>(&self, sp: S, msg: &str) {
+    self.diagnostic().span_warn(sp, msg)
+  }
+  pub fn span_warn_with_code<S: Into<MultiSpan>>(&self, sp: S, msg: &str, code: &str) {
+    self.diagnostic().span_warn_with_code(sp, msg, code)
+  }
+  pub fn warn(&self, msg: &str) {
+    self.diagnostic().warn(msg)
+  }
+
+  pub fn opt_span_warn<S: Into<MultiSpan>>(&self, opt_sp: Option<S>, msg: &str) {
+    match opt_sp {
+        Some(sp) => self.span_warn(sp, msg),
+        None => self.warn(msg),
+    }
+  }
+  /// Delay a span_bug() call until abort_if_errors()
+  pub fn delay_span_bug<S: Into<MultiSpan>>(&self, sp: S, msg: &str) {
+    self.diagnostic().delay_span_bug(sp, msg)
+  }
+  pub fn note_without_error(&self, msg: &str) {
+    self.diagnostic().note_without_error(msg)
+  }
+  pub fn span_note_without_error<S: Into<MultiSpan>>(&self, sp: S, msg: &str) {
+    self.diagnostic().span_note_without_error(sp, msg)
+  }
+  pub fn span_unimpl<S: Into<MultiSpan>>(&self, sp: S, msg: &str) -> ! {
+    self.diagnostic().span_unimpl(sp, msg)
+  }
+  pub fn unimpl(&self, msg: &str) -> ! {
+    self.diagnostic().unimpl(msg)
   }
 }
