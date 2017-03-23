@@ -23,13 +23,23 @@ grammar! bonsai {
 
   type Stream<'a> = FileMapStream<'a>;
 
-  program = .. java_header java_class > make_java_program
+  program = .. java_header diagnostic_attr* java_class > make_java_program
 
-  fn make_java_program(span: Span, header: String, class_name: String,
-    items: Vec<Item>) -> Program
+  diagnostic_attr = HASH LBRACKET identifier
+    LPAREN identifier COMMA number COMMA number RPAREN RBRACKET > make_diagnostic
+
+  fn make_diagnostic(level: String, code: String,
+   line: u64, column: u64) -> CompilerDiagnostic
+  {
+    CompilerDiagnostic::new(level, code, line as usize, column as usize)
+  }
+
+  fn make_java_program(span: Span, header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
+   class_name: String, items: Vec<Item>) -> Program
   {
     Program {
       header: header,
+      expected_diagnostics: expected_diagnostics,
       class_name: class_name,
       items: items,
       span: span
@@ -547,6 +557,7 @@ grammar! bonsai {
   RBRACE = "}" spacing
   LT = "<" !"-" spacing
   GT = ">" spacing
+  HASH = "#" spacing
 
   spacing = (blank+ -> () / comment)* -> (^)
   blank = [" \n\r\t"]

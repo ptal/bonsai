@@ -8,6 +8,14 @@ repository = "https://github.com/ptal/bonsai"
 keywords = ["constraint", "language", "strategy"]
 license = "Apache-2.0"
 
+[lib]
+name = "libbonsai"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bonsai"
+doc = false
+
 [dependencies]
 oak = "^0.5.1"
 oak_runtime = "^0.5.5"

@@ -18,33 +18,47 @@ mod file_filter;
 
 pub use self::config::*;
 use self::file_filter::*;
+use self::module_file::*;
 use partial::*;
 use session::*;
 use front;
 use middle;
 use back;
-use ast::JCrate;
+use ast::{JModule, JCrate};
 
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
 pub fn run() {
   let mut session = Session::new(Config::new());
-  run_front(&mut session)
+  front_mid_run(&mut session)
+    .map(|jcrate| run_back(session.config(), jcrate));;
+}
+
+pub fn front_mid_run(session: &mut Session) -> Partial<JCrate> {
+  run_front(session)
     .and_then(|jcrate| run_middle(&session, jcrate))
-    .map(|jcrate| run_back(session.config(), jcrate));
 }
 
 fn run_front(session: &mut Session) -> Partial<JCrate> {
   let file_filter = FileFilter::new(session.config());
   let mut jcrate = JCrate::new();
   for file in file_filter {
-    Partial::Value(session.load_file(file.input_path()))
-      .and_then(front::parse_bonsai)
-      .and_then(|ast| middle::functionalize_module(file, ast))
+    run_front_one(session, file)
       .map(|module| jcrate.modules.push(module))
       .expect(ABORT_MSG);
   }
   Partial::Value(jcrate)
+}
+
+fn run_front_one(session: &mut Session, file: ModuleFile) -> Partial<JModule> {
+  Partial::Value(session.load_file(file.input_path()))
+    .and_then(front::parse_bonsai)
+    .map(|ast| {
+      for diagnostic in ast.expected_diagnostics.clone() {
+        session.push_expected_diagnostic(diagnostic);
+      }
+      ast })
+    .and_then(|ast| middle::functionalize_module(file, ast))
 }
 
 fn run_middle(session: &Session, jcrate: JCrate) -> Partial<JCrate> {

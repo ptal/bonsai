@@ -17,17 +17,19 @@
 use driver::config::*;
 use syntex_pos::MultiSpan;
 use syntex_errors::DiagnosticBuilder;
-use syntex_errors::emitter::ColorConfig;
+use syntex_errors::emitter::{ColorConfig, Emitter};
 use syntex_syntax::codemap::{FileMap, CodeMap};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use ast::CompilerDiagnostic;
 
 pub use syntex_errors::Handler as SpanDiagnostic;
 
 pub struct Session {
   pub config: Config,
   pub codemap: Rc<CodeMap>,
-  pub span_diagnostic: SpanDiagnostic
+  pub span_diagnostic: SpanDiagnostic,
+  pub expected_diagnostics: Vec<CompilerDiagnostic>
 }
 
 impl Session
@@ -39,8 +41,26 @@ impl Session
     Session {
       config: config,
       codemap: codemap,
-      span_diagnostic: span_diagnostic
+      span_diagnostic: span_diagnostic,
+      expected_diagnostics: vec![]
     }
+  }
+
+  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<String>,
+    codemap: Rc<CodeMap>, emitter: Box<Emitter>) -> Self
+  {
+    let span_diagnostic = SpanDiagnostic::with_emitter(
+      true, false, emitter);
+    Session {
+      config: Config::testing_mode(file_to_test, libs),
+      codemap: codemap,
+      span_diagnostic: span_diagnostic,
+      expected_diagnostics: vec![]
+    }
+  }
+
+  pub fn push_expected_diagnostic(&mut self, diagnostic: CompilerDiagnostic) {
+    self.expected_diagnostics.push(diagnostic);
   }
 
   pub fn config<'a>(&'a self) -> &'a Config {

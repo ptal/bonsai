@@ -23,7 +23,8 @@ pub struct Config
   pub output: PathBuf,
   pub libs: Vec<PathBuf>,
   pub main_method: Option<String>,
-  pub debug: bool
+  pub debug: bool,
+  pub testing_mode: bool
 }
 
 static EXEC_NAME: &'static str = "bonsai";
@@ -57,10 +58,23 @@ impl Config
       output: output,
       libs: libs,
       main_method: matches.value_of("main").map(String::from),
-      debug: matches.is_present("debug")
+      debug: matches.is_present("debug"),
+      testing_mode: false
     };
     config.validate();
     config
+  }
+
+  #[allow(dead_code)]
+  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<String>) -> Config {
+    Config {
+      input: file_to_test.clone(),
+      output: file_to_test,
+      libs: libs.into_iter().map(PathBuf::from).collect(),
+      main_method: None,
+      debug: true,
+      testing_mode: true
+    }
   }
 
   fn default_output(input: &PathBuf) -> PathBuf {

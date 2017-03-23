@@ -37,11 +37,19 @@ impl FileFilter
       mod_to_files: HashMap::new()
     };
     let err_msg = "Failed to collect bonsai files.";
-    package.collect_bonsai_files(config, false, config.input.clone())
-      .expect(&format!("{:?}: {}", config.input, err_msg));
     for lib in &config.libs {
       package.collect_bonsai_files(config, true, lib.clone())
         .expect(&format!("{:?}: {}", lib, err_msg));
+    }
+    // When testing, the input in `config` is a file, not a directory.
+    if config.testing_mode {
+      let file =  ModuleFile::new(config, config.input.clone(), true)
+      .expect(&format!("Testing file {:?} is not a `.bonsai.java` file.", config.input));
+      package.add_mod_file(file);
+    }
+    else {
+      package.collect_bonsai_files(config, false, config.input.clone())
+        .expect(&format!("{:?}: {}", config.input, err_msg));
     }
     package
   }
@@ -56,17 +64,21 @@ impl FileFilter
       }
       else {
         if let Some(mod_file) = ModuleFile::new(config, entry, lib) {
-          let mod_name = mod_file.mod_name();
-          if self.mod_to_files.contains_key(&mod_name) {
-            self.conflicting_module_error(mod_name, mod_file);
-          }
-          else {
-            self.mod_to_files.insert(mod_name, mod_file);
-          }
+          self.add_mod_file(mod_file)
         }
       }
     }
     Ok(())
+  }
+
+  fn add_mod_file(&mut self, mod_file: ModuleFile) {
+    let mod_name = mod_file.mod_name();
+    if self.mod_to_files.contains_key(&mod_name) {
+      self.conflicting_module_error(mod_name, mod_file);
+    }
+    else {
+      self.mod_to_files.insert(mod_name, mod_file);
+    }
   }
 
   fn conflicting_module_error(&self, conflict_mod: String, mod_file: ModuleFile) {

@@ -18,6 +18,46 @@ use std::collections::HashMap;
 use std::cmp::PartialEq;
 pub use syntex_pos::Span;
 pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
+pub use syntex_errors::Level;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompilerDiagnostic {
+  pub level: Level,
+  pub code: String,
+  pub line: usize,
+  pub column: usize
+}
+
+impl CompilerDiagnostic {
+  pub fn new(level: String, code: String, line: usize, column: usize) -> Self {
+    let level = CompilerDiagnostic::from_string_level(level);
+    CompilerDiagnostic {
+      level: level,
+      code: code,
+      line: line,
+      column: column
+    }
+  }
+
+  fn from_string_level(level: String) -> Level {
+    if level == "Fatal" { Level::Fatal }
+    else if level == "Error" { Level::Error }
+    else if level == "Warning" { Level::Warning }
+    else if level == "Note" { Level::Note }
+    else if level == "Help" { Level::Help }
+    else {
+      panic!(format!("Level {} not supported in compiler test attribute.", level));
+    }
+  }
+}
+
+impl Display for CompilerDiagnostic
+{
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    fmt.write_fmt(format_args!("{}:{}:{}:{}", self.level,
+      self.code, self.line, self.column))
+  }
+}
 
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
@@ -57,7 +97,7 @@ impl<Host> Module<Host> {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ModuleAttribute {
   pub visibility: JVisibility,
   pub binding: LetBinding,
@@ -68,12 +108,13 @@ pub struct ModuleAttribute {
 #[derive(Clone, Debug)]
 pub struct Program {
   pub header: String,
+  pub expected_diagnostics: Vec<CompilerDiagnostic>,
   pub class_name: String,
   pub items: Vec<Item>,
   pub span: Span
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Item {
   Attribute(ModuleAttribute),
   Proc(Process),
@@ -82,7 +123,7 @@ pub enum Item {
   JavaConstructor(JConstructor),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Process {
   pub visibility: JVisibility,
   pub name: String,
@@ -105,7 +146,7 @@ impl Process {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Stmt {
   pub node: StmtKind,
   pub span: Span
@@ -144,7 +185,7 @@ impl Stmt {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum StmtKind {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
@@ -169,7 +210,7 @@ impl StmtKind {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RunExpr {
   pub module_path: VarPath,
   pub process: String,
@@ -197,7 +238,7 @@ impl RunExpr {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LetStmt {
   pub binding: LetBinding,
   pub body: Box<Stmt>,
@@ -218,7 +259,7 @@ impl LetStmt {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LetBinding {
   InStore(LetBindingInStore),
   Spacetime(LetBindingSpacetime),
@@ -252,7 +293,7 @@ impl LetBinding {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LetBindingBase {
   pub name: String,
   pub ty: JType,
@@ -280,7 +321,7 @@ impl LetBindingBase {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LetBindingModule {
   pub binding: LetBindingBase,
   pub span: Span
@@ -304,7 +345,7 @@ impl LetBindingModule {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LetBindingSpacetime {
   pub binding: LetBindingBase,
   pub spacetime: Spacetime,
@@ -330,7 +371,7 @@ impl LetBindingSpacetime {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LetBindingInStore {
   pub binding: LetBindingBase,
   pub store: VarPath,
@@ -347,7 +388,7 @@ impl LetBindingInStore {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Condition {
   Entailment(EntailmentRel),
   MetaEntailment(MetaEntailmentRel)
@@ -362,14 +403,14 @@ impl Condition {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntailmentRel {
   pub left: StreamVar,
   pub right: Expr,
   pub span: Span
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MetaEntailmentRel {
   pub left: EntailmentRel,
   pub right: bool,
@@ -461,7 +502,7 @@ impl Spacetime {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Expr {
   pub node: ExprKind,
   pub span: Span
@@ -481,7 +522,7 @@ impl Expr {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
   JavaNew(JType, Vec<Expr>),
   JavaObjectCall(String, Vec<JavaCall>),
@@ -507,7 +548,7 @@ impl ExprKind {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JClass {
   pub header: String,
   pub class_name: String,
@@ -531,7 +572,7 @@ impl JClass {
 pub type JCrate = Crate<JClass>;
 pub type JModule = Module<JClass>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JMethod {
   pub visibility: JVisibility,
   pub is_static: bool,
@@ -542,7 +583,7 @@ pub struct JMethod {
   pub span: Span
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JConstructor {
   pub visibility: JVisibility,
   pub name: String,
@@ -551,7 +592,7 @@ pub struct JConstructor {
   pub span: Span
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JAttribute {
   pub visibility: JVisibility,
   pub is_static: bool,
@@ -635,7 +676,7 @@ impl Display for JVisibility {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JavaCall {
   pub property: String, // can be an attribute or a method.
   pub is_attribute: bool,
