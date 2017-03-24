@@ -38,6 +38,7 @@ use syntex_errors::DiagnosticBuilder;
 use syntex_errors::emitter::Emitter;
 use syntex_pos::Span;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 use std::path::{PathBuf, Path};
 use std::fs::read_dir;
@@ -56,7 +57,11 @@ fn test_data_directory()
   let mut test_path = PathBuf::new();
   test_path.push(data_path);
   test_path.push(Path::new("test"));
-  let mut test_engine = TestEngine::new(test_path);
+  let lib_path = PathBuf::from("libstd/src");
+  if !lib_path.is_dir() {
+    panic!(format!("`{}` must be the directory of the standard bonsai library.", lib_path.display()));
+  }
+  let mut test_engine = TestEngine::new(test_path, lib_path);
   test_engine.run();
 }
 
@@ -69,18 +74,20 @@ enum ExpectedResult {
 struct TestEngine
 {
   test_path: PathBuf,
+  lib_path: PathBuf,
   display: TestDisplay
 }
 
 impl TestEngine
 {
-  fn new(test_path: PathBuf) -> TestEngine
+  fn new(test_path: PathBuf, lib_path: PathBuf) -> TestEngine
   {
     if !test_path.is_dir() {
       panic!(format!("`{}` is not a valid test directory.", test_path.display()));
     }
     TestEngine{
       test_path: test_path,
+      lib_path: lib_path,
       display: TestDisplay::new()
     }
   }
@@ -117,29 +124,32 @@ impl TestEngine
   }
 
   fn test_file(&mut self, filepath: PathBuf, expect: ExpectedResult) {
-    let obtained_diagnostics = Rc::new(vec![]);
+    let obtained_diagnostics = Rc::new(RefCell::new(vec![]));
     let codemap = Rc::new(CodeMap::new());
     let (result, expected_diagnostics) = {
-      let mut session = Session::testing_mode(filepath.clone(), vec![], codemap.clone(),
-        Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap)));
+      let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
+      let mut session = Session::testing_mode(filepath.clone(),
+        vec![self.lib_path.clone()], codemap.clone(), emitter);
       let result = front_mid_run(&mut session);
       (result, session.expected_diagnostics)
     };
+    let obtained_diagnostics = Rc::try_unwrap(obtained_diagnostics)
+      .expect("Could not extract `obtained_diagnostics`.").into_inner();
     let test = Test::new(&mut self.display, result, expect, expected_diagnostics,
-      Rc::try_unwrap(obtained_diagnostics).unwrap(), filepath);
+      obtained_diagnostics, filepath);
     test.diagnostic();
   }
 }
 
 struct TestEmitter
 {
-  obtained_diagnostics: Rc<Vec<CompilerDiagnostic>>,
+  obtained_diagnostics: Rc<RefCell<Vec<CompilerDiagnostic>>>,
   codemap: Rc<CodeMap>,
 }
 
 impl TestEmitter
 {
-  pub fn new(obtained_diagnostics: Rc<Vec<CompilerDiagnostic>>,
+  pub fn new(obtained_diagnostics: Rc<RefCell<Vec<CompilerDiagnostic>>>,
    codemap: Rc<CodeMap>) -> Self
   {
     TestEmitter {
@@ -152,7 +162,8 @@ impl TestEmitter
 impl Emitter for TestEmitter
 {
   fn emit(&mut self, db: &DiagnosticBuilder) {
-    let primary_span: Span = db.span.primary_span().unwrap();
+    let primary_span: Span = db.span.primary_span()
+      .expect("Diagnostic lacks a primary span.");
     let loc = self.codemap.lookup_char_pos(primary_span.lo);
     let diagnostic = CompilerDiagnostic::new(
       format!("{}", db.level),
@@ -160,7 +171,10 @@ impl Emitter for TestEmitter
       loc.line,
       loc.col.to_usize()
     );
-    Rc::get_mut(&mut self.obtained_diagnostics).unwrap().push(diagnostic);
+    self.obtained_diagnostics
+      .try_borrow_mut()
+      .expect("Could not mutably borrow `obtained_diagnostics`")
+      .push(diagnostic);
   }
 }
 

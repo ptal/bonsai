@@ -40,13 +40,13 @@ impl CompilerDiagnostic {
   }
 
   fn from_string_level(level: String) -> Level {
-    if level == "Fatal" { Level::Fatal }
-    else if level == "Error" { Level::Error }
-    else if level == "Warning" { Level::Warning }
-    else if level == "Note" { Level::Note }
-    else if level == "Help" { Level::Help }
+    if level == "fatal" { Level::Fatal }
+    else if level == "error" { Level::Error }
+    else if level == "warning" { Level::Warning }
+    else if level == "note" { Level::Note }
+    else if level == "help" { Level::Help }
     else {
-      panic!(format!("Level {} not supported in compiler test attribute.", level));
+      panic!(format!("Level `{}` not supported in compiler test attribute.", level));
     }
   }
 }

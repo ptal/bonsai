@@ -42,7 +42,11 @@ impl<'a, H: Clone> MatchingChannel<'a, H> {
   fn analyse(mut self) -> Partial<Crate<H>> {
     let bcrate_clone = self.bcrate.clone();
     self.visit_crate(bcrate_clone);
-    Partial::Value(self.bcrate)
+    if self.session.has_errors() {
+      Partial::Fake(self.bcrate)
+    } else {
+      Partial::Value(self.bcrate)
+    }
   }
 
   fn find_attr_by_name(&self, module: &Module<H>,
@@ -116,17 +120,21 @@ impl<'a, H: Clone> Visitor<H, ()> for MatchingChannel<'a, H> {
     let mod_b_name = mod_binding.module_name();
     let mod_b = self.bcrate.find_mod_by_name(mod_b_name.clone());
     if mod_b.is_none() {
-      self.session.span_fatal(mod_binding.span,
-        &format!("Cannot find bonsai module `{}`.", mod_b_name.clone()));
+      self.session.struct_span_err_with_code(
+        mod_binding.span,
+        &format!("Cannot find bonsai module `{}`.", mod_b_name.clone()),
+        "E0001").emit();
     }
-    let mod_b = mod_b.unwrap();
-    let channel_attrs = mod_b.channel_attrs();
-    for attr_b in channel_attrs {
-      let attr_a = self.find_attr_by_name(&mod_a, attr_b.base().name);
-      let attr_a = attr_a.expect(&format!(
-        "The module attribute {} could not be found in {} but is marked with `channel` in {}.",
-        attr_b.base().name, mod_a_name.clone(), mod_b_name.clone()));
-      self.cmp_binding(attr_a, attr_b, mod_a_name.clone(), mod_b_name.clone());
+    else {
+      let mod_b = mod_b.unwrap();
+      let channel_attrs = mod_b.channel_attrs();
+      for attr_b in channel_attrs {
+        let attr_a = self.find_attr_by_name(&mod_a, attr_b.base().name);
+        let attr_a = attr_a.expect(&format!(
+          "The module attribute {} could not be found in {} but is marked with `channel` in {}.",
+          attr_b.base().name, mod_a_name.clone(), mod_b_name.clone()));
+        self.cmp_binding(attr_a, attr_b, mod_a_name.clone(), mod_b_name.clone());
+      }
     }
   }
 }

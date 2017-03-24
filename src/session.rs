@@ -46,7 +46,7 @@ impl Session
     }
   }
 
-  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<String>,
+  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<PathBuf>,
     codemap: Rc<CodeMap>, emitter: Box<Emitter>) -> Self
   {
     let span_diagnostic = SpanDiagnostic::with_emitter(

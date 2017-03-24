@@ -30,8 +30,10 @@ static ABORT_MSG: &'static str = "stop due to compilation errors";
 
 pub fn run() {
   let mut session = Session::new(Config::new());
-  front_mid_run(&mut session)
-    .map(|jcrate| run_back(session.config(), jcrate));;
+  let jcrate = front_mid_run(&mut session)
+    .expect(ABORT_MSG);
+  assert_eq!(session.has_errors(), false);
+  run_back(session.config(), jcrate);
 }
 
 pub fn front_mid_run(session: &mut Session) -> Partial<JCrate> {

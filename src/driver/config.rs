@@ -66,11 +66,11 @@ impl Config
   }
 
   #[allow(dead_code)]
-  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<String>) -> Config {
+  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<PathBuf>) -> Config {
     Config {
       input: file_to_test.clone(),
       output: file_to_test,
-      libs: libs.into_iter().map(PathBuf::from).collect(),
+      libs: libs,
       main_method: None,
       debug: true,
       testing_mode: true

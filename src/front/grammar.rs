@@ -46,7 +46,7 @@ grammar! bonsai {
     }
   }
 
-  java_header = (!PUBLIC .)* > to_string
+  java_header = (!(diagnostic_attr* PUBLIC) .)* > to_string
 
   java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE LBRACE item+ RBRACE
 
