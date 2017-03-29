@@ -24,15 +24,12 @@ public class SpaceMachine extends StdMachine
   private boolean debug;
   private int numReactions;
 
-  public static final InternalIdentifiers INTERNAL_STRING_IDENTIFIERS =
-    new InternalStringIdentifiers();
-
   public static SpaceMachine create(Program body) {
     Program p = new LinkObject(null,
       SC.shell(new StringID(".."), body),
       SC.NO_ACTION, SC.NO_ACTION, SC.NO_ACTION);
     SpaceEnvironment env = new SpaceEnvironment(
-      ClockRegistry.noMultiClockMode(), INTERNAL_STRING_IDENTIFIERS, p);
+      ClockRegistry.noMultiClockMode(), new InternalStringIdentifiers(), p);
     return new SpaceMachine(env);
   }
 
@@ -49,17 +46,26 @@ public class SpaceMachine extends StdMachine
   }
 
   // Returns `true` if it stops because no more nodes are on the queue, otherwise `false` if the program terminated without consuming all nodes.
-  public boolean execute() {
+  public MachineStatus execute() {
     SpaceEnvironment env = (SpaceEnvironment) clock0;
+    env.resetFlags();
     if (debug) {
       System.out.println("[Start of execution]");
     }
-    while(step()) {}
+    MachineStatus status = MachineStatus.Terminated;
+    while(step()) {
+      if (env.stopped) {
+        status = MachineStatus.Stopped;
+      }
+      else if (env.pausedUp) {
+        status = MachineStatus.PausedUp;
+      }
+    }
     if (debug) {
       System.out.println("[End of execution] After " + numReactions + " reactions due to " +
-        ((env.isEmpty()) ? "empty reaction queue.":"program termination."));
+        ((env.isEmpty()) ? "empty reaction queue.":status));
     }
-    return env.isEmpty();
+    return status;
   }
 
   public boolean step() {

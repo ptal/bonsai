@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0001, 20, 11)]
+package bonsai.runtime.sugarcubes;
 
-public class CannotFindModule implements Executable
-{
-  proc execute() {
-    module NotFound notFound;
+public enum MachineStatus {
+  PausedUp,
+  Stopped,
+  Terminated;
+
+  public String toString() {
+    switch(this) {
+      case PausedUp: return "pause up";
+      case Stopped: return "stop";
+      default: return "program termination";
+    }
   }
 }

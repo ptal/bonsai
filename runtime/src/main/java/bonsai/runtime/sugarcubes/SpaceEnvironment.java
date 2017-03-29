@@ -29,6 +29,11 @@ public class SpaceEnvironment extends Clock {
   private SpaceBranch currentBranch;
   private boolean inSnapshot;
 
+  // This is updated by the statement `stop` and `pause up`.
+  // We need it because the byte status of SugarCubes cannot be easily extended so the status of these statements will be `STOP` (which stands for pause).
+  public boolean stopped;
+  public boolean pausedUp;
+
   public SpaceEnvironment(ClockIdentifier clockID,
     InternalIdentifiers anInternalIdentifierGenerator,
     Program body)
@@ -42,6 +47,7 @@ public class SpaceEnvironment extends Clock {
     // FIXME, the current branch should be incorporated into the current running program. For example, one of the problem is that it does not call activateOnEOI.
     currentBranch = null;
     inSnapshot = false;
+    resetFlags();
   }
 
   private boolean firstActivation = true;
@@ -63,6 +69,11 @@ public class SpaceEnvironment extends Clock {
       currentBranch.activate(this);
     }
     return super.activation(env);
+  }
+
+  public void resetFlags() {
+    stopped = false;
+    pausedUp = false;
   }
 
   // Big step transition.

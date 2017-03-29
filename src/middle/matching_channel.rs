@@ -120,10 +120,12 @@ impl<'a, H: Clone> Visitor<H, ()> for MatchingChannel<'a, H> {
     let mod_b_name = mod_binding.module_name();
     let mod_b = self.bcrate.find_mod_by_name(mod_b_name.clone());
     if mod_b.is_none() {
-      self.session.struct_span_err_with_code(
-        mod_binding.span,
+      let sp = mod_binding.binding.ty.span;
+      self.session.struct_span_err_with_code(sp,
         &format!("Cannot find bonsai module `{}`.", mod_b_name.clone()),
-        "E0001").emit();
+        "E0001")
+      .span_label(sp, &format!("not found in this scope"))
+      .emit();
     }
     else {
       let mod_b = mod_b.unwrap();
