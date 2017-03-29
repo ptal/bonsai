@@ -28,21 +28,21 @@ public class SpacetimeVar extends UnaryInstruction
   protected Function<SpaceEnvironment, Object> initValue;
   private boolean firstActivation;
 
-  public SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
+  public SpacetimeVar(Object ref, String name, boolean isModuleAttr, Spacetime spacetime,
     Boolean isTransient, int streamSize,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
     this(name, isModuleAttr, spacetime, initValue,
-      new Stream(name, streamSize, isTransient), body);
+      new Stream(ref, name, streamSize, isTransient), body);
   }
 
   protected SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
     Function<SpaceEnvironment, Object> initValue, Stream stream, Program body)
   {
     super(body);
-    if (stream.capacity() != 1 && spacetime == Spacetime.SingleTime) {
+    if (stream.capacity() != 0 && spacetime == Spacetime.SingleTime) {
       throw new RuntimeException(
-        "Single time variable must have a maximum size of stream of 1. This is a bug.");
+        "Single time variable cannot have a stream of past values. This is a bug.");
     }
     this.name = name;
     this.isModuleAttr = isModuleAttr;

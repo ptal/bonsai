@@ -23,10 +23,10 @@ public class LocationVar extends SpacetimeVar
 {
   private String storeName;
 
-  public LocationVar(String name, String storeName,
+  public LocationVar(Object ref, String name, String storeName,
     Function<SpaceEnvironment, Object> initValue, Program body)
   {
-    super(name, false, Spacetime.SingleSpace, false, 1,
+    super(ref, name, false, Spacetime.SingleSpace, false, 0,
       (env) -> {
         Store store = (Store) env.var(storeName, 0);
         Object value = initValue.apply(env);

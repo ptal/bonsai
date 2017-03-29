@@ -42,8 +42,8 @@ impl<H: Clone> StreamBound<H> {
   }
 
   fn visit_stream_var(&mut self, var: StreamVar) {
-    let bound = self.bcrate.stream_bound.entry(var.name()).or_insert(1);
-    *bound = max(*bound, var.past + 1);
+    let bound = self.bcrate.stream_bound.entry(var.name()).or_insert(0);
+    *bound = max(*bound, var.past);
   }
 
   fn visit_expr(&mut self, expr: Expr) {

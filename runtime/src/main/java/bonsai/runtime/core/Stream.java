@@ -19,38 +19,57 @@ import java.util.function.*;
 /// A bounded stream implemented with a circular buffer where pushing an element when the history is full just erase the first one.
 public class Stream implements Restorable
 {
+  // The reference to the object in the Java class that we must always keep as the current object.
+  private Object ref;
+  // This contains a stream of object "of the past".
   private Object[] stream;
   private int size;
-  private int current;
+  private int last;
 
   private String name;
   private boolean isTransient;
 
-  public Stream(String name, int streamCapacity, boolean isTransient)
+  public Stream(Object ref, String name, int streamCapacity, boolean isTransient)
   {
+    this.ref = ref;
     stream = new Object[streamCapacity];
     this.name = name;
     this.isTransient = isTransient;
     this.size = 0;
-    this.current = 0;
+    this.last = 0;
   }
 
   public int capacity() {
     return stream.length;
   }
 
-  public void reset(Object value) {
-    this.size = 0;
-    this.current = 0;
-    push(value);
+  public boolean isUnary() {
+    return capacity() == 0;
   }
 
-  private void push(Object x) {
-    current = (current + 1) % capacity();
-    stream[current] = x;
-    if (size < capacity()) {
-      size = size + 1;
+  public void reset(Object value) {
+    this.size = 0;
+    this.last = 0;
+    resetRef(value);
+  }
+
+  private Object copyRef() {
+    return Cast.toCopy(name, ref).copy();
+  }
+
+  private void resetRef(Object value) {
+    Cast.toResettable(name, ref).reset(value);
+  }
+
+  private void push(Object value) {
+    if (!isUnary()) {
+      last = (last + 1) % capacity();
+      stream[last] = copyRef();
+      if (size < capacity()) {
+        size = size + 1;
+      }
     }
+    resetRef(value);
   }
 
   public void next(Supplier<Object> defaultValue) {
@@ -58,29 +77,35 @@ public class Stream implements Restorable
       push(defaultValue.get());
     }
     else {
-      if (capacity() > 1) {
+      if (!isUnary()) {
         duplicateLast();
       }
     }
   }
 
   private void duplicateLast() {
-    Object last = Cast.toCopy(name, pre(0)).copy();
-    push(last);
+    push(copyRef());
   }
 
   // Access the value of the stream at T_{c-t} where `c` is the current instant.
   public Object pre(int t) {
+    if (t == 0) {
+      return ref;
+    }
+    t = t - 1;
     checkNonEmptyStream("pre");
     checkCapacity(t);
+    // If the value does not have such a long history yet, return its bottom.
     if (t >= size) {
-      return Cast.toLattice(name, stream[current]).bottom();
+      return Cast.toLattice(name, ref).bottom();
     }
-    return stream[preIndex(t)];
+    else {
+      return stream[preIndex(t)];
+    }
   }
 
   private int preIndex(int t) {
-    int x = current - t;
+    int x = last - t;
     if (x < 0) {
       x = capacity() + x;
     }
@@ -92,12 +117,12 @@ public class Stream implements Restorable
   ///  (2) If the stream is n-ary then we just keep track of the references of the elements in the current stream.
   ///      The last element will be duplicated in `next()`.
   public Object label() {
-    checkNonEmptyStream("label");
-    if (capacity() == 1) {
-      return Cast.toRestorable(name, pre(0)).label();
+    if (isUnary()) {
+      return Cast.toRestorable(name, ref).label();
     }
     else {
-      Label label = new Label();
+      checkNonEmptyStream("label");
+      Label label = new Label(copyRef());
       int begin = preIndex(size-1);
       for (int i = 0; i < size; ++i) {
         Object element = stream[(begin+i)%capacity()];
@@ -108,9 +133,11 @@ public class Stream implements Restorable
   }
 
   private class Label {
+    private Object ref;
     private Object[] labels;
     private int size;
-    public Label() {
+    public Label(Object ref) {
+      this.ref = ref;
       labels = new Object[capacity()];
       size = 0;
     }
@@ -121,14 +148,15 @@ public class Stream implements Restorable
   }
 
   public void restore(Object label) {
-    if (capacity() == 1) {
-      Cast.toRestorable(name, stream[0]).restore(label);
+    if (isUnary()) {
+      Cast.toRestorable(name, ref).restore(label);
     }
     else {
       Label lab = (Label) label;
+      resetRef(lab.ref);
       stream = lab.labels;
       size = lab.size;
-      current = size-1;
+      last = size-1;
     }
   }
 
@@ -150,7 +178,7 @@ public class Stream implements Restorable
   }
 
   public String toString() {
-    String s = "[";
+    String s = "[ref=" + ref + ", ";
     for (int i = 0; i < capacity(); ++i) {
       s += stream[i] + ", ";
     }

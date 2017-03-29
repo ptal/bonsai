@@ -27,7 +27,7 @@ package bonsai.runtime.core;
 
 import java.util.Optional;
 
-public class FlatLattice<T> extends LatticeVar {
+public class FlatLattice<T> extends LatticeVar implements Resettable<FlatLattice<T>> {
 
   protected Optional<T> value;
 
@@ -45,6 +45,10 @@ public class FlatLattice<T> extends LatticeVar {
 
   public boolean isBottom() {
     return !value.isPresent();
+  }
+
+  public void reset(FlatLattice<T> o) {
+    this.value = o.value;
   }
 
   public EntailmentResult entail(Object obj) {
