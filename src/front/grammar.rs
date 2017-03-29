@@ -187,6 +187,8 @@ grammar! bonsai {
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / let_binding > make_let_stmt
     / WHEN condition block > make_when
+    / PAUSE UP SEMI_COLON > make_pause_up
+    / STOP SEMI_COLON > make_stop
     / PAUSE SEMI_COLON > make_pause
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
@@ -253,6 +255,14 @@ grammar! bonsai {
 
   fn make_pause() -> StmtKind {
     StmtKind::Pause
+  }
+
+  fn make_pause_up() -> StmtKind {
+    StmtKind::PauseUp
+  }
+
+  fn make_stop() -> StmtKind {
+    StmtKind::Stop
   }
 
   fn make_trap(name: String, body: Stmt) -> StmtKind {
@@ -491,7 +501,7 @@ grammar! bonsai {
 
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
-    / "loop" / "pause" / "trap" / "exit" / "in" / "world_line"
+    / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
     / "run" / "true" / "false" / java_kw
   kw_tail = !ident_char spacing
@@ -505,6 +515,8 @@ grammar! bonsai {
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
   LOOP = "loop" kw_tail
+  UP = "up" kw_tail
+  STOP = "stop" kw_tail
   PAUSE = "pause" kw_tail
   TRAP = "trap" kw_tail
   EXIT = "exit" kw_tail

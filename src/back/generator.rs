@@ -256,6 +256,8 @@ fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
     Let(body) => generate_let(fmt, context, body),
     When(entailment, body) => generate_when(fmt, context, entailment, body),
     Pause => generate_pause(fmt),
+    PauseUp => generate_pause_up(fmt),
+    Stop => generate_stop(fmt),
     Trap(name, body) => generate_trap(fmt, context, name, body),
     Exit(name) => generate_exit(fmt, name),
     Loop(body) => generate_loop(fmt, context, body),
@@ -403,6 +405,14 @@ fn generate_tell(fmt: &mut CodeFormatter, context: &Context, var: StreamVar, exp
 
 fn generate_pause(fmt: &mut CodeFormatter) {
   fmt.push("SC.stop()");
+}
+
+fn generate_pause_up(fmt: &mut CodeFormatter) {
+  fmt.push("new PauseUp()");
+}
+
+fn generate_stop(fmt: &mut CodeFormatter) {
+  fmt.push("new BStop()");
 }
 
 fn generate_nothing(fmt: &mut CodeFormatter) {

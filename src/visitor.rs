@@ -45,6 +45,8 @@ pub trait Visitor<H, R>
 
   fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) -> R;
   fn visit_pause(&mut self) -> R;
+  fn visit_pause_up(&mut self) -> R;
+  fn visit_stop(&mut self) -> R;
 
   fn visit_trap(&mut self, _name: String, child: Stmt) -> R {
     self.visit_stmt(child)
@@ -99,6 +101,8 @@ pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
     When(cond, body) => visitor.visit_when(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
     Pause => visitor.visit_pause(),
+    PauseUp => visitor.visit_pause_up(),
+    Stop => visitor.visit_stop(),
     Trap(name, body) => visitor.visit_trap(name, *body),
     Exit(name) => visitor.visit_exit(name),
     Loop(body) => visitor.visit_loop(*body),
@@ -162,6 +166,8 @@ macro_rules! unit_visitor_impl {
   (binding_base) => (fn visit_binding(&mut self, _binding: LetBindingBase) {});
   (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
   (pause) => (fn visit_pause(&mut self) {});
+  (pause_up) => (fn visit_pause_up(&mut self) {});
+  (stop) => (fn visit_stop(&mut self) {});
   (exit) => (fn visit_exit(&mut self, _name: String) {});
   (proc_call) => (fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {});
   (fn_call) => (fn visit_fn_call(&mut self, _expr: Expr) {});
@@ -180,6 +186,8 @@ macro_rules! unit_visitor_impl {
     unit_visitor_impl!(binding_base);
     unit_visitor_impl!(tell);
     unit_visitor_impl!(pause);
+    unit_visitor_impl!(pause_up);
+    unit_visitor_impl!(stop);
     unit_visitor_impl!(exit);
     unit_visitor_impl!(proc_call);
     unit_visitor_impl!(fn_call);

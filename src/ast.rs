@@ -194,6 +194,8 @@ pub enum StmtKind {
   When(Condition, Box<Stmt>),
   Tell(StreamVar, Expr),
   Pause,
+  PauseUp,
+  Stop,
   Trap(String, Box<Stmt>),
   Exit(String),
   Loop(Box<Stmt>),

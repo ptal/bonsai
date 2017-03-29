@@ -57,9 +57,11 @@ public class SpaceMachine extends StdMachine
       // We check in order, first for `stop`, then for `pause up`.
       if (env.stopped) {
         status = MachineStatus.Stopped;
+        break;
       }
       else if (env.pausedUp) {
         status = MachineStatus.PausedUp;
+        break;
       }
     }
     if (debug) {

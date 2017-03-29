@@ -80,6 +80,8 @@ impl<H: Clone> Visitor<H, ()> for StreamBound<H> {
   unit_visitor_impl!(space);
   unit_visitor_impl!(let_binding);
   unit_visitor_impl!(pause);
+  unit_visitor_impl!(pause_up);
+  unit_visitor_impl!(stop);
   unit_visitor_impl!(exit);
   unit_visitor_impl!(proc_call);
   unit_visitor_impl!(fn_call);
