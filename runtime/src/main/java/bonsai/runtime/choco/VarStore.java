@@ -17,6 +17,8 @@ package bonsai.runtime.choco;
 import bonsai.runtime.core.*;
 import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
+import org.chocosolver.solver.constraints.*;
+import org.chocosolver.util.ESat;
 
 public class VarStore extends Store implements Restorable, Resettable<VarStore> {
   private Model model;
@@ -105,8 +107,100 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
   }
 
   public EntailmentResult entail(Object value) {
-    throw new UnsupportedOperationException(
-      "Entailment is currently not defined for `VarStore`.");
+    if (value instanceof VarStore) {
+      VarStore vstore = (VarStore) value;
+      return vstoreEntail(vstore);
+    }
+    else if (value instanceof ConstraintStore) {
+      ConstraintStore cstore = (ConstraintStore) value;
+      return cstoreEntail(cstore);
+    }
+    else if (value instanceof Constraint) {
+      Constraint constraint = (Constraint) value;
+      return constraintEntail(constraint);
+    }
+    else {
+      throw new UnsupportedOperationException(
+        "Entailment is not defined between `VarStore` and "
+        + value.getClass().getName() + ".");
+    }
+  }
+
+  private EntailmentResult vstoreEntail(VarStore vstore) {
+    checkOnlyIntVar(model);
+    checkOnlyIntVar(vstore.model);
+    IntVar[] v1 = model.retrieveIntVars(true);
+    IntVar[] v2 = vstore.model.retrieveIntVars(true);
+    if (v2.length < v1.length) {
+      return EntailmentResult.FALSE;
+    }
+    else if (v1.length < v2.length) {
+      return EntailmentResult.UNKNOWN;
+    }
+    else {
+      EntailmentResult res = EntailmentResult.TRUE;
+      for (int i = 0; i < v1.length; i++) {
+        EntailmentResult varRes = varEntail(v1[i], v2[i]);
+        if (varRes == EntailmentResult.FALSE) {
+          return EntailmentResult.FALSE;
+        }
+        else if (varRes == EntailmentResult.UNKNOWN) {
+          res = EntailmentResult.UNKNOWN;
+        }
+      }
+      return res;
+    }
+  }
+
+  private EntailmentResult varEntail(IntVar v1, IntVar v2) {
+    if (v1.isInstantiated() && v2.isInstantiated()) {
+      if (v1.getValue() == v2.getValue()) {
+        return EntailmentResult.TRUE;
+      }
+      else {
+        return EntailmentResult.FALSE;
+      }
+    }
+    else {
+      // We could be more precise using the set inclusion between v1 and v2.
+      return EntailmentResult.UNKNOWN;
+    }
+  }
+
+  private EntailmentResult cstoreEntail(ConstraintStore cstore) {
+    EntailmentResult res = EntailmentResult.TRUE;
+    for (Constraint c : cstore.constraints) {
+      EntailmentResult cRes = constraintEntail(c);
+      if (cRes == EntailmentResult.FALSE) {
+        return EntailmentResult.FALSE;
+      }
+      else if (cRes == EntailmentResult.UNKNOWN) {
+        res = EntailmentResult.UNKNOWN;
+      }
+    }
+    return res;
+  }
+
+  private EntailmentResult constraintEntail(Constraint constraint) {
+    ESat consistency = constraint.isSatisfied();
+    if (consistency == ESat.TRUE) {
+      return EntailmentResult.TRUE;
+    }
+    else if (consistency == ESat.FALSE) {
+      return EntailmentResult.FALSE;
+    }
+    else {
+      return EntailmentResult.UNKNOWN;
+    }
+  }
+
+  private void checkOnlyIntVar(Model model) {
+    if (model.retrieveSetVars().length > 0 ||
+        model.retrieveRealVars().length > 0)
+    {
+      throw new RuntimeException(
+        "Entailment between two VarStore only works with integer variables.");
+    }
   }
 
   public class Entry {
