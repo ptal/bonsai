@@ -69,7 +69,15 @@ public class SpaceMachine extends StdMachine
     return status;
   }
 
-  public boolean step() {
+  // This method is used for explicitly instantiating a future.
+  // After `execute()` the user can read value from the current instant.
+  // After `commit()` the user can write value to the next instant.
+  public boolean commit() {
+    SpaceEnvironment env = (SpaceEnvironment) clock0;
+    return env.commit();
+  }
+
+  private boolean step() {
     SpaceEnvironment env = (SpaceEnvironment) clock0;
     numReactions++;
     if (debug) {

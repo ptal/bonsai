@@ -60,15 +60,33 @@ public class SpaceEnvironment extends Clock {
         if (futures.isEmpty()) {
           return TERM;
         }
-        else {
+        else if(!commitCalled) {
           instantiateFuture();
         }
       }
+      commitCalled = false;
     }
     if (currentBranch != null) {
       currentBranch.activate(this);
     }
     return super.activation(env);
+  }
+
+  // See SpaceMachine.commit()
+  private boolean commitCalled = false;
+  public boolean commit() {
+    if (commitCalled) {
+      throw new RuntimeException(
+        "Method commit() called twice. Only one future can be instantiated per instant.");
+    }
+    if (!futures.isEmpty()) {
+      commitCalled = true;
+      instantiateFuture();
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   public void resetFlags() {
@@ -80,7 +98,6 @@ public class SpaceEnvironment extends Clock {
   public void newInstant() {
     saveFutures();
     super.newInstant();
-
   }
 
   public void saveFutures() {
