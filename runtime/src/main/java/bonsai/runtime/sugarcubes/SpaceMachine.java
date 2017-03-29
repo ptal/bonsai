@@ -54,6 +54,7 @@ public class SpaceMachine extends StdMachine
     }
     MachineStatus status = MachineStatus.Terminated;
     while(step()) {
+      // We check in order, first for `stop`, then for `pause up`.
       if (env.stopped) {
         status = MachineStatus.Stopped;
       }
