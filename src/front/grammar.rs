@@ -35,12 +35,13 @@ grammar! bonsai {
   }
 
   fn make_java_program(span: Span, header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
-   class_name: String, items: Vec<Item>) -> Program
+   class_name: String, interfaces: Vec<JType>, items: Vec<Item>) -> Program
   {
     Program {
       header: header,
       expected_diagnostics: expected_diagnostics,
       class_name: class_name,
+      interfaces: interfaces,
       items: items,
       span: span
     }
@@ -48,7 +49,7 @@ grammar! bonsai {
 
   java_header = (!(diagnostic_attr* PUBLIC) .)* > to_string
 
-  java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE LBRACE item+ RBRACE
+  java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE (COMMA java_ty)* LBRACE item+ RBRACE
 
   item
     = module_attribute
@@ -93,15 +94,16 @@ grammar! bonsai {
     = .. java_visibility identifier java_param_list java_block kw_tail > make_java_constructor
 
   java_attr
-    = .. java_visibility (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
+    = .. (FINAL->())? java_visibility (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
 
-  fn make_java_attr(span: Span, visibility: JVisibility, is_static: Option<()>,
-    ty: JType, name: String, expr: Option<Expr>) -> Item
+  fn make_java_attr(span: Span, is_final: Option<()>, visibility: JVisibility,
+    is_static: Option<()>, ty: JType, name: String, expr: Option<Expr>) -> Item
   {
     Item::JavaAttr(
       JAttribute {
         visibility: visibility,
         is_static: is_static.is_some(),
+        is_final: is_final.is_some(),
         ty: ty,
         name: name,
         expr: expr,
@@ -536,7 +538,7 @@ grammar! bonsai {
   java_kw
     = "new" / "private" / "public" / "class"
     / "implements" / "Executable" / "static"
-    / "protected"
+    / "protected" / "final"
   NEW = "new" kw_tail
   PRIVATE = "private" kw_tail
   PUBLIC = "public" kw_tail
@@ -545,6 +547,7 @@ grammar! bonsai {
   IMPLEMENTS = "implements" kw_tail
   EXECUTABLE = "Executable" kw_tail
   STATIC = "static" kw_tail
+  FINAL = "final" kw_tail
 
   UNDERSCORE = "_"
   TILDE = "~"

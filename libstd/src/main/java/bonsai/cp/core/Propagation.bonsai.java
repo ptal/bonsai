@@ -21,11 +21,13 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class Propagation implements Executable
+public class Propagation implements Executable, Resettable<Propagation>
 {
   private channel world_line VarStore domains = bot;
   private channel world_line ConstraintStore constraints = bot;
   private channel single_time FlatLattice<Consistent> consistent = bot;
+
+  public void reset(Propagation p) {}
 
   public proc execute() {
     loop {

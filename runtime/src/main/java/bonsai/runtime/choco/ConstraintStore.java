@@ -20,7 +20,7 @@ import org.chocosolver.solver.expression.discrete.relational.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.solver.exception.ContradictionException;
 
-public class ConstraintStore extends LatticeVar implements Restorable {
+public class ConstraintStore extends LatticeVar implements Restorable, Resettable<ConstraintStore> {
 
   public ArrayDeque<Constraint> constraints;
 
@@ -30,6 +30,10 @@ public class ConstraintStore extends LatticeVar implements Restorable {
 
   public ConstraintStore() {
     constraints = new ArrayDeque();
+  }
+
+  public void reset(ConstraintStore o) {
+    this.constraints = o.constraints;
   }
 
   public Object label() {

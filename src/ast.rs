@@ -110,6 +110,7 @@ pub struct Program {
   pub header: String,
   pub expected_diagnostics: Vec<CompilerDiagnostic>,
   pub class_name: String,
+  pub interfaces: Vec<JType>,
   pub items: Vec<Item>,
   pub span: Span
 }
@@ -299,6 +300,7 @@ impl LetBinding {
 pub struct LetBindingBase {
   pub name: String,
   pub ty: JType,
+  pub visibility: JVisibility,
   pub is_module_attr: bool,
   pub expr: Expr,
   pub span: Span
@@ -310,6 +312,7 @@ impl LetBindingBase {
     LetBindingBase {
       name: name,
       ty: ty,
+      visibility: JVisibility::Private,
       is_module_attr: false,
       expr: expr,
       span: span
@@ -554,16 +557,18 @@ impl ExprKind {
 pub struct JClass {
   pub header: String,
   pub class_name: String,
+  pub interfaces: Vec<JType>,
   pub java_methods: Vec<JMethod>,
   pub java_attrs: Vec<JAttribute>,
   pub java_constructors: Vec<JConstructor>,
 }
 
 impl JClass {
-  pub fn new(header: String, class_name: String) -> Self {
+  pub fn new(header: String, class_name: String, interfaces: Vec<JType>) -> Self {
     JClass {
       header: header,
       class_name: class_name,
+      interfaces: interfaces,
       java_methods: vec![],
       java_attrs: vec![],
       java_constructors: vec![]
@@ -598,6 +603,7 @@ pub struct JConstructor {
 pub struct JAttribute {
   pub visibility: JVisibility,
   pub is_static: bool,
+  pub is_final: bool,
   pub ty: JType,
   pub name: String,
   pub expr: Option<Expr>,

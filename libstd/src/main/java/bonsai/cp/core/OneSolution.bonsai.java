@@ -21,9 +21,11 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class OneSolution implements Executable
+public class OneSolution implements Executable, Resettable<OneSolution>
 {
   private channel single_time FlatLattice<Consistent> consistent = bot;
+
+  public void reset(OneSolution o) {}
 
   public proc execute() {
     loop {

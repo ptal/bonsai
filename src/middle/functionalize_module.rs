@@ -24,7 +24,7 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
     attributes: vec![],
     processes: vec![],
     file: file,
-    host: JClass::new(ast.header, ast.class_name)
+    host: JClass::new(ast.header, ast.class_name, ast.interfaces)
   };
 
   let mut executable_proc = None;
@@ -55,7 +55,8 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
 fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   let mut channel_attrs = vec![];
   let mut mod_attrs = vec![];
-  for attr in attrs {
+  for mut attr in attrs {
+    attr.binding.base_mut().visibility = attr.visibility;
     if attr.is_channel {
       channel_attrs.push(attr.binding);
     }

@@ -121,4 +121,8 @@ public class SpacetimeVar extends UnaryInstruction
       stream.next(() -> initValue.apply(env));
     }
   }
+
+  public Spacetime spacetime() {
+    return spacetime;
+  }
 }

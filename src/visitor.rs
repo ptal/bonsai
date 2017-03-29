@@ -132,13 +132,13 @@ pub fn walk_binding<H, R, V: ?Sized>(visitor: &mut V, binding: LetBinding) -> R 
 
 /// We need this macro for factorizing the code since we can not specialize a trait on specific type parameter (we would need to specialize on `()` here).
 macro_rules! unit_visitor_impl {
-  (bcrate, H) => (
-    fn visit_crate(&mut self, bcrate: Crate<H>) {
+  (bcrate, $H:ty) => (
+    fn visit_crate(&mut self, bcrate: Crate<$H>) {
       walk_modules(self, bcrate.modules);
     }
   );
-  (module, H) => (
-    fn visit_module(&mut self, module: Module<H>) {
+  (module, $H:ty) => (
+    fn visit_module(&mut self, module: Module<$H>) {
       walk_processes(self, module.processes);
     }
   );
@@ -173,9 +173,9 @@ macro_rules! unit_visitor_impl {
   (fn_call) => (fn visit_fn_call(&mut self, _expr: Expr) {});
   (module_call) => (fn visit_module_call(&mut self, _expr: RunExpr) {});
   (nothing) => (fn visit_nothing(&mut self) {});
-  (all, H) => (
-    unit_visitor_impl!(bcrate, H);
-    unit_visitor_impl!(module, H);
+  (all, $H:ty) => (
+    unit_visitor_impl!(bcrate, $H);
+    unit_visitor_impl!(module, $H);
     unit_visitor_impl!(all_stmt);
   );
   (all_stmt) => (

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use ast::*;
+use visitor::*;
 use partial::*;
 use driver::config::*;
 use back::code_formatter::*;
@@ -24,12 +25,15 @@ pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
 {
   let context = Context::new(module.clone(), stream_bound);
   let mut fmt = CodeFormatter::new();
-  fmt.push_block(module.host.header);
-  fmt.push_line(&format!("public class {} implements Executable", module.host.class_name));
+  fmt.push_block(module.host.header.clone());
+  fmt.push(&format!("public class {} implements Executable", module.host.class_name));
+  fmt.terminate_line(&list_of_interfaces(module.host.interfaces.clone()));
   fmt.open_block();
-  for attr in module.host.java_attrs {
+  for attr in module.host.java_attrs.clone() {
     generate_java_attr(&mut fmt, attr);
   }
+  // Extract all local variable (and module variable) as class attributes.
+  LocalAttr::generate_local_attr(&mut fmt, module.clone());
   generate_main_method(config, &mut fmt, module.host.class_name);
   for process in module.processes {
     generate_process(&mut fmt, &context, process);
@@ -42,6 +46,14 @@ pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
   }
   fmt.close_block();
   Partial::Value(fmt.unwrap())
+}
+
+fn list_of_interfaces(interfaces: Vec<JType>) -> String {
+  let mut s = String::new();
+  for interface in interfaces {
+    s.push_str(&format!(", {}", interface));
+  }
+  s
 }
 
 fn generate_main_method(config: &Config, fmt: &mut CodeFormatter, class_name: String) {
@@ -85,6 +97,7 @@ fn generate_java_constructor(fmt: &mut CodeFormatter, constructor: JConstructor)
 
 fn generate_java_attr(fmt: &mut CodeFormatter, attr: JAttribute) {
   let code: String = vec![
+    string_from_final(attr.is_final),
     format!("{} ", attr.visibility),
     string_from_static(attr.is_static),
     format!("{} ", attr.ty),
@@ -96,6 +109,59 @@ fn generate_java_attr(fmt: &mut CodeFormatter, attr: JAttribute) {
     generate_expr(fmt, expr);
   }
   fmt.terminate_line(";");
+}
+
+struct LocalAttr<'a> {
+  fmt: &'a mut CodeFormatter
+}
+
+impl<'a> LocalAttr<'a> {
+  pub fn generate_local_attr(fmt: &'a mut CodeFormatter,
+    module: JModule)
+  {
+    LocalAttr {
+      fmt: fmt
+    }
+    .visit_module(module)
+  }
+}
+
+impl<'a> Visitor<JClass, ()> for LocalAttr<'a> {
+  unit_visitor_impl!(bcrate, JClass);
+  unit_visitor_impl!(module, JClass);
+  unit_visitor_impl!(sequence);
+  unit_visitor_impl!(parallel);
+  unit_visitor_impl!(space);
+  unit_visitor_impl!(let_binding);
+  unit_visitor_impl!(tell);
+  unit_visitor_impl!(pause);
+  unit_visitor_impl!(pause_up);
+  unit_visitor_impl!(stop);
+  unit_visitor_impl!(exit);
+  unit_visitor_impl!(proc_call);
+  unit_visitor_impl!(fn_call);
+  unit_visitor_impl!(module_call);
+  unit_visitor_impl!(nothing);
+
+  fn visit_binding(&mut self, binding: LetBindingBase) {
+    let jattr = JAttribute {
+      visibility: binding.visibility,
+      is_static: false,
+      is_final: true,
+      ty: binding.ty.clone(),
+      name: binding.name,
+      expr: Some(Expr::new(DUMMY_SP, ExprKind::JavaNew(binding.ty, vec![]))),
+      span: binding.span
+    };
+    generate_java_attr(self.fmt, jattr);
+  }
+}
+
+fn string_from_final(is_final: bool) -> String {
+  if is_final {
+    String::from("final ")
+  }
+  else { String::new() }
 }
 
 fn string_from_static(is_static: bool) -> String {
@@ -332,8 +398,9 @@ fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
 {
   let spacetime = generate_spacetime(spacetime);
   let stream_bound = context.stream_bound_of(&binding.name);
-  fmt.push(&format!("new SpacetimeVar(\"{}\", {}, {}, {}, {}, ",
-    binding.name, binding.is_module_attr, spacetime, is_transient, stream_bound));
+  fmt.push(&format!("new SpacetimeVar({}, \"{}\", {}, {}, {}, {}, ",
+    binding.name, binding.name, binding.is_module_attr, spacetime,
+    is_transient, stream_bound));
   generate_closure(fmt, context, true, binding.expr);
 }
 
@@ -349,8 +416,8 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
 fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
   binding: LetBindingBase, store: VarPath)
 {
-  fmt.push(&format!("new LocationVar(\"{}\", \"{}\", ",
-    binding.name, store.name()));
+  fmt.push(&format!("new LocationVar({}, \"{}\", \"{}\", ",
+    binding.name, binding.name, store.name()));
   generate_closure(fmt, context, true, binding.expr);
 }
 

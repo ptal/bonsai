@@ -18,7 +18,7 @@ import bonsai.runtime.core.*;
 import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
 
-public class VarStore extends Store implements Restorable {
+public class VarStore extends Store implements Restorable, Resettable<VarStore> {
   private Model model;
   private Integer depth;
 
@@ -33,6 +33,11 @@ public class VarStore extends Store implements Restorable {
   public VarStore(String problem_name) {
     model = new Model(problem_name);
     depth = 0;
+  }
+
+  public void reset(VarStore o) {
+    this.model = o.model;
+    this.depth = o.depth;
   }
 
   public IntVar[] vars() {

@@ -25,7 +25,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class Branching implements Executable
+public class Branching implements Executable, Resettable<Branching>
 {
   private channel world_line VarStore domains = bot;
   private channel world_line ConstraintStore constraints = bot;
@@ -47,6 +47,13 @@ public class Branching implements Executable
     this.val = val;
   }
 
+  public Branching() {}
+
+  public void reset(Branching branching) {
+    this.var = branching.var;
+    this.val = branching.val;
+  }
+
   public proc execute() {
     split();
   }
@@ -54,11 +61,11 @@ public class Branching implements Executable
   public proc exclude() {
     loop {
       when consistent |= Consistent.Unknown {
-        single_time IntVar x = var.getVariable(domains.vars());
-        single_time Integer v = val.selectValue(x);
+        single_time FlatLattice<IntVar> x = new FlatLattice(var.getVariable(domains.vars()));
+        single_time FlatLattice<Integer> v = new FlatLattice(val.selectValue(x.unwrap()));
         space
-        || constraints <- x.eq(v);
-        || constraints <- x.ne(v);
+        || constraints <- x.unwrap().eq(v.unwrap());
+        || constraints <- x.unwrap().ne(v.unwrap());
         end
       }
       pause;
@@ -68,11 +75,11 @@ public class Branching implements Executable
   public proc split() {
     loop {
       when consistent |= Consistent.Unknown {
-        single_time IntVar x = var.getVariable(domains.vars());
-        single_time Integer v = val.selectValue(x);
+        single_time FlatLattice<IntVar> x2 = new FlatLattice(var.getVariable(domains.vars()));
+        single_time FlatLattice<Integer> v2 = new FlatLattice(val.selectValue(x2.unwrap()));
         space
-        || constraints <- x.le(v);
-        || constraints <- x.gt(v);
+        || constraints <- x2.unwrap().le(v2.unwrap());
+        || constraints <- x2.unwrap().gt(v2.unwrap());
         end
       }
       pause;

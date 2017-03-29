@@ -66,9 +66,6 @@ public class SpaceEnvironment extends Clock {
       }
       commitCalled = false;
     }
-    if (currentBranch != null) {
-      currentBranch.activate(this);
-    }
     return super.activation(env);
   }
 
@@ -120,6 +117,7 @@ public class SpaceEnvironment extends Clock {
     int b = currentSnapshot.branch();
     currentBranch = branches.get(b);
     currentBranch.prepareFor(this);
+    currentBranch.activate(this);
   }
 
   // For shadowing the single time variables when executing a branch.
@@ -134,6 +132,27 @@ public class SpaceEnvironment extends Clock {
   public void exitSpaceBranch() {
     inSnapshot = false;
   }
+
+  // private void instantiateSSAndWL() {
+  //   instantiateVars(vars.entrySet()
+  //     .stream()
+  //     .map(v -> v.getValue())
+  //     .filter(v -> v.spacetime() == Spacetime.WorldLine
+  //               || v.spacetime() == Spacetime.SingleSpace));
+  // }
+
+  // private void instantiateST() {
+  //   instantiateVars(vars.entrySet()
+  //     .stream()
+  //     .map(v -> v.getValue())
+  //     .filter(v -> v.spacetime() == Spacetime.SingleTime));
+  // }
+
+  // private void instantiateVars(Stream<SpacetimeVar> varsStream) {
+  //   for(SpacetimeVar var : varsStream) {
+  //     var.restore(this, currentSnapshot);
+  //   }
+  // }
 
   public Integer registerSpaceBranch(SpaceBranch branch) {
     // FIXME: branches can be null because `SpaceEnvironment` is used in prepareFor of instructions but prepareFor is called in the constructor of Clock.

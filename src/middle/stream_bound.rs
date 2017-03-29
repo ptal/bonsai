@@ -89,7 +89,7 @@ impl<H: Clone> Visitor<H, ()> for StreamBound<H> {
   unit_visitor_impl!(nothing);
 
   fn visit_binding(&mut self, binding: LetBindingBase) {
-    self.bcrate.stream_bound.entry(binding.name).or_insert(1);
+    self.bcrate.stream_bound.entry(binding.name).or_insert(0);
   }
 
   fn visit_tell(&mut self, var: StreamVar, expr: Expr) {
