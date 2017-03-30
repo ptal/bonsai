@@ -412,6 +412,7 @@ impl Condition {
 pub struct EntailmentRel {
   pub left: StreamVar,
   pub right: Expr,
+  pub strict: bool,
   pub span: Span
 }
 

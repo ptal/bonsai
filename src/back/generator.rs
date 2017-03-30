@@ -422,7 +422,7 @@ fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
 }
 
 fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: EntailmentRel) {
-  fmt.push("new EntailmentConfig(\"");
+  fmt.push(&format!("new EntailmentConfig({}, \"", entailment.strict));
   generate_stream_var(fmt, entailment.left.clone());
   fmt.push(&format!("\", {}, ", entailment.left.past));
   generate_closure(fmt, context, true, entailment.right);

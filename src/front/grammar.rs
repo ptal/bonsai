@@ -418,9 +418,11 @@ grammar! bonsai {
   condition
     = meta_entailment > make_meta_condition
     / entailment > make_condition
+    / strict_entailment > make_condition
 
   meta_entailment = .. LPAREN entailment RPAREN ENTAILMENT boolean > make_meta_entailment_rel
   entailment = .. stream_var ENTAILMENT expr > make_entailment_rel
+  strict_entailment = .. stream_var GT expr > make_strict_entailment_rel
 
   fn make_meta_condition(entailment: MetaEntailmentRel) -> Condition {
     Condition::MetaEntailment(entailment)
@@ -433,6 +435,16 @@ grammar! bonsai {
     EntailmentRel {
       left: left,
       right: right,
+      strict: false,
+      span: span
+    }
+  }
+
+  fn make_strict_entailment_rel(span: Span, left: StreamVar, right: Expr) -> EntailmentRel {
+    EntailmentRel {
+      left: left,
+      right: right,
+      strict: true,
       span: span
     }
   }

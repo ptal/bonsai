@@ -106,6 +106,29 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
     }
   }
 
+  public LMax countAsn() {
+    checkOnlyIntVar(model);
+    LMax asn = new LMax();
+    for (IntVar v : model.retrieveIntVars(true)) {
+      if (v.isInstantiated()) {
+        asn.inc();
+      }
+    }
+    return asn;
+  }
+
+  public LMax countAsnOf(IntVar[] vars) {
+    checkOnlyIntVar(model);
+    LMax asn = new LMax();
+    for (IntVar v : vars) {
+      if (v.isInstantiated()) {
+        asn.inc();
+      }
+    }
+    return asn;
+  }
+
+
   public EntailmentResult entail(Object value) {
     if (value instanceof VarStore) {
       VarStore vstore = (VarStore) value;

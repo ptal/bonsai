@@ -93,7 +93,6 @@ public class Stream implements Restorable
       return ref;
     }
     t = t - 1;
-    checkNonEmptyStream("pre");
     checkCapacity(t);
     // If the value does not have such a long history yet, return its bottom.
     if (t >= size) {
@@ -156,14 +155,6 @@ public class Stream implements Restorable
       stream = lab.labels;
       size = lab.size;
       last = size-1;
-    }
-  }
-
-  private void checkNonEmptyStream(String method) {
-    if (size == 0) {
-      throw new RuntimeException(
-        "[BUG] Try to access value of an empty stream for the variable `"
-        + name + "` in the method `" + method + "`.");
     }
   }
 

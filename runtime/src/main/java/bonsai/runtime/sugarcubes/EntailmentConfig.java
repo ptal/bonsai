@@ -24,6 +24,7 @@ import inria.meije.rc.sugarcubes.implementation.*;
 
 public class EntailmentConfig extends ConfigImpl implements Precursor
 {
+  private boolean strict;
   private String leftSide;
   private int preLeft;
   private Function<SpaceEnvironment, Object> rightSide;
@@ -31,9 +32,11 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
   private Event event;
   private boolean posted;
 
-  public EntailmentConfig(String leftSide, int preLeft,
+  /// The strict flag means: a |= b /\ a != b
+  public EntailmentConfig(boolean strict, String leftSide, int preLeft,
     Function<SpaceEnvironment, Object> rightSide)
   {
+    this.strict = strict;
     this.leftSide = leftSide;
     this.preLeft = preLeft;
     this.rightSide = rightSide;
@@ -45,7 +48,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
   }
 
   public EntailmentConfig copy() {
-    return new EntailmentConfig(leftSide, preLeft, rightSide);
+    return new EntailmentConfig(strict, leftSide, preLeft, rightSide);
   }
 
   public EntailmentConfig prepareFor(Environment env) {
@@ -74,7 +77,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
       LatticeVar lhs = space_env.latticeVar(leftSide, preLeft);
       Object rhs = rightSide.apply(space_env);
       EntailmentResult res = lhs.entail(rhs);
-      if (res == EntailmentResult.TRUE) {
+      if (res == EntailmentResult.TRUE && (!strict || !(lhs.equals(rhs)))) {
         return SATISFIED;
       }
       else if (res == EntailmentResult.FALSE) {
