@@ -121,7 +121,6 @@ public class Stream implements Restorable
       return Cast.toRestorable(name, ref).label();
     }
     else {
-      checkNonEmptyStream("label");
       Label label = new Label(copyRef());
       int begin = preIndex(size-1);
       for (int i = 0; i < size; ++i) {

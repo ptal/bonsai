@@ -192,6 +192,7 @@ grammar! bonsai {
     / PAUSE UP SEMI_COLON > make_pause_up
     / STOP SEMI_COLON > make_stop
     / PAUSE SEMI_COLON > make_pause
+    / NOTHING SEMI_COLON > make_nothing
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
@@ -265,6 +266,10 @@ grammar! bonsai {
 
   fn make_stop() -> StmtKind {
     StmtKind::Stop
+  }
+
+  fn make_nothing() -> StmtKind {
+    StmtKind::Nothing
   }
 
   fn make_trap(name: String, body: Stmt) -> StmtKind {
@@ -505,7 +510,7 @@ grammar! bonsai {
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
-    / "run" / "true" / "false" / java_kw
+    / "run" / "true" / "false" / "nothing" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -533,6 +538,7 @@ grammar! bonsai {
   RUN = "run" kw_tail
   TRUE = "true" kw_tail
   FALSE = "false" kw_tail
+  NOTHING = "nothing" kw_tail
 
   // Java keyword
   java_kw

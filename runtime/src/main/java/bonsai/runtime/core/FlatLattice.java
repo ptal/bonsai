@@ -27,8 +27,9 @@ package bonsai.runtime.core;
 
 import java.util.Optional;
 
-public class FlatLattice<T> extends LatticeVar implements Resettable<FlatLattice<T>> {
-
+public class FlatLattice<T> extends LatticeVar
+  implements Resettable<FlatLattice<T>>, Copy<FlatLattice<T>>
+{
   protected Optional<T> value;
 
   public FlatLattice(T value) {
@@ -49,6 +50,16 @@ public class FlatLattice<T> extends LatticeVar implements Resettable<FlatLattice
 
   public void reset(FlatLattice<T> o) {
     this.value = o.value;
+  }
+
+  public FlatLattice<T> copy() {
+    if (isBottom()) {
+      return bottom();
+    }
+    else {
+      Copy v = Cast.toCopy("<anon> in FlatLattice.copy", value.get());
+      return new FlatLattice(v.copy());
+    }
   }
 
   public EntailmentResult entail(Object obj) {

@@ -59,11 +59,11 @@ public class PauseUp extends InstructionImpl
 
   public byte activate(Environment e){
     SpaceEnvironment env = (SpaceEnvironment) e;
-    env.pausedUp = true;
     if(ended){
       ended = false;
       return TERM;
     }
+    env.pausedUp = true;
     ended = true;
     return STOP;
   }

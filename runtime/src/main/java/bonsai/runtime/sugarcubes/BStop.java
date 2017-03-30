@@ -60,11 +60,11 @@ public class BStop extends InstructionImpl
 
   public byte activate(Environment e){
     SpaceEnvironment env = (SpaceEnvironment) e;
-    env.stopped = true;
     if(ended){
       ended = false;
       return TERM;
     }
+    env.stopped = true;
     ended = true;
     return STOP;
   }

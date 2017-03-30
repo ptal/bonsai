@@ -42,13 +42,12 @@ public class SpaceMachine extends StdMachine
   public SpaceMachine(SpaceEnvironment env) {
     super(env);
     debug = false;
-    numReactions = 1;
+    numReactions = 0;
   }
 
   // Returns `true` if it stops because no more nodes are on the queue, otherwise `false` if the program terminated without consuming all nodes.
   public MachineStatus execute() {
     SpaceEnvironment env = (SpaceEnvironment) clock0;
-    env.resetFlags();
     if (debug) {
       System.out.println("[Start of execution]");
     }
@@ -66,8 +65,9 @@ public class SpaceMachine extends StdMachine
     }
     if (debug) {
       System.out.println("[End of execution] After " + numReactions + " reactions due to " +
-        ((env.isEmpty()) ? "empty reaction queue.":status));
+        ((env.isEmpty()) ? "empty reaction queue":status) + ". Size of the reaction queue: " + env.queueSize());
     }
+    env.resetFlags();
     return status;
   }
 

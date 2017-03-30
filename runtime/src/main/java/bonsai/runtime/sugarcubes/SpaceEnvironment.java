@@ -44,7 +44,7 @@ public class SpaceEnvironment extends Clock {
     // branches = new ArrayList(); // FIXME, cf. registerSpaceBranch
     activatedBranches = new ArrayList();
     currentSnapshot = null;
-    // FIXME, the current branch should be incorporated into the current running program. For example, one of the problem is that it does not call activateOnEOI.
+    // FIXME, the current branch should be incorporated into the current running program. For example, one of the problem is that it does not call activateOnEOI. Not so sure... With the new commit / step protocol, things might be different, think about this as a node/edge graph.
     currentBranch = null;
     inSnapshot = false;
     resetFlags();
@@ -57,14 +57,15 @@ public class SpaceEnvironment extends Clock {
         firstActivation = false;
       }
       else {
-        if (futures.isEmpty()) {
-          return TERM;
-        }
-        else if(!commitCalled) {
-          instantiateFuture();
+        if (!commitCalled) {
+          if (futures.isEmpty()) {
+            return TERM;
+          }
+          else {
+            instantiateFuture();
+          }
         }
       }
-      commitCalled = false;
     }
     return super.activation(env);
   }
@@ -89,6 +90,7 @@ public class SpaceEnvironment extends Clock {
   public void resetFlags() {
     stopped = false;
     pausedUp = false;
+    commitCalled = false;
   }
 
   // Big step transition.

@@ -203,7 +203,7 @@ pub enum StmtKind {
   ProcCall(String, Vec<Expr>),
   FnCall(Expr),
   ModuleCall(RunExpr),
-  Nothing // This is a facility for parsing, passing from imperative to functional representation. (see let_lifting.rs).
+  Nothing
 }
 
 impl StmtKind {

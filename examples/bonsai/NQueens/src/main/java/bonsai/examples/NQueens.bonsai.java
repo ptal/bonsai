@@ -44,11 +44,20 @@ public class NQueens implements Executable
   proc engine() {
     module Branching branching = Branching.firstFailMiddle(domains.model());
     module Propagation propagation = new Propagation();
-    module OneSolution oneSolution = new OneSolution();
+    // module OneSolution oneSolution = new OneSolution();
     par
     || run branching.split();
     || run propagation;
-    || run oneSolution;
+    || loop {
+        par
+        || when domains |= constraints
+           {
+            ~printVariables("Solution", consistent, domains);
+            stop;
+           }
+        || pause;
+        end
+       }
     end
   }
 

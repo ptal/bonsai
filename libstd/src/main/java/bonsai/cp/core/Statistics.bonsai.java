@@ -21,10 +21,15 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class Statistics implements Executable
+public class Statistics implements Executable, Resettable<Statistics>
 {
-  private single_space transient FlatLattice<RInteger> nodes = bot;
-  private world_line transient RFlatLattice<RInteger> depth = bot;
+  public single_space transient FlatLattice<RInteger> nodes = bot;
+  public world_line transient RFlatLattice<RInteger> depth = bot;
+
+  public void reset(Statistics s) {
+    this.nodes.reset(s.nodes);
+    this.depth.reset(s.depth);
+  }
 
   public proc execute() {
     par

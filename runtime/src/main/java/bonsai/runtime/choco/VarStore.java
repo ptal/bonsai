@@ -100,7 +100,7 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
       throw new UnsupportedOperationException(
         "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.");
     }
-    else {
+    else if (this != value) {
       throw new RuntimeException(
         "Join is only defined between `VarStore` and an entry `VarStore.Entry`.");
     }
