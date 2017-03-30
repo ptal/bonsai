@@ -78,6 +78,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
       Object rhs = rightSide.apply(space_env);
       EntailmentResult res = lhs.entail(rhs);
       if (res == EntailmentResult.TRUE && (!strict || !(lhs.equals(rhs)))) {
+        System.out.println(lhs + " |= " + rhs);
         return SATISFIED;
       }
       else if (res == EntailmentResult.FALSE) {

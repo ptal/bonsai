@@ -17,6 +17,7 @@ package bonsai.cp.core;
 import java.util.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
+import org.chocosolver.solver.variables.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
@@ -32,9 +33,27 @@ public class Propagation implements Executable, Resettable<Propagation>
   public proc execute() {
     loop {
       consistent <- PropagatorEngine.propagate(domains, constraints);
+      ~printVariables("[After propagate]", consistent, domains);
       // Hack to generate an event on domains.
       domains <- domains;
       pause;
     }
+  }
+
+  private static void printHeader(String message,
+    FlatLattice<Consistent> consistent)
+  {
+    System.out.print("["+message+"][" + consistent + "]");
+  }
+
+  private static void printVariables(String message,
+    FlatLattice<Consistent> consistent, VarStore domains)
+  {
+    printHeader(message, consistent);
+    System.out.print(" Variables = [");
+    for (IntVar v : domains.vars()) {
+      System.out.print(v + ", ");
+    }
+    System.out.println("]");
   }
 }

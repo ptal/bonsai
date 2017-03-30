@@ -57,7 +57,7 @@ public class SpaceEnvironment extends Clock {
         firstActivation = false;
       }
       else {
-        if (!commitCalled) {
+        if (!futureInstantiated) {
           if (futures.isEmpty()) {
             return TERM;
           }
@@ -71,31 +71,25 @@ public class SpaceEnvironment extends Clock {
   }
 
   // See SpaceMachine.commit()
-  private boolean commitCalled = false;
+  private boolean futureInstantiated;
   public boolean commit() {
-    if (commitCalled) {
-      throw new RuntimeException(
-        "Method commit() called twice. Only one future can be instantiated per instant.");
-    }
-    if (!futures.isEmpty()) {
-      commitCalled = true;
+    if (!futureInstantiated && !futures.isEmpty()) {
       instantiateFuture();
       return true;
     }
-    else {
-      return false;
-    }
+    return false;
   }
 
   public void resetFlags() {
     stopped = false;
     pausedUp = false;
-    commitCalled = false;
+    futureInstantiated = false;
   }
 
   // Big step transition.
   public void newInstant() {
     saveFutures();
+    futureInstantiated = false;
     super.newInstant();
   }
 
@@ -120,6 +114,7 @@ public class SpaceEnvironment extends Clock {
     currentBranch = branches.get(b);
     currentBranch.prepareFor(this);
     currentBranch.activate(this);
+    futureInstantiated = true;
   }
 
   // For shadowing the single time variables when executing a branch.
