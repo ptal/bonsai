@@ -198,6 +198,7 @@ grammar! bonsai {
     / LOOP block > make_loop
     / TILDE java_call_expr SEMI_COLON > make_java_call_stmt
     / RUN run_expr SEMI_COLON > make_run
+    / UNIVERSE block > make_universe
     / var LEFT_ARROW expr SEMI_COLON > make_tell
     / identifier list_args SEMI_COLON > make_proc_call
 
@@ -298,6 +299,10 @@ grammar! bonsai {
 
   fn make_run(run_expr: RunExpr) -> StmtKind {
     StmtKind::ModuleCall(run_expr)
+  }
+
+  fn make_universe(body: Stmt) -> StmtKind {
+    StmtKind::Universe(Box::new(body))
   }
 
   run_expr
@@ -522,7 +527,7 @@ grammar! bonsai {
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
-    / "run" / "true" / "false" / "nothing" / java_kw
+    / "run" / "true" / "false" / "nothing" / "universe" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -551,6 +556,7 @@ grammar! bonsai {
   TRUE = "true" kw_tail
   FALSE = "false" kw_tail
   NOTHING = "nothing" kw_tail
+  UNIVERSE = "universe" kw_tail
 
   // Java keyword
   java_kw

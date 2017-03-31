@@ -63,6 +63,10 @@ pub trait Visitor<H, R>
   fn visit_module_call(&mut self, expr: RunExpr) -> R;
   fn visit_nothing(&mut self) -> R;
 
+  fn visit_universe(&mut self, child: Stmt) -> R {
+    self.visit_stmt(child)
+  }
+
   fn visit_binding_in_store(&mut self, in_store: LetBindingInStore) -> R {
     self.visit_binding(in_store.binding)
   }
@@ -109,6 +113,7 @@ pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
     ProcCall(name, args) => visitor.visit_proc_call(name, args),
     FnCall(expr) => visitor.visit_fn_call(expr),
     ModuleCall(expr) => visitor.visit_module_call(expr),
+    Universe(body) => visitor.visit_universe(*body),
     Nothing => visitor.visit_nothing()
   }
 }

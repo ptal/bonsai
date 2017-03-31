@@ -203,6 +203,7 @@ pub enum StmtKind {
   ProcCall(String, Vec<Expr>),
   FnCall(Expr),
   ModuleCall(RunExpr),
+  Universe(Box<Stmt>),
   Nothing
 }
 

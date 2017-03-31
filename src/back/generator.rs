@@ -23,7 +23,7 @@ use std::collections::{HashSet, HashMap};
 pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
   config: &Config) -> Partial<String>
 {
-  let context = Context::new(module.clone(), stream_bound);
+  let context = Context::new(module.clone(), stream_bound, config.debug);
   let mut fmt = CodeFormatter::new();
   fmt.push_block(module.host.header.clone());
   fmt.push(&format!("public class {} implements Executable", module.host.class_name));
@@ -331,6 +331,7 @@ fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
     ProcCall(process, args) => generate_fun_call(fmt, process, args),
     ModuleCall(run_expr) => generate_module_call(fmt, context, run_expr),
     Tell(var, expr) => generate_tell(fmt, context, var, expr),
+    Universe(body) => generate_universe(fmt, context, body),
     Nothing => generate_nothing(fmt)
   }
 }
@@ -512,4 +513,12 @@ fn generate_trap(fmt: &mut CodeFormatter, context: &Context,
 
 fn generate_exit(fmt: &mut CodeFormatter, name: String) {
   fmt.push(&format!("SC.generate(\"{}\")", name));
+}
+
+fn generate_universe(fmt: &mut CodeFormatter, context: &Context, body: Box<Stmt>) {
+  fmt.push_line(&format!("new Universe({},", context.debug));
+  fmt.indent();
+  generate_statement(fmt, context, *body);
+  fmt.unindent();
+  fmt.push(")");
 }

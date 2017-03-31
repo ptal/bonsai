@@ -96,7 +96,7 @@ public class SpaceEnvironment extends Clock {
   public void saveFutures() {
     for (Integer branchIdx: activatedBranches) {
       Snapshot future = new Snapshot(branchIdx);
-      for (SpacetimeVar var : vars.values()) {
+      for (SpacetimeVar var : vars().values()) {
         var.save(future);
       }
       futures.push(future);
@@ -107,7 +107,7 @@ public class SpaceEnvironment extends Clock {
   // Precondition: !futures.isEmpty()
   public void instantiateFuture() {
     currentSnapshot = futures.pop();
-    for(Map.Entry<String, SpacetimeVar> var : vars.entrySet()) {
+    for(Map.Entry<String, SpacetimeVar> var : vars().entrySet()) {
       var.getValue().restore(this, currentSnapshot);
     }
     int b = currentSnapshot.branch();
@@ -131,7 +131,7 @@ public class SpaceEnvironment extends Clock {
   }
 
   // private void instantiateSSAndWL() {
-  //   instantiateVars(vars.entrySet()
+  //   instantiateVars(vars().entrySet()
   //     .stream()
   //     .map(v -> v.getValue())
   //     .filter(v -> v.spacetime() == Spacetime.WorldLine
@@ -139,7 +139,7 @@ public class SpaceEnvironment extends Clock {
   // }
 
   // private void instantiateST() {
-  //   instantiateVars(vars.entrySet()
+  //   instantiateVars(vars().entrySet()
   //     .stream()
   //     .map(v -> v.getValue())
   //     .filter(v -> v.spacetime() == Spacetime.SingleTime));
@@ -157,26 +157,32 @@ public class SpaceEnvironment extends Clock {
       branches = new ArrayList();
     }
     branches.add(branch);
+    System.out.println("Add branch " + (branches.size() - 1));
     return branches.size() - 1;
   }
 
   // At the end of the current instant, the branches at `branchesIndexes` will be turned into `Snapshot` for future activation.
   public void activateSpace(ArrayList<Integer> branchesIndexes) {
     for (Integer idx : branchesIndexes) {
+      System.out.println("Activate branch " + idx);
       if (idx >= branches.size()) {
         throw new RuntimeException(
-          "activateSpace: Try to activate a undeclared or not existing space.");
+          "activateSpace: Try to activate an undeclared or not existing space.");
       }
       activatedBranches.add(idx);
     }
   }
 
   public void declareVar(String name, SpacetimeVar v) {
+    vars().put(name, v);
+  }
+
+  private HashMap<String, SpacetimeVar> vars() {
     // FIXME: similar problem than with `registerSpaceBranch`.
     if (vars == null) {
       vars = new HashMap();
     }
-    vars.put(name, v);
+    return vars;
   }
 
   public LatticeVar latticeVar(String name, int time) {
@@ -191,7 +197,7 @@ public class SpaceEnvironment extends Clock {
         return value.get();
       }
     }
-    SpacetimeVar v = vars.get(name);
+    SpacetimeVar v = vars().get(name);
     if (v == null) {
       throw new RuntimeException("The variable `" + name
         + "` is not registered in the environment.");

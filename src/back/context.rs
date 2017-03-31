@@ -21,14 +21,16 @@ use std::collections::HashMap;
 
 pub struct Context {
   name_to_bindings: HashMap<String, LetBindingBase>,
-  stream_bound: HashMap<String, usize>
+  stream_bound: HashMap<String, usize>,
+  pub debug: bool
 }
 
 impl Context {
-  pub fn new(module: JModule, stream_bound: HashMap<String, usize>) -> Self {
+  pub fn new(module: JModule, stream_bound: HashMap<String, usize>, debug: bool) -> Self {
     let mut context = Context {
       name_to_bindings: HashMap::new(),
       stream_bound: stream_bound,
+      debug: debug,
     };
     for channel_attr in module.channel_attrs() {
       context.insert_binding(channel_attr.base());
