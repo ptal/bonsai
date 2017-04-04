@@ -69,6 +69,7 @@ impl Context {
     | Par(branches)
     | Space(branches) => self.visit_stmts(branches),
       When(_, stmt)
+    | Suspend(_, stmt)
     | Trap(_, stmt)
     | Loop(stmt) => self.visit_stmt(*stmt),
       _ => ()

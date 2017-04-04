@@ -321,6 +321,7 @@ fn generate_statement(fmt: &mut CodeFormatter, context: &Context, stmt: Stmt) {
     Space(branches) => generate_space(fmt, context, branches),
     Let(body) => generate_let(fmt, context, body),
     When(entailment, body) => generate_when(fmt, context, entailment, body),
+    Suspend(entailment, body) => generate_suspend(fmt, context, entailment, body),
     Pause => generate_pause(fmt),
     PauseUp => generate_pause_up(fmt),
     Stop => generate_stop(fmt),
@@ -455,6 +456,19 @@ fn generate_when(fmt: &mut CodeFormatter, context: &Context,
   fmt.push("SC.nothing())");
   fmt.unindent();
 }
+
+fn generate_suspend(fmt: &mut CodeFormatter, context: &Context,
+  condition: Condition, body: Box<Stmt>)
+{
+  fmt.push("new SuspendWhen(");
+  generate_condition(fmt, context, condition);
+  fmt.terminate_line(",");
+  fmt.indent();
+  generate_statement(fmt, context, *body);
+  fmt.push(")");
+  fmt.unindent();
+}
+
 
 fn generate_module_call(fmt: &mut CodeFormatter, context: &Context, run_expr: RunExpr) {
   fmt.push(&format!("new RunModule("));

@@ -41,4 +41,14 @@ public class RInteger implements Restorable, Copy<RInteger>, Resettable<RInteger
   public String toString() {
     return value.toString();
   }
+
+  public boolean equals ( Object obj ) {
+    if (obj == null) {
+      return false;
+    } else if (getClass() != obj.getClass()) {
+      return false;
+    } else {
+      return ((RInteger) obj).value.equals(value);
+    }
+  }
 }

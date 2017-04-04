@@ -36,16 +36,21 @@ public class Universe extends UnaryInstruction
     }
   }
 
+  private Universe(Universe universe) {
+    this.machine = universe.machine;
+    this.debug = universe.debug;
+  }
+
   public String actualToString() {
     return "universe " + body + " end";
   }
 
   public Universe copy() {
-    return new Universe(debug, body);
+    return new Universe(this);
   }
 
   public Universe prepareFor(Environment env) {
-    Universe copy = new Universe(debug, body.prepareFor(env));
+    Universe copy = new Universe(this);
     copy.body.setParent(copy);
     return copy;
   }

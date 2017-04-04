@@ -41,6 +41,7 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
     Par(branches) => Par(lift_stmts(branches)),
     Space(branches) => Space(lift_stmts(branches)),
     When(entailment, body) => When(entailment, Box::new(lift_stmt(*body))),
+    Suspend(entailment, body) => Suspend(entailment, Box::new(lift_stmt(*body))),
     Trap(name, body) => Trap(name, Box::new(lift_stmt(*body))),
     Loop(body) => Loop(Box::new(lift_stmt(*body))),
     Let(mut decl) => {

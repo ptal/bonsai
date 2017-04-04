@@ -193,6 +193,7 @@ pub enum StmtKind {
   Space(Vec<Stmt>),
   Let(LetStmt),
   When(Condition, Box<Stmt>),
+  Suspend(Condition, Box<Stmt>),
   Tell(StreamVar, Expr),
   Pause,
   PauseUp,

@@ -43,6 +43,10 @@ pub trait Visitor<H, R>
     self.visit_stmt(child)
   }
 
+  fn visit_suspend(&mut self, _cond: Condition, child: Stmt) -> R {
+    self.visit_stmt(child)
+  }
+
   fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) -> R;
   fn visit_pause(&mut self) -> R;
   fn visit_pause_up(&mut self) -> R;
@@ -103,6 +107,7 @@ pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
     Space(branches) => visitor.visit_space(branches),
     Let(stmt) => visitor.visit_let(stmt.binding, *(stmt.body)),
     When(cond, body) => visitor.visit_when(cond, *body),
+    Suspend(cond, body) => visitor.visit_suspend(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
     Pause => visitor.visit_pause(),
     PauseUp => visitor.visit_pause_up(),

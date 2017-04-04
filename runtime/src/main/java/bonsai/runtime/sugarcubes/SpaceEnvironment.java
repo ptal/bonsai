@@ -157,14 +157,12 @@ public class SpaceEnvironment extends Clock {
       branches = new ArrayList();
     }
     branches.add(branch);
-    System.out.println("Add branch " + (branches.size() - 1));
     return branches.size() - 1;
   }
 
   // At the end of the current instant, the branches at `branchesIndexes` will be turned into `Snapshot` for future activation.
   public void activateSpace(ArrayList<Integer> branchesIndexes) {
     for (Integer idx : branchesIndexes) {
-      System.out.println("Activate branch " + idx);
       if (idx >= branches.size()) {
         throw new RuntimeException(
           "activateSpace: Try to activate an undeclared or not existing space.");

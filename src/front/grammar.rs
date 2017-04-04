@@ -189,6 +189,7 @@ grammar! bonsai {
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / let_binding > make_let_stmt
     / WHEN condition block > make_when
+    / SUSPEND WHEN condition block > make_suspend
     / PAUSE UP SEMI_COLON > make_pause_up
     / STOP SEMI_COLON > make_stop
     / PAUSE SEMI_COLON > make_pause
@@ -255,6 +256,10 @@ grammar! bonsai {
 
   fn make_when(condition: Condition, body: Stmt) -> StmtKind {
     StmtKind::When(condition, Box::new(body))
+  }
+
+  fn make_suspend(condition: Condition, body: Stmt) -> StmtKind {
+    StmtKind::Suspend(condition, Box::new(body))
   }
 
   fn make_pause() -> StmtKind {
@@ -527,7 +532,7 @@ grammar! bonsai {
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
-    / "run" / "true" / "false" / "nothing" / "universe" / java_kw
+    / "run" / "true" / "false" / "nothing" / "universe" / "suspend" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -538,6 +543,7 @@ grammar! bonsai {
   TRANSIENT = "transient" kw_tail -> ()
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
+  SUSPEND = "suspend" kw_tail
   LOOP = "loop" kw_tail
   UP = "up" kw_tail
   STOP = "stop" kw_tail
