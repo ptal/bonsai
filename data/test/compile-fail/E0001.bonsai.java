@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0001, 20, 11)]
+#[error(E0001, 22, 11)]
+
+package test;
 
 public class CannotFindModule implements Executable
 {

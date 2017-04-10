@@ -62,7 +62,7 @@ impl Display for CompilerDiagnostic
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
   pub modules: Vec<Module<Host>>,
-  pub stream_bound: HashMap<String, usize>
+  pub stream_bound: HashMap<String, usize>,
 }
 
 impl<Host> Crate<Host> where Host: Clone {
@@ -109,6 +109,8 @@ pub struct ModuleAttribute {
 pub struct Program {
   pub header: String,
   pub expected_diagnostics: Vec<CompilerDiagnostic>,
+  pub package: FQN,
+  pub imports: Vec<JImport>,
   pub class_name: String,
   pub interfaces: Vec<JType>,
   pub items: Vec<Item>,
@@ -564,9 +566,66 @@ impl ExprKind {
   }
 }
 
+/// Java fully qualified name (FQN).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FQN {
+  pub names: Vec<String>,
+  pub span: Span
+}
+
+impl FQN {
+  pub fn new(span: Span, names: Vec<String>) -> Self {
+    FQN {
+      names: names,
+      span: span
+    }
+  }
+}
+
+impl Display for FQN {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    let mut i = 0;
+    while i < self.names.len() - 1 {
+      fmt.write_fmt(format_args!("{}.", self.names[i]))?;
+      i += 1;
+    }
+    fmt.write_str(self.names[i].as_str())
+  }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct JImport {
+  fqn: FQN,
+  import_all: bool,
+  span: Span
+}
+
+impl JImport {
+  pub fn new(span: Span, fqn: FQN, import_all: bool) -> Self {
+    JImport {
+      fqn: fqn,
+      import_all: import_all,
+      span: span
+    }
+  }
+}
+
+impl Display for JImport
+{
+  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
+    formatter.write_fmt(format_args!("{}", self.fqn))?;
+    if self.import_all {
+      formatter.write_str(".*")?;
+    }
+    Ok(())
+  }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JClass {
   pub header: String,
+  pub package: FQN,
+  pub imports: Vec<JImport>,
   pub class_name: String,
   pub interfaces: Vec<JType>,
   pub java_methods: Vec<JMethod>,
@@ -575,9 +634,13 @@ pub struct JClass {
 }
 
 impl JClass {
-  pub fn new(header: String, class_name: String, interfaces: Vec<JType>) -> Self {
+  pub fn new(header: String, package: FQN, imports: Vec<JImport>,
+    class_name: String, interfaces: Vec<JType>) -> Self
+  {
     JClass {
       header: header,
+      package: package,
+      imports: imports,
       class_name: class_name,
       interfaces: interfaces,
       java_methods: vec![],

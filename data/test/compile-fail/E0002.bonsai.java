@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0002, 20, 2)]
+#[error(E0002, 22, 2)]
+
+package test;
 
 public class DuplicateAttribute implements Executable
 {

@@ -26,6 +26,10 @@ pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
   let context = Context::new(module.clone(), stream_bound, config.debug);
   let mut fmt = CodeFormatter::new();
   fmt.push_block(module.host.header.clone());
+  fmt.push_line(&format!("package {};", module.host.package));
+  for import in &module.host.imports {
+    fmt.push_line(&format!("import {};", import));
+  }
   fmt.push(&format!("public class {} implements Executable", module.host.class_name));
   fmt.terminate_line(&list_of_interfaces(module.host.interfaces.clone()));
   fmt.open_block();

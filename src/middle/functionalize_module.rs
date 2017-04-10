@@ -24,7 +24,7 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
     attributes: vec![],
     processes: vec![],
     file: file,
-    host: JClass::new(ast.header, ast.class_name, ast.interfaces)
+    host: JClass::new(ast.header, ast.package, ast.imports, ast.class_name, ast.interfaces)
   };
 
   let mut executable_proc = None;

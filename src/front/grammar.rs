@@ -23,7 +23,7 @@ grammar! bonsai {
 
   type Stream<'a> = FileMapStream<'a>;
 
-  program = .. java_header diagnostic_attr* java_class > make_java_program
+  program = .. pre_header header java_class > make_java_program
 
   diagnostic_attr = HASH LBRACKET identifier
     LPAREN identifier COMMA number COMMA number RPAREN RBRACKET > make_diagnostic
@@ -35,11 +35,14 @@ grammar! bonsai {
   }
 
   fn make_java_program(span: Span, header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
+   package: FQN, imports: Vec<JImport>,
    class_name: String, interfaces: Vec<JType>, items: Vec<Item>) -> Program
   {
     Program {
       header: header,
       expected_diagnostics: expected_diagnostics,
+      package: package,
+      imports: imports,
       class_name: class_name,
       interfaces: interfaces,
       items: items,
@@ -47,7 +50,29 @@ grammar! bonsai {
     }
   }
 
-  java_header = (!(diagnostic_attr* PUBLIC) .)* > to_string
+  pre_header = (!(diagnostic_attr* PACKAGE) .)* > to_string
+
+  header = diagnostic_attr* java_package java_import*
+
+  java_import
+    = .. IMPORT fully_qualified_name SEMI_COLON > make_single_type_import
+    / .. IMPORT fully_qualified_name DOT STAR SEMI_COLON > make_all_type_import
+
+  fn make_single_type_import(span: Span, fqn: FQN) -> JImport {
+    JImport::new(span, fqn, false)
+  }
+
+  fn make_all_type_import(span: Span, fqn: FQN) -> JImport {
+    JImport::new(span, fqn, true)
+  }
+
+  java_package = PACKAGE fully_qualified_name SEMI_COLON
+
+  fully_qualified_name = .. identifier (DOT identifier)* > make_fully_qualified_name
+
+  fn make_fully_qualified_name(span: Span, first: String, rest: Vec<String>) -> FQN {
+    FQN::new(span, extend_front(first, rest))
+  }
 
   java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE (COMMA java_ty)* LBRACE item+ RBRACE
 
@@ -578,6 +603,8 @@ grammar! bonsai {
   EXECUTABLE = "Executable" kw_tail
   STATIC = "static" kw_tail
   FINAL = "final" kw_tail
+  PACKAGE = "package" kw_tail
+  IMPORT = "import" kw_tail
 
   UNDERSCORE = "_"
   TILDE = "~"
@@ -603,6 +630,7 @@ grammar! bonsai {
   LT = "<" !"-" spacing
   GT = ">" spacing
   HASH = "#" spacing
+  STAR = "*" spacing
 
   spacing = (blank+ -> () / comment)* -> (^)
   blank = [" \n\r\t"]

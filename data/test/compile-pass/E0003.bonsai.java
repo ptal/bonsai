@@ -14,6 +14,8 @@
 
 // The scopes of these two variables are distinct and should not generate any error.
 
+package test;
+
 public class DistinctScope implements Executable
 {
   proc execute() {

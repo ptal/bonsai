@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0003, 22, 4)]
+#[error(E0003, 24, 4)]
+
+package test;
 
 public class DuplicateAttributeVar implements Executable
 {

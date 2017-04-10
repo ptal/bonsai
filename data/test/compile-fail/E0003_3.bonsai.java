@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0003, 23, 4)]
-#[error(E0003, 27, 4)]
+#[error(E0003, 25, 4)]
+#[error(E0003, 29, 4)]
+
+package test;
 
 public class TwoDuplicateVar implements Executable
 {
