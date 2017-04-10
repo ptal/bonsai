@@ -14,11 +14,11 @@
 
 package bonsai.runtime.core;
 
-public class RInteger implements Restorable, Copy<RInteger>, Resettable<RInteger>
+public class BInteger implements Restorable, Copy<BInteger>
 {
   public Integer value;
 
-  public RInteger(int value) {
+  public BInteger(int value) {
     this.value = new Integer(value);
   }
 
@@ -30,12 +30,8 @@ public class RInteger implements Restorable, Copy<RInteger>, Resettable<RInteger
     this.value = (Integer) label;
   }
 
-  public RInteger copy() {
-    return new RInteger(this.value);
-  }
-
-  public void reset(RInteger i) {
-    this.value = i.value;
+  public BInteger copy() {
+    return new BInteger(this.value);
   }
 
   public String toString() {
@@ -48,7 +44,7 @@ public class RInteger implements Restorable, Copy<RInteger>, Resettable<RInteger
     } else if (getClass() != obj.getClass()) {
       return false;
     } else {
-      return ((RInteger) obj).value.equals(value);
+      return ((BInteger) obj).value.equals(value);
     }
   }
 }

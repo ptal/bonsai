@@ -96,10 +96,23 @@ public class Stream implements Restorable
     checkCapacity(t);
     // If the value does not have such a long history yet, return its bottom.
     if (t >= size) {
-      return Cast.toLattice(name, ref).bottom();
+      return bottom();
     }
     else {
       return stream[preIndex(t)];
+    }
+  }
+
+  private Object bottom() {
+    try {
+      return ref.getClass().getConstructor().newInstance();
+    }
+    catch (Exception e) {
+      throw new RuntimeException(
+        "The variable `" + name +
+        "` does not implement a valid empty constructor which is required for the bottom value." +
+        "\n Object: " + ref +
+        "\n Exception : " + e);
     }
   }
 

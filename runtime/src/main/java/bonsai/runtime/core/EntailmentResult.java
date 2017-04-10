@@ -14,7 +14,7 @@
 
 package bonsai.runtime.core;
 
-public class EntailmentResult extends FlatLattice<Boolean> {
+public class EntailmentResult extends L<Boolean> {
 
   public static EntailmentResult TRUE = new EntailmentResult(new Boolean(true));
   public static EntailmentResult FALSE = new EntailmentResult(new Boolean(false));
@@ -26,9 +26,5 @@ public class EntailmentResult extends FlatLattice<Boolean> {
 
   public EntailmentResult(Boolean b) {
     super(b);
-  }
-
-  public EntailmentResult bottom() {
-    return new EntailmentResult();
   }
 }

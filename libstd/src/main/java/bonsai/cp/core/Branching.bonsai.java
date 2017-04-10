@@ -29,7 +29,7 @@ public class Branching implements Executable, Resettable<Branching>
 {
   private channel world_line VarStore domains = bot;
   private channel world_line ConstraintStore constraints = bot;
-  private channel single_time FlatLattice<Consistent> consistent = bot;
+  private channel single_time L<Consistent> consistent = bot;
 
   private VariableSelector<IntVar> var;
   private IntValueSelector val;
@@ -61,8 +61,8 @@ public class Branching implements Executable, Resettable<Branching>
   public proc exclude() {
     loop {
       when consistent |= Consistent.Unknown {
-        single_time FlatLattice<IntVar> x = new FlatLattice(var.getVariable(domains.vars()));
-        single_time FlatLattice<Integer> v = new FlatLattice(val.selectValue(x.unwrap()));
+        single_time L<IntVar> x = new L(var.getVariable(domains.vars()));
+        single_time L<Integer> v = new L(val.selectValue(x.unwrap()));
         space
         || constraints <- x.unwrap().eq(v.unwrap());
         || constraints <- x.unwrap().ne(v.unwrap());
@@ -75,8 +75,8 @@ public class Branching implements Executable, Resettable<Branching>
   public proc split() {
     loop {
       when consistent |= Consistent.Unknown {
-        single_time FlatLattice<IntVar> x2 = new FlatLattice(var.getVariable(domains.vars()));
-        single_time FlatLattice<Integer> v2 = new FlatLattice(val.selectValue(x2.unwrap()));
+        single_time L<IntVar> x2 = new L(var.getVariable(domains.vars()));
+        single_time L<Integer> v2 = new L(val.selectValue(x2.unwrap()));
         space
         || constraints <- x2.unwrap().le(v2.unwrap());
         || constraints <- x2.unwrap().gt(v2.unwrap());

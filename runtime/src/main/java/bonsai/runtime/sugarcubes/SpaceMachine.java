@@ -45,7 +45,6 @@ public class SpaceMachine extends StdMachine
     numReactions = 0;
   }
 
-  // Returns `true` if it stops because no more nodes are on the queue, otherwise `false` if the program terminated without consuming all nodes.
   public MachineStatus execute() {
     SpaceEnvironment env = (SpaceEnvironment) clock0;
     if (debug) {

@@ -26,7 +26,7 @@ public class Propagation implements Executable, Resettable<Propagation>
 {
   private channel world_line VarStore domains = bot;
   private channel world_line ConstraintStore constraints = bot;
-  private channel single_time FlatLattice<Consistent> consistent = bot;
+  private channel single_time L<Consistent> consistent = bot;
 
   public void reset(Propagation p) {}
 
@@ -41,13 +41,13 @@ public class Propagation implements Executable, Resettable<Propagation>
   }
 
   private static void printHeader(String message,
-    FlatLattice<Consistent> consistent)
+    L<Consistent> consistent)
   {
     System.out.print("["+message+"][" + consistent + "]");
   }
 
   private static void printVariables(String message,
-    FlatLattice<Consistent> consistent, VarStore domains)
+    L<Consistent> consistent, VarStore domains)
   {
     printHeader(message, consistent);
     System.out.print(" Variables = [");

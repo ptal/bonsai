@@ -23,8 +23,8 @@ import bonsai.runtime.sugarcubes.*;
 
 public class Statistics implements Executable, Resettable<Statistics>
 {
-  public single_space transient FlatLattice<RInteger> nodes = bot;
-  public world_line transient RFlatLattice<RInteger> depth = bot;
+  public single_space transient L<BInteger> nodes = bot;
+  public world_line transient W<BInteger> depth = bot;
 
   public void reset(Statistics s) {
     this.nodes.reset(s.nodes);
@@ -39,7 +39,7 @@ public class Statistics implements Executable, Resettable<Statistics>
   }
 
   public proc countDepth() {
-    depth <- new RInteger(0);
+    depth <- new BInteger(0);
     loop {
       pause;
       depth <- inc(pre depth);
@@ -47,7 +47,7 @@ public class Statistics implements Executable, Resettable<Statistics>
   }
 
   public proc countNode() {
-    nodes <- new RInteger(1);
+    nodes <- new BInteger(1);
     loop {
       pause;
       nodes <- inc(pre nodes);
@@ -58,12 +58,12 @@ public class Statistics implements Executable, Resettable<Statistics>
     ~printStats(nodes, depth);
   }
 
-  private RInteger inc(FlatLattice<RInteger> x) {
+  private BInteger inc(L<BInteger> x) {
     int n = x.unwrap().value + 1;
-    return new RInteger(n);
+    return new BInteger(n);
   }
 
-  private void printStats(FlatLattice<RInteger> nodes, RFlatLattice<RInteger> depth) {
+  private void printStats(L<BInteger> nodes, W<BInteger> depth) {
     System.out.println("Nodes: " + nodes);
     System.out.println("Current depth: " + depth);
   }

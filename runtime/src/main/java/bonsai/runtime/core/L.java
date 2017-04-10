@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// `FlatLattice` transforms any type `T` ranging over values `E1...EN` into a lattice of the form:
+// `L<T>` transforms any type `T` ranging over values `E1...EN` into a lattice of the form:
 //       Top
 //   /  / |   \
 // E1 E2 E3 .. EN
@@ -21,49 +21,49 @@
 
 // The bottom element is represented with an empty optional and top should never happen (exception otherwise).
 
-// The entailment and join operation are dynamically overload so `x |= y` and `x <- y` are defined such that `y` can be of type `FlatLattice<T>` or `T`.
+// The entailment and join operation are dynamically overload so `x |= y` and `x <- y` are defined such that `y` can be of type `L<T>` or `T`.
 
 package bonsai.runtime.core;
 
 import java.util.Optional;
 
-public class FlatLattice<T> extends LatticeVar
-  implements Resettable<FlatLattice<T>>, Copy<FlatLattice<T>>
+public class L<T> extends LatticeVar
+  implements Resettable<L<T>>, Copy<L<T>>
 {
   protected Optional<T> value;
 
-  public FlatLattice(T value) {
+  public L(T value) {
     this.value = Optional.of(value);
   }
 
-  public FlatLattice() {
+  public L() {
     this.value = Optional.empty();
   }
 
-  public FlatLattice<T> bottom() {
-    return new FlatLattice();
+  public L<T> bottom() {
+    return new L();
   }
 
   public boolean isBottom() {
     return !value.isPresent();
   }
 
-  public void reset(FlatLattice<T> o) {
+  public void reset(L<T> o) {
     this.value = o.value;
   }
 
-  public FlatLattice<T> copy() {
+  public L<T> copy() {
     if (isBottom()) {
       return bottom();
     }
     else {
-      Copy v = Cast.toCopy("<anon> in FlatLattice.copy", value.get());
-      return new FlatLattice(v.copy());
+      Copy v = Cast.toCopy("<anon> in L.copy", value.get());
+      return new L(v.copy());
     }
   }
 
   public EntailmentResult entail(Object obj) {
-    FlatLattice<T> other = flatLatticeOf(obj);
+    L<T> other = flatLatticeOf(obj);
     if (other.isBottom()) {
       return EntailmentResult.TRUE;
     }
@@ -88,7 +88,7 @@ public class FlatLattice<T> extends LatticeVar
   }
 
   public void join(Object obj) {
-    FlatLattice<T> other = flatLatticeOf(obj);
+    L<T> other = flatLatticeOf(obj);
     if (!other.isBottom()) {
       T other_inner = other.value.get();
       join_inner(other_inner);
@@ -122,13 +122,13 @@ public class FlatLattice<T> extends LatticeVar
     }
   }
 
-  private FlatLattice<T> flatLatticeOf(Object obj) {
+  private L<T> flatLatticeOf(Object obj) {
     assert obj != null;
-    if (obj instanceof FlatLattice) {
-      return (FlatLattice) obj;
+    if (obj instanceof L) {
+      return (L) obj;
     }
     else {
-      return new FlatLattice(obj);
+      return new L(obj);
     }
   }
 
