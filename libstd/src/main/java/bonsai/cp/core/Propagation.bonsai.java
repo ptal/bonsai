@@ -33,7 +33,7 @@ public class Propagation implements Executable, Resettable<Propagation>
   public proc execute() {
     loop {
       consistent <- PropagatorEngine.propagate(domains, constraints);
-      ~printVariables("[After propagate]", consistent, domains);
+      // ~printVariables("[After propagate]", consistent, domains);
       // Hack to generate an event on domains.
       domains <- domains;
       pause;

@@ -31,6 +31,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
   private Precursor parent;
   private Event event;
   private boolean posted;
+  private boolean firstEval;
 
   /// The strict flag means: a |= b /\ a != b
   public EntailmentConfig(boolean strict, String leftSide, int preLeft,
@@ -41,6 +42,7 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
     this.preLeft = preLeft;
     this.rightSide = rightSide;
     this.posted = false;
+    this.firstEval = true;
   }
 
   public String toString() {
@@ -72,7 +74,8 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
 
   public byte evaluate(Environment env) {
     // Change happened on the domain of the variable `leftSide`.
-    if(cannotChange() || event.isGenerated(env)){
+    if(cannotChange() || event.isGenerated(env) || firstEval){
+      firstEval = false;
       SpaceEnvironment space_env = (SpaceEnvironment) env;
       LatticeVar lhs = space_env.latticeVar(leftSide, preLeft);
       Object rhs = rightSide.apply(space_env);
@@ -92,10 +95,13 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
   }
 
   public byte evaluateAtEOI(Environment env) {
-    return this.evaluate(env);
+    byte res = this.evaluate(env);
+    reset();
+    return res;
   }
 
   public void reset() {
+    firstEval = true;
   }
 
   public void zapFromHere(Environment env) {

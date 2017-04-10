@@ -92,7 +92,7 @@ public class SpacetimeVar extends UnaryInstruction
     stream.reset(value);
   }
 
-  /// Check if the variable exit its scope.
+  /// Check if the variable exits its scope.
   public void lastActivation(SpaceEnvironment env, byte res) {
     if (TERM == res || EXCP == res) {
       firstActivation = true;
