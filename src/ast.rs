@@ -161,9 +161,9 @@ impl Stmt {
     }
   }
 
-  pub fn imperative_let(binding: LetBinding) -> Self {
+  pub fn mod_attr(binding: LetBinding) -> Self {
     Stmt::new(binding.span(),
-      StmtKind::Let(LetStmt::imperative(binding)))
+      StmtKind::Let(LetStmt::mod_attr(binding)))
   }
 
   pub fn seq(seq: Vec<Stmt>) -> Self {
@@ -247,6 +247,7 @@ impl RunExpr {
 pub struct LetStmt {
   pub binding: LetBinding,
   pub body: Box<Stmt>,
+  pub is_mod_attr: bool,
   pub span: Span,
 }
 
@@ -255,8 +256,15 @@ impl LetStmt {
     LetStmt {
       binding: binding,
       body: body,
+      is_mod_attr: false,
       span: span
     }
+  }
+
+  pub fn mod_attr(binding: LetBinding) -> Self {
+    let mut stmt = Self::imperative(binding);
+    stmt.is_mod_attr = true;
+    stmt
   }
 
   pub fn imperative(binding: LetBinding) -> Self {

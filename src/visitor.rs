@@ -35,8 +35,9 @@ pub trait Visitor<H, R>
   fn visit_par(&mut self, children: Vec<Stmt>) -> R;
   fn visit_space(&mut self, children: Vec<Stmt>) -> R;
 
-  fn visit_let(&mut self, _binding: LetBinding, child: Stmt) -> R {
-    self.visit_stmt(child)
+  fn visit_let(&mut self, let_stmt: LetStmt) -> R {
+    walk_binding(self, let_stmt.binding);
+    self.visit_stmt(*(let_stmt.body))
   }
 
   fn visit_when(&mut self, _cond: Condition, child: Stmt) -> R {
@@ -105,7 +106,7 @@ pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
     Seq(branches) => visitor.visit_seq(branches),
     Par(branches) => visitor.visit_par(branches),
     Space(branches) => visitor.visit_space(branches),
-    Let(stmt) => visitor.visit_let(stmt.binding, *(stmt.body)),
+    Let(stmt) => visitor.visit_let(stmt),
     When(cond, body) => visitor.visit_when(cond, *body),
     Suspend(cond, body) => visitor.visit_suspend(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
@@ -167,12 +168,6 @@ macro_rules! unit_visitor_impl {
       walk_stmts(self, children);
     }
   );
-  (let_binding) => (
-    fn visit_let(&mut self, binding: LetBinding, child: Stmt) {
-      walk_binding(self, binding);
-      self.visit_stmt(child);
-    }
-  );
   (binding_base) => (fn visit_binding(&mut self, _binding: LetBindingBase) {});
   (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
   (pause) => (fn visit_pause(&mut self) {});
@@ -192,7 +187,6 @@ macro_rules! unit_visitor_impl {
     unit_visitor_impl!(sequence);
     unit_visitor_impl!(parallel);
     unit_visitor_impl!(space);
-    unit_visitor_impl!(let_binding);
     unit_visitor_impl!(binding_base);
     unit_visitor_impl!(tell);
     unit_visitor_impl!(pause);

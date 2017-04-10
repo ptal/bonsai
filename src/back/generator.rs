@@ -132,7 +132,6 @@ impl<'a> Visitor<JClass, ()> for LocalAttr<'a> {
   unit_visitor_impl!(sequence);
   unit_visitor_impl!(parallel);
   unit_visitor_impl!(space);
-  unit_visitor_impl!(let_binding);
   unit_visitor_impl!(tell);
   unit_visitor_impl!(pause);
   unit_visitor_impl!(pause_up);

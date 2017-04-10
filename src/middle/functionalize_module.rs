@@ -66,7 +66,7 @@ fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
   }
 
   let mut stmts: Vec<_> = mod_attrs.into_iter()
-    .map(|binding| Stmt::imperative_let(binding))
+    .map(|binding| Stmt::mod_attr(binding))
     .collect();
 
   let mut seq_branches: Vec<_> = channel_attrs.into_iter()
