@@ -29,7 +29,8 @@ struct Duplicate<'a, H> {
   bcrate: Crate<H>,
   session: &'a Session,
   dup_local_vars: HashMap<String, Span>,
-  dup_mod_attrs: HashMap<String, Span>
+  dup_mod_attrs: HashMap<String, Span>,
+  dup_proc: HashMap<String, Span>,
 }
 
 impl<'a, H: Clone> Duplicate<'a, H> {
@@ -39,6 +40,7 @@ impl<'a, H: Clone> Duplicate<'a, H> {
       session: session,
       dup_local_vars: HashMap::new(),
       dup_mod_attrs: HashMap::new(),
+      dup_proc: HashMap::new(),
     }
   }
 
@@ -52,47 +54,50 @@ impl<'a, H: Clone> Duplicate<'a, H> {
     }
   }
 
-  fn duplicate_mod_attrs(&mut self, attrs: Vec<ModuleAttribute>) {
-    self.dup_mod_attrs.clear();
-    for attr in attrs {
-      let binding = attr.binding.base();
-      let err =
-        match self.dup_mod_attrs.get(&binding.name) {
-          Some(prev_span) => {
-            self.session.struct_span_err_with_code(attr.span,
-              &format!("Module attribute `{}` is already declared.", binding.name.clone()),
-              "E0002")
-            .span_label(attr.span, &"attribute already declared")
-            .span_label(*prev_span, &format!("`{}` first declared here", binding.name.clone()))
-            .emit();
-            true
-          }
-          None => false
-        };
-      if !err { self.dup_mod_attrs.insert(binding.name, attr.span); }
-    }
-  }
-
   fn reset_dup_local_vars(&mut self) {
     self.dup_local_vars = self.dup_mod_attrs.clone();
   }
 
-  fn duplicate_local_vars(&mut self, let_stmt: &LetStmt) {
-    let binding = let_stmt.binding.base();
+  fn reset_dup_proc(&mut self) {
+    self.dup_proc.clear();
+  }
+
+  fn duplicate(dups: &mut HashMap<String, Span>, session: &Session,
+    name: String, span: Span, code: &str, what: &str) {
     let err =
-      match self.dup_local_vars.get(&binding.name) {
+      match dups.get(&name) {
         Some(prev_span) => {
-          self.session.struct_span_err_with_code(let_stmt.span,
-            &format!("Local variable `{}` is already declared.", binding.name.clone()),
-            "E0003")
-          .span_label(let_stmt.span, &"local variable already declared")
-          .span_label(*prev_span, &format!("`{}` first declared here", binding.name.clone()))
+          session.struct_span_err_with_code(span,
+            &format!("duplicate {} definitions with name `{}`", what, name.clone()),
+            code)
+          .span_label(span, &"duplicate definition")
+          .span_label(*prev_span, &format!("previous definition of `{}` here", name.clone()))
           .emit();
           true
         }
         _ => false
       };
-    if !err { self.dup_local_vars.insert(binding.name, let_stmt.span); }
+    if !err { dups.insert(name, span); }
+  }
+
+  fn duplicate_mod_attrs(&mut self, attrs: Vec<ModuleAttribute>) {
+    self.dup_mod_attrs.clear();
+    for attr in attrs {
+      let binding = attr.binding.base();
+      Self::duplicate(&mut self.dup_mod_attrs, self.session,
+        binding.name, attr.span, "E0002", "spacetime attribute");
+    }
+  }
+
+  fn duplicate_local_vars(&mut self, let_stmt: &LetStmt) {
+    let binding = let_stmt.binding.base();
+    Self::duplicate(&mut self.dup_local_vars, self.session,
+      binding.name, let_stmt.span, "E0003", "local variable");
+  }
+
+  fn duplicate_proc(&mut self, process: &Process) {
+    Self::duplicate(&mut self.dup_proc, self.session,
+      process.name.clone(), process.span, "E0004", "process");
   }
 }
 
@@ -113,11 +118,13 @@ impl<'a, H: Clone> Visitor<H, ()> for Duplicate<'a, H> {
   unit_visitor_impl!(binding_base);
 
   fn visit_module(&mut self, module: Module<H>) {
+    self.reset_dup_proc();
     self.duplicate_mod_attrs(module.attributes);
     walk_processes(self, module.processes);
   }
 
   fn visit_process(&mut self, process: Process) {
+    self.duplicate_proc(&process);
     self.reset_dup_local_vars();
     self.visit_stmt(process.body);
   }
