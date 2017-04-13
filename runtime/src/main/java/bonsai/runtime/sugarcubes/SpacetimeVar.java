@@ -16,87 +16,40 @@ package bonsai.runtime.sugarcubes;
 
 import java.util.function.*;
 import bonsai.runtime.core.*;
-import inria.meije.rc.sugarcubes.*;
-import inria.meije.rc.sugarcubes.implementation.*;
 
-public class SpacetimeVar extends UnaryInstruction
+public class SpacetimeVar
 {
-  protected String name;
-  protected boolean isModuleAttr;
-  protected Spacetime spacetime;
-  protected Stream stream;
-  protected Function<SpaceEnvironment, Object> initValue;
-  private boolean firstActivation;
+  private String name;
+  private String uid;
+  private Spacetime spacetime;
+  private Stream stream;
+  private Function<SpaceEnvironment, Object> initValue;
 
-  public SpacetimeVar(Object ref, String name, boolean isModuleAttr, Spacetime spacetime,
+  public SpacetimeVar(Object ref, String name, String uid, Spacetime spacetime,
     Boolean isTransient, int streamSize,
-    Function<SpaceEnvironment, Object> initValue, Program body)
+    Function<SpaceEnvironment, Object> initValue)
   {
-    this(name, isModuleAttr, spacetime, initValue,
-      new Stream(ref, name, streamSize, isTransient), body);
+    this(name, uid, spacetime, initValue,
+      new Stream(ref, name, streamSize, isTransient));
   }
 
-  protected SpacetimeVar(String name, boolean isModuleAttr, Spacetime spacetime,
-    Function<SpaceEnvironment, Object> initValue, Stream stream, Program body)
+  private SpacetimeVar(String name, String uid, Spacetime spacetime,
+    Function<SpaceEnvironment, Object> initValue, Stream stream)
   {
-    super(body);
     if (stream.capacity() != 0 && spacetime == Spacetime.SingleTime) {
       throw new RuntimeException(
         "Single time variable cannot have a stream of past values. This is a bug.");
     }
     this.name = name;
-    this.isModuleAttr = isModuleAttr;
+    this.uid = uid;
     this.spacetime = spacetime;
     this.stream = stream;
     this.initValue = initValue;
-    this.firstActivation = true;
   }
 
-  public String actualToString() {
-    return name + " in " + spacetime + " = " + value(0) + ";\n" + body;
-  }
-
-  public SpacetimeVar copy() {
-    return new SpacetimeVar(name, isModuleAttr, spacetime, initValue, stream, body.copy());
-  }
-
-  public SpacetimeVar prepareFor(Environment env) {
-    SpacetimeVar copy = new SpacetimeVar(name, isModuleAttr, spacetime,
-      initValue, stream, body.prepareFor(env));
-    copy.body.setParent(copy);
-    /// If this variable is a module attribute, we must initialise it now in case it is used by parallel process before being run, consider `run o || when o.attr`. Also, it is safe to initialise it now because module attribute should not use the environment.
-    if (isModuleAttr) {
-      firstActivation((SpaceEnvironment) env);
-    }
-    return copy;
-  }
-
-  public byte activate(Environment e) {
-    SpaceEnvironment env = (SpaceEnvironment) e;
-    firstActivation(env);
-    byte res = body.activate(env);
-    lastActivation(env, res);
-    return res;
-  }
-
-  public void firstActivation(SpaceEnvironment env) {
-    if (firstActivation) {
-      firstActivation = false;
-      initialiseCurrentValue(env);
-      env.declareVar(name, this);
-    }
-  }
-
-  public void initialiseCurrentValue(SpaceEnvironment env) {
+  public void reset(SpaceEnvironment env) {
     Object value = initValue.apply(env);
     stream.reset(value);
-  }
-
-  /// Check if the variable exits its scope.
-  public void lastActivation(SpaceEnvironment env, byte res) {
-    if (TERM == res || EXCP == res) {
-      firstActivation = true;
-    }
   }
 
   public Object value(int time) {
@@ -113,16 +66,21 @@ public class SpacetimeVar extends UnaryInstruction
   }
 
   public void restore(SpaceEnvironment env, Snapshot snapshot) {
-    // We only restore variable that are activated (in scope).
-    if (!firstActivation) {
-      if (spacetime == Spacetime.WorldLine) {
-        snapshot.restoreWorldLineVar(name, stream);
-      }
-      stream.next(() -> initValue.apply(env));
+    if (spacetime == Spacetime.WorldLine) {
+      snapshot.restoreWorldLineVar(name, stream);
     }
+    stream.next(() -> initValue.apply(env));
   }
 
   public Spacetime spacetime() {
     return spacetime;
+  }
+
+  public String name() {
+    return name;
+  }
+
+  public String uid() {
+    return uid;
   }
 }

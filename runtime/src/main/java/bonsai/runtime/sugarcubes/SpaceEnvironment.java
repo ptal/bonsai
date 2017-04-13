@@ -171,16 +171,28 @@ public class SpaceEnvironment extends Clock {
     }
   }
 
-  public void declareVar(String name, SpacetimeVar v) {
-    vars().put(name, v);
+  public void enterScope(SpacetimeVar var) {
+    if (var == null) {
+      throw new RuntimeException("SpaceEnvironment.enterScope: null `var` parameter.");
+    }
+    SpacetimeVar old = vars().put(var.uid(), var);
+    if (old != null) {
+      throw new RuntimeException(
+        "SpaceEnvironment.enterScope: The variable `" + var.name() +
+        "` (uid: `" + var.uid() + "`) was already in scope with the name `" + old.name() + "`.");
+    }
   }
 
-  private HashMap<String, SpacetimeVar> vars() {
-    // FIXME: similar problem than with `registerSpaceBranch`.
-    if (vars == null) {
-      vars = new HashMap();
+  public void exitScope(SpacetimeVar var) {
+    if (var == null) {
+      throw new RuntimeException("SpaceEnvironment.exitScope: null `var` parameter.");
     }
-    return vars;
+    SpacetimeVar removed = vars().remove(var.uid());
+    if (removed == null) {
+      throw new RuntimeException(
+        "SpaceEnvironment.enterScope: Try to exit the scope of the variable `" + var.name() +
+        "` (uid: `" + var.uid() + "`) but it was not in scope.");
+    }
   }
 
   public LatticeVar latticeVar(String name, int time) {
@@ -209,5 +221,13 @@ public class SpaceEnvironment extends Clock {
 
   public int queueSize() {
     return futures.size();
+  }
+
+  private HashMap<String, SpacetimeVar> vars() {
+    // FIXME: similar problem than with `registerSpaceBranch`.
+    if (vars == null) {
+      vars = new HashMap();
+    }
+    return vars;
   }
 }

@@ -421,9 +421,10 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
 fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
   binding: LetBindingBase, store: VarPath)
 {
-  fmt.push(&format!("new LocationVar({}, \"{}\", \"{}\", ",
-    binding.name, binding.name, store.name()));
-  generate_closure(fmt, context, true, binding.expr);
+  panic!("Not yet implemented.");
+  // fmt.push(&format!("new LocationVar({}, \"{}\", \"{}\", ",
+  //   binding.name, binding.name, store.name()));
+  // generate_closure(fmt, context, true, binding.expr);
 }
 
 fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: EntailmentRel) {

@@ -16,8 +16,6 @@ package bonsai.runtime.sugarcubes;
 
 import java.util.*;
 import bonsai.runtime.core.*;
-import inria.meije.rc.sugarcubes.*;
-import inria.meije.rc.sugarcubes.implementation.*;
 
 public class Snapshot
 {
