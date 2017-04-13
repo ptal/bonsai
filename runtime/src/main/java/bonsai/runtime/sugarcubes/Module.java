@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,36 +19,38 @@ import bonsai.runtime.core.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 
-public class LocalVar extends Scoped
+public class Module extends Scoped
 {
-  private SpacetimeVar var;
+  private Consumer<SpaceEnvironment> init;
+  private Consumer<SpaceEnvironment> destroy;
 
-  public LocalVar(SpacetimeVar var, Program body)
+  public Module(Consumer<SpaceEnvironment> init,
+    Consumer<SpaceEnvironment> destroy, Program body)
   {
     super(body);
-    this.var = var;
+    this.init = init;
+    this.destroy = destroy;
   }
 
   public String actualToString() {
-    return var.name() + " in " + var.spacetime() + " = " + var.value(0) + ";\n" + body;
+    return "<module-init>;\n" + body;
   }
 
-  public LocalVar copy() {
-    return new LocalVar(var, body.copy());
+  public Module copy() {
+    return new Module(init, destroy, body.copy());
   }
 
-  public LocalVar prepareFor(Environment env) {
-    LocalVar copy = new LocalVar(var, body.prepareFor(env));
+  public Module prepareFor(Environment env) {
+    Module copy = new Module(init, destroy, body.prepareFor(env));
     copy.body.setParent(copy);
     return copy;
   }
 
   protected void enterScope(SpaceEnvironment env) {
-    var.reset(env);
-    env.enterScope(var);
+    init.accept(env);
   }
 
   protected void exitScope(SpaceEnvironment env) {
-    env.exitScope(var);
+    destroy.accept(env);
   }
 }
