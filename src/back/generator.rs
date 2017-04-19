@@ -29,8 +29,9 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
   for field in module.host.java_fields.clone() {
     generate_java_field(&mut fmt, field);
   }
-  // Extract all local variable (and module variable) as class fields.
-  LocalAttr::generate_local_fields(&mut fmt, module.clone());
+  for field in module.fields.clone() {
+    generate_spacetime_field(&mut fmt, field);
+  }
   generate_main_method(&context, &mut fmt, module.host.class_name);
   for process in module.processes {
     generate_process(&mut fmt, context, process);
@@ -92,65 +93,33 @@ fn generate_java_constructor(fmt: &mut CodeFormatter, constructor: JConstructor)
   fmt.push_java_method(code);
 }
 
-fn generate_java_field(fmt: &mut CodeFormatter, field: JField) {
+fn generate_java_field(fmt: &mut CodeFormatter, jfield: JField) {
   let code: String = vec![
-    string_from_final(field.is_final),
-    format!("{} ", field.visibility),
-    string_from_static(field.is_static),
-    format!("{} ", field.ty),
-    field.name
+    string_from_final(jfield.is_final),
+    format!("{} ", jfield.visibility),
+    string_from_static(jfield.is_static),
+    format!("{} ", jfield.ty),
+    jfield.name
   ].iter().flat_map(|x| x.chars()).collect();
   fmt.push(&code);
-  if let Some(expr) = field.expr {
+  if let Some(expr) = jfield.expr {
     fmt.push(" = ");
     generate_expr(fmt, expr);
   }
   fmt.terminate_line(";");
 }
 
-struct LocalAttr<'a> {
-  fmt: &'a mut CodeFormatter
-}
-
-impl<'a> LocalAttr<'a> {
-  pub fn generate_local_fields(fmt: &'a mut CodeFormatter,
-    module: JModule)
-  {
-    LocalAttr {
-      fmt: fmt
-    }
-    .visit_module(module)
-  }
-}
-
-impl<'a> Visitor<JClass, ()> for LocalAttr<'a> {
-  unit_visitor_impl!(bcrate, JClass);
-  unit_visitor_impl!(module, JClass);
-  unit_visitor_impl!(sequence);
-  unit_visitor_impl!(parallel);
-  unit_visitor_impl!(space);
-  unit_visitor_impl!(tell);
-  unit_visitor_impl!(pause);
-  unit_visitor_impl!(pause_up);
-  unit_visitor_impl!(stop);
-  unit_visitor_impl!(exit);
-  unit_visitor_impl!(proc_call);
-  unit_visitor_impl!(fn_call);
-  unit_visitor_impl!(module_call);
-  unit_visitor_impl!(nothing);
-
-  fn visit_binding(&mut self, binding: Binding) {
-    let jfield = JField {
-      visibility: JVisibility::Public,
-      is_static: false,
-      is_final: true,
-      ty: binding.ty.clone(),
-      name: binding.name,
-      expr: Some(Expr::new(DUMMY_SP, ExprKind::JavaNew(binding.ty, vec![]))),
-      span: binding.span
-    };
-    generate_java_field(self.fmt, jfield);
-  }
+fn generate_spacetime_field(fmt: &mut CodeFormatter, field: ModuleField) {
+  let jfield = JField {
+    visibility: field.visibility,
+    is_static: false,
+    is_final: true,
+    ty: field.binding.ty.clone(),
+    name: field.binding.name,
+    expr: Some(field.binding.expr),
+    span: field.binding.span
+  };
+  generate_java_field(fmt, jfield);
 }
 
 fn string_from_final(is_final: bool) -> String {
@@ -381,6 +350,7 @@ fn generate_space(fmt: &mut CodeFormatter, context: &Context, branches: Vec<Stmt
 }
 
 fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
+  fmt.push(&format!("new LocalVar("));
   generate_binding(fmt, context, let_decl.binding);
   fmt.terminate_line(",");
   generate_statement(fmt, context, *let_decl.body);
@@ -391,8 +361,10 @@ fn generate_binding(fmt: &mut CodeFormatter, context: &Context, binding: Binding
 {
   let spacetime = generate_spacetime(binding.spacetime);
   let stream_bound = context.stream_bound_of(&binding.name);
-  fmt.push(&format!("new SpacetimeVar({}, \"{}\", {}, {}, {}, ",
-    binding.name, binding.name, spacetime,
+  fmt.push("new SpacetimeVar(");
+  generate_bottom(fmt, binding.ty.clone());
+  fmt.push(&format!("\"{}\", \"{}\", {}, {}, {},",
+    binding.name, binding.uid, spacetime,
     binding.is_transient(), stream_bound));
   generate_closure(fmt, context, true, binding.expr);
 }
