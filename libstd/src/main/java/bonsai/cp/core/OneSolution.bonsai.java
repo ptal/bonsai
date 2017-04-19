@@ -23,7 +23,7 @@ import bonsai.runtime.sugarcubes.*;
 
 public class OneSolution implements Executable, Resettable<OneSolution>
 {
-  private channel single_time L<Consistent> consistent = bot;
+  private ref single_time L<Consistent> consistent = bot;
 
   public void reset(OneSolution o) {}
 

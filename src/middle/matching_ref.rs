@@ -16,19 +16,19 @@
 
 use context::*;
 
-pub fn matching_channel<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let matching_channel = MatchingChannel::new(context);
-  matching_channel.analyse()
+pub fn matching_ref<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  let matching_ref = MatchingRef::new(context);
+  matching_ref.analyse()
 }
 
-struct MatchingChannel<'a> {
+struct MatchingRef<'a> {
   context: Context<'a>,
   current_mod: usize
 }
 
-impl<'a> MatchingChannel<'a> {
+impl<'a> MatchingRef<'a> {
   pub fn new(context: Context<'a>) -> Self {
-    MatchingChannel {
+    MatchingRef {
       context: context,
       current_mod: 0
     }
@@ -64,7 +64,7 @@ impl<'a> MatchingChannel<'a> {
       mod_a_name: String, mod_b_name: String)
   {
     let msg_err = |specifier| panic!(
-      "{} specifier must match the one of the channel variable.\
+      "{} specifier must match the one of the `ref` variable.\
        It occurs in module {} when instantiating module {}.",
        specifier, mod_a_name, mod_b_name);
     if field_a.is_transient() != field_b.is_transient() {
@@ -89,7 +89,7 @@ impl<'a> MatchingChannel<'a> {
   }
 }
 
-impl<'a> Visitor<JClass, ()> for MatchingChannel<'a> {
+impl<'a> Visitor<JClass, ()> for MatchingRef<'a> {
   unit_visitor_impl!(module, JClass);
   unit_visitor_impl!(all_stmt);
 
@@ -116,11 +116,11 @@ impl<'a> Visitor<JClass, ()> for MatchingChannel<'a> {
       }
       else {
         let mod_b = mod_b.unwrap();
-        let channel_fields = mod_b.channel_fields();
-        for field_b in channel_fields {
+        let ref_fields = mod_b.ref_fields();
+        for field_b in ref_fields {
           let field_a = self.find_field_by_name(&mod_a, field_b.name.clone());
           let field_a = field_a.expect(&format!(
-            "The module attribute {} could not be found in {} but is marked with `channel` in {}.",
+            "The module attribute {} could not be found in {} but is marked with `ref` in {}.",
             field_b.name.clone(), mod_a_name.clone(), mod_b_name.clone()));
           self.cmp_binding(field_a, field_b, mod_a_name.clone(), mod_b_name.clone());
         }

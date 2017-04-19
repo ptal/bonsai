@@ -85,9 +85,9 @@ pub struct Module<Host> {
 }
 
 impl<Host> Module<Host> {
-  pub fn channel_fields(&self) -> Vec<Binding> {
+  pub fn ref_fields(&self) -> Vec<Binding> {
     self.fields.iter()
-      .filter(|a| a.is_channel)
+      .filter(|a| a.is_ref)
       .cloned()
       .map(|a| a.binding)
       .collect()
@@ -98,7 +98,7 @@ impl<Host> Module<Host> {
 pub struct ModuleField {
   pub visibility: JVisibility,
   pub binding: Binding,
-  pub is_channel: bool,
+  pub is_ref: bool,
   pub span: Span
 }
 

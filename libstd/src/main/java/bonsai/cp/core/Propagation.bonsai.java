@@ -24,9 +24,9 @@ import bonsai.runtime.sugarcubes.*;
 
 public class Propagation implements Executable, Resettable<Propagation>
 {
-  private channel world_line VarStore domains = bot;
-  private channel world_line ConstraintStore constraints = bot;
-  private channel single_time L<Consistent> consistent = bot;
+  private ref world_line VarStore domains = bot;
+  private ref world_line ConstraintStore constraints = bot;
+  private ref single_time L<Consistent> consistent = bot;
 
   public void reset(Propagation p) {}
 

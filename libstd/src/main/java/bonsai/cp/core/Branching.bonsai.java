@@ -27,9 +27,9 @@ import bonsai.runtime.sugarcubes.*;
 
 public class Branching implements Executable, Resettable<Branching>
 {
-  private channel world_line VarStore domains = bot;
-  private channel world_line ConstraintStore constraints = bot;
-  private channel single_time L<Consistent> consistent = bot;
+  private ref world_line VarStore domains = bot;
+  private ref world_line ConstraintStore constraints = bot;
+  private ref single_time L<Consistent> consistent = bot;
 
   private VariableSelector<IntVar> var;
   private IntValueSelector val;

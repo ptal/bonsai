@@ -83,7 +83,7 @@ grammar! bonsai {
     / java_field
     / java_constructor
 
-  module_field = .. java_visibility? (CHANNEL->())? binding > make_module_field
+  module_field = .. java_visibility? (REF->())? binding > make_module_field
 
   expr_or_bot = expr > some_expr
               / BOT > make_bottom_expr
@@ -92,13 +92,13 @@ grammar! bonsai {
   fn make_bottom_expr() -> Option<Expr> { None }
 
   fn make_module_field(span: Span, visibility: Option<JVisibility>,
-    is_channel: Option<()>, binding: Binding) -> Item
+    is_ref: Option<()>, binding: Binding) -> Item
   {
     Item::Field(
       ModuleField {
         visibility: visibility.unwrap_or(JVisibility::Private),
         binding: binding,
-        is_channel: is_channel.is_some(),
+        is_ref: is_ref.is_some(),
         span: span
       }
     )
@@ -535,7 +535,7 @@ grammar! bonsai {
   keyword
     = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
-    / "single_time" / "single_space" / "bot" / "top" / "channel" / "module"
+    / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "run" / "true" / "false" / "nothing" / "universe" / "suspend" / java_kw
   kw_tail = !ident_char spacing
 
@@ -560,7 +560,7 @@ grammar! bonsai {
   SINGLE_SPACE = "single_space" kw_tail
   BOT = "bot" kw_tail
   TOP = "top" kw_tail
-  CHANNEL = "channel" kw_tail
+  REF = "ref" kw_tail
   MODULE = "module" kw_tail
   RUN = "run" kw_tail
   TRUE = "true" kw_tail
@@ -712,11 +712,11 @@ grammar! bonsai {
 //         public module int x2 = 0;
 //         module int x3 = bot;
 
-//         channel single_time int c1 = bot;
-//         protected channel single_space int c2 = 0;
-//         channel world_line int c3 = bot;
+//         ref single_time int c1 = bot;
+//         protected ref single_space int c2 = 0;
+//         ref world_line int c3 = bot;
 
-//         channel single_time transient int t1 = bot;
+//         ref single_time transient int t1 = bot;
 //         single_space transient int t2 = bot;
 //       }
 //      "#.into_state());

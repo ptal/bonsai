@@ -53,11 +53,11 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
 }
 
 fn functionalize_attrs(fields: Vec<ModuleField>, body: Stmt) -> Stmt {
-  let mut channel_fields = vec![];
+  let mut ref_fields = vec![];
   let mut mod_fields = vec![];
   for field in fields {
-    if field.is_channel {
-      channel_fields.push(field.binding);
+    if field.is_ref {
+      ref_fields.push(field.binding);
     }
     else {
       mod_fields.push(field.binding);
@@ -68,7 +68,7 @@ fn functionalize_attrs(fields: Vec<ModuleField>, body: Stmt) -> Stmt {
     .map(|binding| Stmt::field(binding))
     .collect();
 
-  let mut seq_branches: Vec<_> = channel_fields.into_iter()
+  let mut seq_branches: Vec<_> = ref_fields.into_iter()
     .filter(|binding| !binding.expr.node.is_bottom())
     .map(|binding| Stmt::new(binding.span,
       StmtKind::Tell(StreamVar::simple(binding.span, binding.name), binding.expr)))

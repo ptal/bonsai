@@ -14,18 +14,18 @@
 
 pub mod functionalize_module;
 mod duplicate;
-mod matching_channel;
+mod matching_ref;
 mod stream_bound;
 
 use context::*;
 pub use middle::functionalize_module::*;
 use middle::duplicate::*;
-use middle::matching_channel::*;
+use middle::matching_ref::*;
 use middle::stream_bound::*;
 
 pub fn analyse_bonsai<'a>(context: Context<'a>) -> Partial<Context<'a>> {
   Partial::Value(context)
     .and_then(|context| duplicate(context))
-    .and_then(|context| matching_channel(context))
+    .and_then(|context| matching_ref(context))
     .and_then(|context| stream_bound(context))
 }
