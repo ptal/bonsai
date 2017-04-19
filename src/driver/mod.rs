@@ -24,35 +24,36 @@ use session::*;
 use front;
 use middle;
 use back;
+use context::Context;
 use ast::{JModule, JCrate};
 
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
 pub fn run() {
   let mut session = Session::new(Config::new());
-  let jcrate = front_mid_run(&mut session)
+  let context = front_mid_run(&mut session)
     .expect(ABORT_MSG);
-  assert_eq!(session.has_errors(), false);
-  run_back(session.config(), jcrate);
+  assert_eq!(context.session.has_errors(), false);
+  run_back(context);
 }
 
-pub fn front_mid_run(session: &mut Session) -> Partial<JCrate> {
+pub fn front_mid_run<'a>(session: &'a mut Session) -> Partial<Context<'a>> {
   run_front(session)
-    .and_then(|jcrate| run_middle(&session, jcrate))
+    .and_then(move |jcrate| run_middle(Context::new(session, jcrate)))
 }
 
 fn run_front(session: &mut Session) -> Partial<JCrate> {
   let file_filter = FileFilter::new(session.config());
   let mut jcrate = JCrate::new();
   for file in file_filter {
-    run_front_one(session, file)
+    run_front_module(session, file)
       .map(|module| jcrate.modules.push(module))
       .expect(ABORT_MSG);
   }
   Partial::Value(jcrate)
 }
 
-fn run_front_one(session: &mut Session, file: ModuleFile) -> Partial<JModule> {
+fn run_front_module(session: &mut Session, file: ModuleFile) -> Partial<JModule> {
   Partial::Value(session.load_file(file.input_path()))
     .and_then(front::parse_bonsai)
     .map(|ast| {
@@ -63,15 +64,16 @@ fn run_front_one(session: &mut Session, file: ModuleFile) -> Partial<JModule> {
     .and_then(|ast| middle::functionalize_module(file, ast))
 }
 
-fn run_middle(session: &Session, jcrate: JCrate) -> Partial<JCrate> {
-  middle::analyse_bonsai(session, jcrate)
+fn run_middle<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  middle::analyse_bonsai(context)
 }
 
-fn run_back(config: &Config, jcrate: JCrate) {
-  for module in jcrate.modules {
+fn run_back(mut context: Context) {
+  for module in context.ast.modules.clone() {
     if !module.file.is_lib() {
+      context.init_module(module.clone());
       let file = module.file.clone();
-      back::generate_runtime(module, jcrate.stream_bound.clone(), &config)
+      back::generate_module(&context, module)
         .map(|output| file.write_output(output))
         .expect(ABORT_MSG);
     }

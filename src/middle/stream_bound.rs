@@ -14,35 +14,37 @@
 
 /// For each binding, we compute its maximum stream bound. It is the maximum number of `pre` occuring before the variable.
 
-use ast::*;
-use visitor::*;
-use partial::*;
+use context::*;
 use std::cmp::max;
 
-pub fn stream_bound<H: Clone>(bcrate: Crate<H>) -> Partial<Crate<H>> {
-  let stream_bound = StreamBound::new(bcrate);
+pub fn stream_bound<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  let stream_bound = StreamBound::new(context);
   stream_bound.compute()
 }
 
-struct StreamBound<H: Clone> {
-  bcrate: Crate<H>
+struct StreamBound<'a> {
+  context: Context<'a>
 }
 
-impl<H: Clone> StreamBound<H> {
-  pub fn new(bcrate: Crate<H>) -> Self {
+impl<'a> StreamBound<'a> {
+  pub fn new(context: Context<'a>) -> Self {
     StreamBound {
-      bcrate: bcrate
+      context: context
     }
   }
 
-  fn compute(mut self) -> Partial<Crate<H>> {
-    let bcrate_clone = self.bcrate.clone();
+  fn compute(mut self) -> Partial<Context<'a>> {
+    let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    Partial::Value(self.bcrate)
+    Partial::Value(self.context)
+  }
+
+  fn bound_of<'b>(&'b mut self, var: String) -> &'b mut usize {
+    self.context.stream_bound.entry(var).or_insert(0)
   }
 
   fn visit_stream_var(&mut self, var: StreamVar) {
-    let bound = self.bcrate.stream_bound.entry(var.name()).or_insert(0);
+    let bound = self.bound_of(var.name());
     *bound = max(*bound, var.past);
   }
 
@@ -72,9 +74,9 @@ impl<H: Clone> StreamBound<H> {
   }
 }
 
-impl<H: Clone> Visitor<H, ()> for StreamBound<H> {
-  unit_visitor_impl!(bcrate, H);
-  unit_visitor_impl!(module, H);
+impl<'a> Visitor<JClass, ()> for StreamBound<'a> {
+  unit_visitor_impl!(bcrate, JClass);
+  unit_visitor_impl!(module, JClass);
   unit_visitor_impl!(sequence);
   unit_visitor_impl!(parallel);
   unit_visitor_impl!(space);
@@ -88,7 +90,7 @@ impl<H: Clone> Visitor<H, ()> for StreamBound<H> {
   unit_visitor_impl!(nothing);
 
   fn visit_binding(&mut self, binding: LetBindingBase) {
-    self.bcrate.stream_bound.entry(binding.name).or_insert(0);
+    self.bound_of(binding.name);
   }
 
   fn visit_tell(&mut self, var: StreamVar, expr: Expr) {

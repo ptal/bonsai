@@ -14,42 +14,45 @@
 
 /// We create a module, ensure that an entry point exists (`execute` method) and move module attributes as `let` declarations wrapping the `execute` code.
 
-use ast::*;
-use visitor::*;
-use partial::*;
-use session::*;
+use context::*;
 
-pub fn matching_channel<H: Clone>(session: &Session, bcrate: Crate<H>) -> Partial<Crate<H>> {
-  let matching_channel = MatchingChannel::new(session, bcrate);
+pub fn matching_channel<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  let matching_channel = MatchingChannel::new(context);
   matching_channel.analyse()
 }
 
-struct MatchingChannel<'a, H> {
-  bcrate: Crate<H>,
-  session: &'a Session,
+struct MatchingChannel<'a> {
+  context: Context<'a>,
   current_mod: usize
 }
 
-impl<'a, H: Clone> MatchingChannel<'a, H> {
-  pub fn new(session: &'a Session, bcrate: Crate<H>) -> Self {
+impl<'a> MatchingChannel<'a> {
+  pub fn new(context: Context<'a>) -> Self {
     MatchingChannel {
-      bcrate: bcrate,
-      session: session,
+      context: context,
       current_mod: 0
     }
   }
 
-  fn analyse(mut self) -> Partial<Crate<H>> {
-    let bcrate_clone = self.bcrate.clone();
+  fn session(&'a self) -> &'a Session {
+    self.context.session
+  }
+
+  fn ast(&'a self) -> &'a JCrate {
+    &self.context.ast
+  }
+
+  fn analyse(mut self) -> Partial<Context<'a>> {
+    let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    if self.session.has_errors() {
-      Partial::Fake(self.bcrate)
+    if self.session().has_errors() {
+      Partial::Fake(self.context)
     } else {
-      Partial::Value(self.bcrate)
+      Partial::Value(self.context)
     }
   }
 
-  fn find_attr_by_name(&self, module: &Module<H>,
+  fn find_attr_by_name(&self, module: &JModule,
     name: String) -> Option<LetBinding>
   {
     module.attributes.iter()
@@ -103,11 +106,11 @@ impl<'a, H: Clone> MatchingChannel<'a, H> {
   }
 }
 
-impl<'a, H: Clone> Visitor<H, ()> for MatchingChannel<'a, H> {
-  unit_visitor_impl!(module, H);
+impl<'a> Visitor<JClass, ()> for MatchingChannel<'a> {
+  unit_visitor_impl!(module, JClass);
   unit_visitor_impl!(all_stmt);
 
-  fn visit_crate(&mut self, bcrate: Crate<H>) {
+  fn visit_crate(&mut self, bcrate: JCrate) {
     for (i, module) in bcrate.modules.into_iter().enumerate() {
       self.current_mod = i;
       self.visit_module(module);
@@ -115,13 +118,13 @@ impl<'a, H: Clone> Visitor<H, ()> for MatchingChannel<'a, H> {
   }
 
   fn visit_binding_module(&mut self, mod_binding: LetBindingModule) {
-    let mod_a = self.bcrate.modules[self.current_mod].clone();
+    let mod_a = self.ast().modules[self.current_mod].clone();
     let mod_a_name = mod_a.file.mod_name();
     let mod_b_name = mod_binding.module_name();
-    let mod_b = self.bcrate.find_mod_by_name(mod_b_name.clone());
+    let mod_b = self.ast().find_mod_by_name(mod_b_name.clone());
     if mod_b.is_none() {
       let sp = mod_binding.binding.ty.span;
-      self.session.struct_span_err_with_code(sp,
+      self.session().struct_span_err_with_code(sp,
         &format!("Cannot find bonsai module `{}`.", mod_b_name.clone()),
         "E0001")
       .span_label(sp, &format!("not found in this scope"))

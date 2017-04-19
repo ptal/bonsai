@@ -12,18 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use ast::*;
-use visitor::*;
-use partial::*;
-use driver::config::*;
+use context::*;
 use back::code_formatter::*;
-use back::context::*;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashSet};
 
-pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
-  config: &Config) -> Partial<String>
-{
-  let context = Context::new(module.clone(), stream_bound, config.debug);
+pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String> {
   let mut fmt = CodeFormatter::new();
   fmt.push_block(module.host.header.clone());
   fmt.push_line(&format!("package {};", module.host.package));
@@ -38,9 +31,9 @@ pub fn generate_runtime(module: JModule, stream_bound: HashMap<String, usize>,
   }
   // Extract all local variable (and module variable) as class attributes.
   LocalAttr::generate_local_attr(&mut fmt, module.clone());
-  generate_main_method(config, &mut fmt, module.host.class_name);
+  generate_main_method(&context, &mut fmt, module.host.class_name);
   for process in module.processes {
-    generate_process(&mut fmt, &context, process);
+    generate_process(&mut fmt, context, process);
   }
   for method in module.host.java_methods {
     generate_java_method(&mut fmt, method);
@@ -60,12 +53,12 @@ fn list_of_interfaces(interfaces: Vec<JType>) -> String {
   s
 }
 
-fn generate_main_method(config: &Config, fmt: &mut CodeFormatter, class_name: String) {
-  if let Some(main_class) = config.main_method.clone() {
+fn generate_main_method(context: &Context, fmt: &mut CodeFormatter, class_name: String) {
+  if let Some(main_class) = context.config().main_method.clone() {
     if main_class == class_name {
       fmt.push_line("public static void main(String[] args)");
       fmt.open_block();
-      let machine_method = if config.debug { "createDebug" } else { "create" };
+      let machine_method = if context.config().debug { "createDebug" } else { "create" };
       fmt.push_block(format!("\
         {} current = new {}();\n\
         Program program = current.execute();\n\
@@ -418,8 +411,8 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
   }
 }
 
-fn generate_let_in_store(fmt: &mut CodeFormatter, context: &Context,
-  binding: LetBindingBase, store: VarPath)
+fn generate_let_in_store(_fmt: &mut CodeFormatter, _context: &Context,
+  _binding: LetBindingBase, _store: VarPath)
 {
   panic!("Not yet implemented.");
   // fmt.push(&format!("new LocationVar({}, \"{}\", \"{}\", ",
@@ -534,7 +527,7 @@ fn generate_exit(fmt: &mut CodeFormatter, name: String) {
 }
 
 fn generate_universe(fmt: &mut CodeFormatter, context: &Context, body: Box<Stmt>) {
-  fmt.push_line(&format!("new Universe({},", context.debug));
+  fmt.push_line(&format!("new Universe({},", context.config().debug));
   fmt.indent();
   generate_statement(fmt, context, *body);
   fmt.unindent();

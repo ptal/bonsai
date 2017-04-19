@@ -14,43 +14,42 @@
 
 /// Check duplicate names of local variables and modules attributes.
 
-use ast::*;
-use visitor::*;
-use partial::*;
-use session::*;
+use context::*;
 use std::collections::HashMap;
 
-pub fn duplicate<H: Clone>(session: &Session, bcrate: Crate<H>) -> Partial<Crate<H>> {
-  let duplicate = Duplicate::new(session, bcrate);
+pub fn duplicate<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  let duplicate = Duplicate::new(context);
   duplicate.analyse()
 }
 
-struct Duplicate<'a, H> {
-  bcrate: Crate<H>,
-  session: &'a Session,
+struct Duplicate<'a> {
+  context: Context<'a>,
   dup_local_vars: HashMap<String, Span>,
   dup_mod_attrs: HashMap<String, Span>,
   dup_proc: HashMap<String, Span>,
 }
 
-impl<'a, H: Clone> Duplicate<'a, H> {
-  pub fn new(session: &'a Session, bcrate: Crate<H>) -> Self {
+impl<'a> Duplicate<'a> {
+  pub fn new(context: Context<'a>) -> Self {
     Duplicate {
-      bcrate: bcrate,
-      session: session,
+      context: context,
       dup_local_vars: HashMap::new(),
       dup_mod_attrs: HashMap::new(),
       dup_proc: HashMap::new(),
     }
   }
 
-  fn analyse(mut self) -> Partial<Crate<H>> {
-    let bcrate_clone = self.bcrate.clone();
+  fn session(&'a self) -> &'a Session {
+    self.context.session
+  }
+
+  fn analyse(mut self) -> Partial<Context<'a>> {
+    let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    if self.session.has_errors() {
-      Partial::Fake(self.bcrate)
+    if self.session().has_errors() {
+      Partial::Fake(self.context)
     } else {
-      Partial::Value(self.bcrate)
+      Partial::Value(self.context)
     }
   }
 
@@ -62,47 +61,53 @@ impl<'a, H: Clone> Duplicate<'a, H> {
     self.dup_proc.clear();
   }
 
-  fn duplicate(dups: &mut HashMap<String, Span>, session: &Session,
-    name: String, span: Span, code: &str, what: &str) {
-    let err =
-      match dups.get(&name) {
-        Some(prev_span) => {
-          session.struct_span_err_with_code(span,
-            &format!("duplicate {} definitions with name `{}`", what, name.clone()),
-            code)
-          .span_label(span, &"duplicate definition")
-          .span_label(*prev_span, &format!("previous definition of `{}` here", name.clone()))
-          .emit();
-          true
-        }
-        _ => false
-      };
-    if !err { dups.insert(name, span); }
+  // Note: Due to the borrowing of session, we cannot take `dups` as mutable (both are owned by `self`).
+  fn duplicate(dups: &HashMap<String, Span>, session: &Session,
+    name: String, span: Span, code: &str, what: &str) -> bool
+  {
+    match dups.get(&name) {
+      Some(prev_span) => {
+        session.struct_span_err_with_code(span,
+          &format!("duplicate {} definitions with name `{}`", what, name.clone()),
+          code)
+        .span_label(span, &"duplicate definition")
+        .span_label(*prev_span, &format!("previous definition of `{}` here", name.clone()))
+        .emit();
+        true
+      }
+      _ => false
+    }
   }
 
   fn duplicate_mod_attrs(&mut self, attrs: Vec<ModuleAttribute>) {
     self.dup_mod_attrs.clear();
     for attr in attrs {
       let binding = attr.binding.base();
-      Self::duplicate(&mut self.dup_mod_attrs, self.session,
-        binding.name, attr.span, "E0002", "spacetime attribute");
+      let name = binding.name.clone();
+      let err = Self::duplicate(&self.dup_mod_attrs, self.session(),
+        name.clone(), attr.span, "E0002", "spacetime attribute");
+      if !err { self.dup_mod_attrs.insert(name, attr.span); }
     }
   }
 
   fn duplicate_local_vars(&mut self, let_stmt: &LetStmt) {
     let binding = let_stmt.binding.base();
-    Self::duplicate(&mut self.dup_local_vars, self.session,
-      binding.name, let_stmt.span, "E0003", "local variable");
+    let name = binding.name.clone();
+    let err = Self::duplicate(&self.dup_local_vars, self.session(),
+      name.clone(), let_stmt.span, "E0003", "local variable");
+    if !err { self.dup_local_vars.insert(name, let_stmt.span); }
   }
 
   fn duplicate_proc(&mut self, process: &Process) {
-    Self::duplicate(&mut self.dup_proc, self.session,
-      process.name.clone(), process.span, "E0004", "process");
+    let name = process.name.clone();
+    let err = Self::duplicate(&self.dup_proc, self.session(),
+      name.clone(), process.span, "E0004", "process");
+    if !err { self.dup_proc.insert(name, process.span); }
   }
 }
 
-impl<'a, H: Clone> Visitor<H, ()> for Duplicate<'a, H> {
-  unit_visitor_impl!(bcrate, H);
+impl<'a> Visitor<JClass, ()> for Duplicate<'a> {
+  unit_visitor_impl!(bcrate, JClass);
   unit_visitor_impl!(sequence);
   unit_visitor_impl!(parallel);
   unit_visitor_impl!(space);
@@ -117,7 +122,7 @@ impl<'a, H: Clone> Visitor<H, ()> for Duplicate<'a, H> {
   unit_visitor_impl!(nothing);
   unit_visitor_impl!(binding_base);
 
-  fn visit_module(&mut self, module: Module<H>) {
+  fn visit_module(&mut self, module: JModule) {
     self.reset_dup_proc();
     self.duplicate_mod_attrs(module.attributes);
     walk_processes(self, module.processes);

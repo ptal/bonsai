@@ -130,7 +130,7 @@ impl TestEngine
       let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
       let mut session = Session::testing_mode(filepath.clone(),
         vec![self.lib_path.clone()], codemap.clone(), emitter);
-      let result = front_mid_run(&mut session);
+      let result = front_mid_run(&mut session).map(|c| c.clone_ast());
       (result, session.expected_diagnostics)
     };
     let obtained_diagnostics = Rc::try_unwrap(obtained_diagnostics)

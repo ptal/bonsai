@@ -14,7 +14,6 @@
 
 use driver::module_file::ModuleFile;
 use std::fmt::{Display, Error, Formatter};
-use std::collections::HashMap;
 use std::cmp::PartialEq;
 pub use syntex_pos::Span;
 pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
@@ -62,14 +61,12 @@ impl Display for CompilerDiagnostic
 #[derive(Clone, Debug)]
 pub struct Crate<Host> {
   pub modules: Vec<Module<Host>>,
-  pub stream_bound: HashMap<String, usize>,
 }
 
 impl<Host> Crate<Host> where Host: Clone {
   pub fn new() -> Self {
     Crate {
       modules: vec![],
-      stream_bound: HashMap::new()
     }
   }
 

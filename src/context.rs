@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,31 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// The context is useful for mapping variable names to their types. This is mainly used when generating the closures because, at that point of the generation process, we do not have access to the type of the variables.
-
-/// TODO: this context does not take into account the scoping rules of variables.
-
-use ast::*;
+pub use ast::*;
+pub use session::*;
+pub use visitor::*;
+pub use partial::*;
+use driver::config::Config;
 use std::collections::HashMap;
+use std::ops::Deref;
 
-pub struct Context {
-  name_to_bindings: HashMap<String, LetBindingBase>,
-  stream_bound: HashMap<String, usize>,
-  pub debug: bool
+pub struct Context<'a> {
+  pub session: &'a Session,
+  pub ast: JCrate,
+  // For each variable, compute the maximum number of `pre` that can possibly happen. This is useful to compute the size of the stream. For example: `pre pre x` gives `[x: 2]`.
+  pub stream_bound: HashMap<String, usize>,
+  pub name_to_bindings: HashMap<String, LetBindingBase>,
 }
 
-impl Context {
-  pub fn new(module: JModule, stream_bound: HashMap<String, usize>, debug: bool) -> Self {
-    let mut context = Context {
-      name_to_bindings: HashMap::new(),
-      stream_bound: stream_bound,
-      debug: debug,
-    };
-    for channel_attr in module.channel_attrs() {
-      context.insert_binding(channel_attr.base());
+impl<'a> Context<'a> {
+  pub fn new(session: &'a Session, ast: JCrate) -> Self {
+    Context {
+      session: session,
+      ast: ast,
+      stream_bound: HashMap::new(),
+      name_to_bindings: HashMap::new()
     }
-    context.visit_program(module);
-    context
+  }
+
+  pub fn config(&self) -> &'a Config {
+    self.session.config()
+  }
+
+  pub fn clone_ast(&self) -> JCrate {
+    self.ast.clone()
+  }
+
+  pub fn init_module(&mut self, module: JModule) {
+    self.name_to_bindings.clear();
+    for channel_attr in module.channel_attrs() {
+      self.insert_binding(channel_attr.base());
+    }
+    self.visit_program(module);
   }
 
   fn visit_program(&mut self, module: JModule) {
@@ -93,5 +108,13 @@ impl Context {
   pub fn stream_bound_of(&self, name: &String) -> usize {
     *self.stream_bound.get(name)
     .expect(&format!("Undeclared variable `{}`.", name))
+  }
+}
+
+impl<'a> Deref for Context<'a> {
+  type Target = Session;
+
+  fn deref(&self) -> &Session {
+    self.session
   }
 }

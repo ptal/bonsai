@@ -29,21 +29,27 @@ pub struct Session {
   pub config: Config,
   pub codemap: Rc<CodeMap>,
   pub span_diagnostic: SpanDiagnostic,
-  pub expected_diagnostics: Vec<CompilerDiagnostic>
+  pub expected_diagnostics: Vec<CompilerDiagnostic>,
 }
 
 impl Session
 {
-  pub fn new(config: Config) -> Self {
-    let codemap = Rc::new(CodeMap::new());
-    let span_diagnostic = SpanDiagnostic::with_tty_emitter(
-      ColorConfig::Always, true, false, Some(codemap.clone()));
+  fn init(config: Config, codemap: Rc<CodeMap>,
+    span_diagnostic: SpanDiagnostic) -> Self
+  {
     Session {
       config: config,
       codemap: codemap,
       span_diagnostic: span_diagnostic,
-      expected_diagnostics: vec![]
+      expected_diagnostics: vec![],
     }
+  }
+
+  pub fn new(config: Config) -> Self {
+    let codemap = Rc::new(CodeMap::new());
+    let span_diagnostic = SpanDiagnostic::with_tty_emitter(
+      ColorConfig::Always, true, false, Some(codemap.clone()));
+    Session::init(config, codemap, span_diagnostic)
   }
 
   pub fn testing_mode(file_to_test: PathBuf, libs: Vec<PathBuf>,
@@ -51,12 +57,8 @@ impl Session
   {
     let span_diagnostic = SpanDiagnostic::with_emitter(
       true, false, emitter);
-    Session {
-      config: Config::testing_mode(file_to_test, libs),
-      codemap: codemap,
-      span_diagnostic: span_diagnostic,
-      expected_diagnostics: vec![]
-    }
+    Session::init(Config::testing_mode(file_to_test, libs),
+      codemap, span_diagnostic)
   }
 
   pub fn push_expected_diagnostic(&mut self, diagnostic: CompilerDiagnostic) {

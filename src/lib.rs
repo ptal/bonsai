@@ -23,9 +23,10 @@ extern crate syntex_syntax;
 extern crate syntex_errors;
 
 pub mod session;
-pub mod driver;
 pub mod ast;
 pub mod visitor;
+pub mod context;
+pub mod driver;
 pub mod front;
 pub mod middle;
 pub mod back;

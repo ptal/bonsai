@@ -17,17 +17,15 @@ mod duplicate;
 mod matching_channel;
 mod stream_bound;
 
-use ast::*;
+use context::*;
 pub use middle::functionalize_module::*;
 use middle::duplicate::*;
 use middle::matching_channel::*;
 use middle::stream_bound::*;
-use partial::*;
-use session::*;
 
-pub fn analyse_bonsai(session: &Session, jcrate: JCrate) -> Partial<JCrate> {
-  Partial::Value(jcrate)
-    .and_then(|jcrate| duplicate(session, jcrate))
-    .and_then(|jcrate| matching_channel(session, jcrate))
-    .and_then(|jcrate| stream_bound(jcrate))
+pub fn analyse_bonsai<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  Partial::Value(context)
+    .and_then(|context| duplicate(context))
+    .and_then(|context| matching_channel(context))
+    .and_then(|context| stream_bound(context))
 }

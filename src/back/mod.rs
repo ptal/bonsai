@@ -13,7 +13,6 @@
 // limitations under the License.
 
 mod code_formatter;
-mod context;
 mod generator;
 
-pub use back::generator::generate_runtime;
+pub use back::generator::generate_module;

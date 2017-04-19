@@ -23,9 +23,10 @@ extern crate syntex_syntax;
 extern crate syntex_errors;
 
 mod session;
-mod driver;
 mod ast;
 mod visitor;
+mod context;
+mod driver;
 mod front;
 mod middle;
 mod back;
