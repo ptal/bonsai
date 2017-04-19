@@ -15,7 +15,7 @@
 /// The declaration of variable in Java is a statement and not an expression. We perform this transformation as follows:
 /// `single_time Type var = expr; <code-following>` into
 /// `single_time Type var = expr in <code-following>`.
-/// The code following the variable declaration is lifted inside the structure of the let statement. It replaces the `Unknown` statements by the statement following inside the AST.
+/// The code following the variable declaration is lifted inside the structure of the let statement. It replaces the `Nothing` statement by the statement following inside the AST.
 
 use ast::*;
 
@@ -89,30 +89,3 @@ fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
     }
   }
 }
-
-#[cfg(test)]
-mod test
-{
-  use ast::*;
-
-  #[test]
-  fn test_let_lifting() {
-    use ast::StmtKind::*;
-    let let_stmt = Stmt::new(DUMMY_SP, Let(LetStmt::imperative(
-      LetBinding::Spacetime(LetBindingSpacetime::example()))));
-    let ast = Stmt::seq(vec![
-      Stmt::example(),
-      let_stmt.clone(),
-      Stmt::seq(vec![let_stmt.clone(), Stmt::example(), let_stmt.clone()])
-    ]);
-    let res = super::lift_stmt(ast);
-    let expected = Stmt::seq(vec![
-      Stmt::example(),
-      Stmt::new(DUMMY_SP, Let(LetStmt::new(DUMMY_SP, LetBinding::Spacetime(LetBindingSpacetime::example()),
-        box Stmt::new(DUMMY_SP, Let(LetStmt::new(DUMMY_SP, LetBinding::Spacetime(LetBindingSpacetime::example()),
-          box Stmt::seq(vec![Stmt::example(), let_stmt.clone()])))))))
-    ]);
-    assert_eq!(res, expected);
-  }
-}
-

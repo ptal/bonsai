@@ -89,7 +89,7 @@ impl<'a> Visitor<JClass, ()> for StreamBound<'a> {
   unit_visitor_impl!(module_call);
   unit_visitor_impl!(nothing);
 
-  fn visit_binding(&mut self, binding: LetBindingBase) {
+  fn visit_binding(&mut self, binding: Binding) {
     self.bound_of(binding.name);
   }
 

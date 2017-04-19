@@ -25,7 +25,7 @@ pub struct Context<'a> {
   pub ast: JCrate,
   // For each variable, compute the maximum number of `pre` that can possibly happen. This is useful to compute the size of the stream. For example: `pre pre x` gives `[x: 2]`.
   pub stream_bound: HashMap<String, usize>,
-  pub name_to_bindings: HashMap<String, LetBindingBase>,
+  pub name_to_bindings: HashMap<String, Binding>,
 }
 
 impl<'a> Context<'a> {
@@ -48,8 +48,8 @@ impl<'a> Context<'a> {
 
   pub fn init_module(&mut self, module: JModule) {
     self.name_to_bindings.clear();
-    for channel_attr in module.channel_attrs() {
-      self.insert_binding(channel_attr.base());
+    for binding in module.channel_fields() {
+      self.insert_binding(binding.clone());
     }
     self.visit_program(module);
   }
@@ -60,7 +60,7 @@ impl<'a> Context<'a> {
     }
   }
 
-  fn insert_binding(&mut self, binding: LetBindingBase) {
+  fn insert_binding(&mut self, binding: Binding) {
     self.name_to_bindings.insert(
       binding.name.clone(),
       binding);
@@ -76,8 +76,7 @@ impl<'a> Context<'a> {
     use ast::StmtKind::*;
     match stmt.node {
       Let(decl) => {
-        let base_binding = decl.binding.base().clone();
-        self.insert_binding(base_binding);
+        self.insert_binding(decl.binding);
         self.visit_stmt(*decl.body);
       }
       Seq(branches)
@@ -91,7 +90,7 @@ impl<'a> Context<'a> {
     }
   }
 
-  pub fn binding_of(&self, name: &String) -> LetBindingBase {
+  pub fn binding_of(&self, name: &String) -> Binding {
     self.name_to_bindings.get(name)
     .expect(&format!("Undeclared variable `{}`.", name))
     .clone()

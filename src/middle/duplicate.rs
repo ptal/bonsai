@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Check duplicate names of local variables and modules attributes.
+/// Check duplicate names of local variables and modules fields.
 
 use context::*;
 use std::collections::HashMap;
@@ -25,7 +25,7 @@ pub fn duplicate<'a>(context: Context<'a>) -> Partial<Context<'a>> {
 struct Duplicate<'a> {
   context: Context<'a>,
   dup_local_vars: HashMap<String, Span>,
-  dup_mod_attrs: HashMap<String, Span>,
+  dup_mod_fields: HashMap<String, Span>,
   dup_proc: HashMap<String, Span>,
 }
 
@@ -34,7 +34,7 @@ impl<'a> Duplicate<'a> {
     Duplicate {
       context: context,
       dup_local_vars: HashMap::new(),
-      dup_mod_attrs: HashMap::new(),
+      dup_mod_fields: HashMap::new(),
       dup_proc: HashMap::new(),
     }
   }
@@ -54,7 +54,7 @@ impl<'a> Duplicate<'a> {
   }
 
   fn reset_dup_local_vars(&mut self) {
-    self.dup_local_vars = self.dup_mod_attrs.clone();
+    self.dup_local_vars = self.dup_mod_fields.clone();
   }
 
   fn reset_dup_proc(&mut self) {
@@ -79,19 +79,19 @@ impl<'a> Duplicate<'a> {
     }
   }
 
-  fn duplicate_mod_attrs(&mut self, attrs: Vec<ModuleAttribute>) {
-    self.dup_mod_attrs.clear();
-    for attr in attrs {
-      let binding = attr.binding.base();
+  fn duplicate_mod_fields(&mut self, fields: Vec<ModuleField>) {
+    self.dup_mod_fields.clear();
+    for field in fields {
+      let binding = field.binding.clone();
       let name = binding.name.clone();
-      let err = Self::duplicate(&self.dup_mod_attrs, self.session(),
-        name.clone(), attr.span, "E0002", "spacetime attribute");
-      if !err { self.dup_mod_attrs.insert(name, attr.span); }
+      let err = Self::duplicate(&self.dup_mod_fields, self.session(),
+        name.clone(), field.span, "E0002", "spacetime field");
+      if !err { self.dup_mod_fields.insert(name, field.span); }
     }
   }
 
   fn duplicate_local_vars(&mut self, let_stmt: &LetStmt) {
-    let binding = let_stmt.binding.base();
+    let binding = let_stmt.binding.clone();
     let name = binding.name.clone();
     let err = Self::duplicate(&self.dup_local_vars, self.session(),
       name.clone(), let_stmt.span, "E0003", "local variable");
@@ -120,11 +120,10 @@ impl<'a> Visitor<JClass, ()> for Duplicate<'a> {
   unit_visitor_impl!(fn_call);
   unit_visitor_impl!(module_call);
   unit_visitor_impl!(nothing);
-  unit_visitor_impl!(binding_base);
 
   fn visit_module(&mut self, module: JModule) {
     self.reset_dup_proc();
-    self.duplicate_mod_attrs(module.attributes);
+    self.duplicate_mod_fields(module.fields);
     walk_processes(self, module.processes);
   }
 
@@ -135,8 +134,8 @@ impl<'a> Visitor<JClass, ()> for Duplicate<'a> {
   }
 
   fn visit_let(&mut self, let_stmt: LetStmt) {
-    // Due to the functionalization of module, some of the attributes are also local variables, but not all—such as references.
-    if !let_stmt.is_mod_attr {
+    // Due to the functionalization of module, some of the fields are also local variables, but not all—such as references.
+    if !let_stmt.is_field {
       self.duplicate_local_vars(&let_stmt);
     }
     self.visit_stmt(*(let_stmt.body));

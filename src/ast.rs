@@ -78,15 +78,15 @@ impl<Host> Crate<Host> where Host: Clone {
 
 #[derive(Clone, Debug)]
 pub struct Module<Host> {
-  pub attributes: Vec<ModuleAttribute>,
+  pub fields: Vec<ModuleField>,
   pub processes: Vec<Process>,
   pub file: ModuleFile,
   pub host: Host
 }
 
 impl<Host> Module<Host> {
-  pub fn channel_attrs(&self) -> Vec<LetBinding> {
-    self.attributes.iter()
+  pub fn channel_fields(&self) -> Vec<Binding> {
+    self.fields.iter()
       .filter(|a| a.is_channel)
       .cloned()
       .map(|a| a.binding)
@@ -95,9 +95,9 @@ impl<Host> Module<Host> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ModuleAttribute {
+pub struct ModuleField {
   pub visibility: JVisibility,
-  pub binding: LetBinding,
+  pub binding: Binding,
   pub is_channel: bool,
   pub span: Span
 }
@@ -116,10 +116,10 @@ pub struct Program {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Item {
-  Attribute(ModuleAttribute),
+  Field(ModuleField),
   Proc(Process),
   JavaMethod(JMethod),
-  JavaAttr(JAttribute),
+  JavaField(JField),
   JavaConstructor(JConstructor),
 }
 
@@ -160,9 +160,9 @@ impl Stmt {
     }
   }
 
-  pub fn mod_attr(binding: LetBinding) -> Self {
-    Stmt::new(binding.span(),
-      StmtKind::Let(LetStmt::mod_attr(binding)))
+  pub fn field(binding: Binding) -> Self {
+    Stmt::new(binding.span,
+      StmtKind::Let(LetStmt::field(binding)))
   }
 
   pub fn seq(seq: Vec<Stmt>) -> Self {
@@ -244,161 +244,68 @@ impl RunExpr {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LetStmt {
-  pub binding: LetBinding,
+  pub binding: Binding,
   pub body: Box<Stmt>,
-  pub is_mod_attr: bool,
+  pub is_field: bool,
   pub span: Span,
 }
 
 impl LetStmt {
-  pub fn new(span: Span, binding: LetBinding, body: Box<Stmt>) -> Self {
+  pub fn local(span: Span, binding: Binding, body: Box<Stmt>) -> Self {
     LetStmt {
       binding: binding,
       body: body,
-      is_mod_attr: false,
+      is_field: false,
       span: span
     }
   }
 
-  pub fn mod_attr(binding: LetBinding) -> Self {
+  pub fn field(binding: Binding) -> Self {
     let mut stmt = Self::imperative(binding);
-    stmt.is_mod_attr = true;
+    stmt.is_field = true;
     stmt
   }
 
-  pub fn imperative(binding: LetBinding) -> Self {
-    LetStmt::new(binding.span(), binding, Box::new(Stmt::new(DUMMY_SP, StmtKind::Nothing)))
+  pub fn imperative(binding: Binding) -> Self {
+    LetStmt::local(binding.span, binding, Box::new(Stmt::new(DUMMY_SP, StmtKind::Nothing)))
   }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum LetBinding {
-  InStore(LetBindingInStore),
-  Spacetime(LetBindingSpacetime),
-  Module(LetBindingModule)
-}
-
-impl LetBinding {
-  pub fn base(&self) -> LetBindingBase {
-    use self::LetBinding::*;
-    match self.clone() {
-      InStore(base) => base.binding,
-      Spacetime(base) => base.binding,
-      Module(base) => base.binding
-    }
-  }
-  pub fn base_mut<'a>(&'a mut self) -> &'a mut LetBindingBase {
-    use self::LetBinding::*;
-    match self {
-      &mut InStore(ref mut base) => &mut base.binding,
-      &mut Spacetime(ref mut base) => &mut base.binding,
-      &mut Module(ref mut base) => &mut base.binding
-    }
-  }
-  pub fn span(&self) -> Span {
-    use self::LetBinding::*;
-    match self.clone() {
-      InStore(base) => base.span,
-      Spacetime(base) => base.span,
-      Module(base) => base.span
-    }
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LetBindingBase {
+pub struct Binding {
   pub name: String,
+  pub spacetime: Spacetime,
   pub ty: JType,
-  pub visibility: JVisibility,
-  pub is_module_attr: bool,
   pub expr: Expr,
   pub span: Span
 }
 
-impl LetBindingBase {
-  pub fn new(span: Span, name: String, ty: JType, expr: Expr) -> Self
+impl Binding
+{
+  pub fn new(span: Span, name: String,
+    spacetime: Spacetime, ty: JType, expr: Expr) -> Self
   {
-    LetBindingBase {
+    Binding {
       name: name,
+      spacetime: spacetime,
       ty: ty,
-      visibility: JVisibility::Private,
-      is_module_attr: false,
       expr: expr,
       span: span
     }
   }
 
-  #[allow(dead_code)]
-  pub fn example() -> Self {
-    LetBindingBase::new(DUMMY_SP, String::from("<name>"), JType::example(),
-      Expr::example())
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LetBindingModule {
-  pub binding: LetBindingBase,
-  pub span: Span
-}
-
-impl LetBindingModule {
-  pub fn new(span: Span, binding: LetBindingBase) -> Self {
-    LetBindingModule {
-      binding: binding,
-      span: span
-    }
+  pub fn is_transient(&self) -> bool {
+    self.spacetime.is_transient()
   }
 
-  pub fn module_name(&self) -> String {
-    self.binding.ty.name.clone()
+  pub fn is_module(&self) -> bool {
+    self.spacetime == Spacetime::Product
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    LetBindingModule::new(DUMMY_SP, LetBindingBase::example())
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LetBindingSpacetime {
-  pub binding: LetBindingBase,
-  pub spacetime: Spacetime,
-  pub is_transient: bool,
-  pub span: Span
-}
-
-impl LetBindingSpacetime {
-  pub fn new(span: Span, binding: LetBindingBase, sp: Spacetime, is_transient: bool) -> Self
-  {
-    let is_transient = if sp == Spacetime::SingleTime { true } else { is_transient };
-    LetBindingSpacetime {
-      binding: binding,
-      spacetime: sp,
-      is_transient: is_transient,
-      span: span
-    }
-  }
-
-  #[allow(dead_code)]
-  pub fn example() -> Self {
-    LetBindingSpacetime::new(DUMMY_SP, LetBindingBase::example(), Spacetime::example(), false)
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LetBindingInStore {
-  pub binding: LetBindingBase,
-  pub store: VarPath,
-  pub span: Span
-}
-
-impl LetBindingInStore {
-  pub fn new(span: Span, binding: LetBindingBase, store: VarPath) -> Self {
-    LetBindingInStore {
-      binding: binding,
-      store: store,
-      span: span
-    }
+    Binding::new(DUMMY_SP, String::from("<name>"), Spacetime::example(),
+      JType::example(), Expr::example())
   }
 }
 
@@ -448,7 +355,7 @@ impl VarPath {
   }
   pub fn to_java_calls(&self) -> Vec<JavaCall> {
     self.properties.clone().into_iter()
-      .map(|p| JavaCall::attribute(DUMMY_SP, p))
+      .map(|p| JavaCall::field(DUMMY_SP, p))
       .collect()
   }
 
@@ -503,17 +410,28 @@ impl StreamVar {
   }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// The spacetime of a variable describes how it evolves in each instant. For `WorldLine` and `SingleSpace` we can additional set a boolean to `true` if the variable is transient (i.e. its value is re-initialized to bottom between each instant). The `Product` variant is used for records where variables have fields with various spacetime.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Spacetime {
-  SingleSpace,
+  WorldLine(bool),
+  SingleSpace(bool),
   SingleTime,
-  WorldLine
+  Product
 }
 
 impl Spacetime {
+  pub fn is_transient(self) -> bool {
+    use self::Spacetime::*;
+    match self {
+      WorldLine(transient)
+    | SingleSpace(transient) => transient,
+      _ => false
+    }
+  }
+
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Spacetime::SingleSpace
+    Spacetime::SingleSpace(false)
   }
 }
 
@@ -626,7 +544,7 @@ pub struct JClass {
   pub class_name: String,
   pub interfaces: Vec<JType>,
   pub java_methods: Vec<JMethod>,
-  pub java_attrs: Vec<JAttribute>,
+  pub java_fields: Vec<JField>,
   pub java_constructors: Vec<JConstructor>,
 }
 
@@ -641,7 +559,7 @@ impl JClass {
       class_name: class_name,
       interfaces: interfaces,
       java_methods: vec![],
-      java_attrs: vec![],
+      java_fields: vec![],
       java_constructors: vec![]
     }
   }
@@ -671,7 +589,7 @@ pub struct JConstructor {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct JAttribute {
+pub struct JField {
   pub visibility: JVisibility,
   pub is_static: bool,
   pub is_final: bool,
@@ -757,8 +675,8 @@ impl Display for JVisibility {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JavaCall {
-  pub property: String, // can be an attribute or a method.
-  pub is_attribute: bool,
+  pub property: String, // can be a field or a method.
+  pub is_field: bool,
   pub args: Vec<Expr>,
   pub span: Span
 }
@@ -767,16 +685,16 @@ impl JavaCall {
   pub fn empty_method(span: Span, name: String) -> Self {
     JavaCall {
       property: name,
-      is_attribute: false,
+      is_field: false,
       args: vec![],
       span: span
     }
   }
 
-  pub fn attribute(span: Span, name: String) -> Self {
+  pub fn field(span: Span, name: String) -> Self {
     JavaCall {
       property: name,
-      is_attribute: true,
+      is_field: true,
       args: vec![],
       span: span
     }

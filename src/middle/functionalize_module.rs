@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// We create a module, ensure that an entry point exists (`execute` method) and move module attributes as `let` declarations wrapping the `execute` code.
+/// We create a module, ensure that an entry point exists (`execute` method) and move module fields as `let` declarations wrapping the `execute` code.
 
 use ast::*;
 use driver::module_file::ModuleFile;
@@ -21,7 +21,7 @@ use partial::*;
 
 pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> {
   let mut module = Module {
-    attributes: vec![],
+    fields: vec![],
     processes: vec![],
     file: file,
     host: JClass::new(ast.header, ast.package, ast.imports, ast.class_name, ast.interfaces)
@@ -30,7 +30,7 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
   let mut executable_proc = None;
   for item in ast.items {
     match item {
-      Item::Attribute(attr) => module.attributes.push(attr),
+      Item::Field(field) => module.fields.push(field),
       Item::Proc(process) => {
         if process.name == "execute" {
           executable_proc = Some(process);
@@ -40,37 +40,35 @@ pub fn functionalize_module(file: ModuleFile, ast: Program) -> Partial<JModule> 
         }
       }
       Item::JavaMethod(decl) => module.host.java_methods.push(decl),
-      Item::JavaAttr(decl) => module.host.java_attrs.push(decl),
+      Item::JavaField(decl) => module.host.java_fields.push(decl),
       Item::JavaConstructor(decl) => module.host.java_constructors.push(decl)
     }
   }
   let mut exec_proc = executable_proc.expect(&format!(
     "Missing process `execute` in `{}`. It is the entry point of the reactive module.",
     module.file.mod_name()));
-  exec_proc.body = functionalize_attrs(module.attributes.clone(), exec_proc.body);
+  exec_proc.body = functionalize_attrs(module.fields.clone(), exec_proc.body);
   module.processes.insert(0, exec_proc);
   Partial::Value(module)
 }
 
-fn functionalize_attrs(attrs: Vec<ModuleAttribute>, body: Stmt) -> Stmt {
-  let mut channel_attrs = vec![];
-  let mut mod_attrs = vec![];
-  for mut attr in attrs {
-    attr.binding.base_mut().visibility = attr.visibility;
-    if attr.is_channel {
-      channel_attrs.push(attr.binding);
+fn functionalize_attrs(fields: Vec<ModuleField>, body: Stmt) -> Stmt {
+  let mut channel_fields = vec![];
+  let mut mod_fields = vec![];
+  for field in fields {
+    if field.is_channel {
+      channel_fields.push(field.binding);
     }
     else {
-      mod_attrs.push(attr.binding);
+      mod_fields.push(field.binding);
     }
   }
 
-  let mut stmts: Vec<_> = mod_attrs.into_iter()
-    .map(|binding| Stmt::mod_attr(binding))
+  let mut stmts: Vec<_> = mod_fields.into_iter()
+    .map(|binding| Stmt::field(binding))
     .collect();
 
-  let mut seq_branches: Vec<_> = channel_attrs.into_iter()
-    .map(|binding| binding.base())
+  let mut seq_branches: Vec<_> = channel_fields.into_iter()
     .filter(|binding| !binding.expr.node.is_bottom())
     .map(|binding| Stmt::new(binding.span,
       StmtKind::Tell(StreamVar::simple(binding.span, binding.name), binding.expr)))

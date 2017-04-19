@@ -26,11 +26,11 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
   fmt.push(&format!("public class {} implements Executable", module.host.class_name));
   fmt.terminate_line(&list_of_interfaces(module.host.interfaces.clone()));
   fmt.open_block();
-  for attr in module.host.java_attrs.clone() {
-    generate_java_attr(&mut fmt, attr);
+  for field in module.host.java_fields.clone() {
+    generate_java_field(&mut fmt, field);
   }
-  // Extract all local variable (and module variable) as class attributes.
-  LocalAttr::generate_local_attr(&mut fmt, module.clone());
+  // Extract all local variable (and module variable) as class fields.
+  LocalAttr::generate_local_fields(&mut fmt, module.clone());
   generate_main_method(&context, &mut fmt, module.host.class_name);
   for process in module.processes {
     generate_process(&mut fmt, context, process);
@@ -92,16 +92,16 @@ fn generate_java_constructor(fmt: &mut CodeFormatter, constructor: JConstructor)
   fmt.push_java_method(code);
 }
 
-fn generate_java_attr(fmt: &mut CodeFormatter, attr: JAttribute) {
+fn generate_java_field(fmt: &mut CodeFormatter, field: JField) {
   let code: String = vec![
-    string_from_final(attr.is_final),
-    format!("{} ", attr.visibility),
-    string_from_static(attr.is_static),
-    format!("{} ", attr.ty),
-    attr.name
+    string_from_final(field.is_final),
+    format!("{} ", field.visibility),
+    string_from_static(field.is_static),
+    format!("{} ", field.ty),
+    field.name
   ].iter().flat_map(|x| x.chars()).collect();
   fmt.push(&code);
-  if let Some(expr) = attr.expr {
+  if let Some(expr) = field.expr {
     fmt.push(" = ");
     generate_expr(fmt, expr);
   }
@@ -113,7 +113,7 @@ struct LocalAttr<'a> {
 }
 
 impl<'a> LocalAttr<'a> {
-  pub fn generate_local_attr(fmt: &'a mut CodeFormatter,
+  pub fn generate_local_fields(fmt: &'a mut CodeFormatter,
     module: JModule)
   {
     LocalAttr {
@@ -139,9 +139,9 @@ impl<'a> Visitor<JClass, ()> for LocalAttr<'a> {
   unit_visitor_impl!(module_call);
   unit_visitor_impl!(nothing);
 
-  fn visit_binding(&mut self, binding: LetBindingBase) {
-    let jattr = JAttribute {
-      visibility: binding.visibility,
+  fn visit_binding(&mut self, binding: Binding) {
+    let jfield = JField {
+      visibility: JVisibility::Public,
       is_static: false,
       is_final: true,
       ty: binding.ty.clone(),
@@ -149,7 +149,7 @@ impl<'a> Visitor<JClass, ()> for LocalAttr<'a> {
       expr: Some(Expr::new(DUMMY_SP, ExprKind::JavaNew(binding.ty, vec![]))),
       span: binding.span
     };
-    generate_java_attr(self.fmt, jattr);
+    generate_java_field(self.fmt, jfield);
   }
 }
 
@@ -281,7 +281,7 @@ fn generate_java_object_call(fmt: &mut CodeFormatter, object: String,
 }
 
 fn generate_java_this_call(fmt: &mut CodeFormatter, method: JavaCall) {
-  if method.is_attribute {
+  if method.is_field {
     fmt.push(&method.property);
   }
   else {
@@ -381,43 +381,30 @@ fn generate_space(fmt: &mut CodeFormatter, context: &Context, branches: Vec<Stmt
 }
 
 fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
-  match let_decl.binding {
-    LetBinding::InStore(decl) => generate_let_in_store(fmt, context, decl.binding, decl.store),
-    LetBinding::Spacetime(decl) => generate_spacetime_binding(fmt, context, decl.binding, decl.spacetime, decl.is_transient),
-    LetBinding::Module(decl) => generate_spacetime_binding(fmt, context, decl.binding, Spacetime::SingleSpace, false)
-  }
+  generate_binding(fmt, context, let_decl.binding);
   fmt.terminate_line(",");
   generate_statement(fmt, context, *let_decl.body);
   fmt.push(")");
 }
 
-fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
-  binding: LetBindingBase, spacetime: Spacetime, is_transient: bool)
+fn generate_binding(fmt: &mut CodeFormatter, context: &Context, binding: Binding)
 {
-  let spacetime = generate_spacetime(spacetime);
+  let spacetime = generate_spacetime(binding.spacetime);
   let stream_bound = context.stream_bound_of(&binding.name);
-  fmt.push(&format!("new SpacetimeVar({}, \"{}\", {}, {}, {}, {}, ",
-    binding.name, binding.name, binding.is_module_attr, spacetime,
-    is_transient, stream_bound));
+  fmt.push(&format!("new SpacetimeVar({}, \"{}\", {}, {}, {}, ",
+    binding.name, binding.name, spacetime,
+    binding.is_transient(), stream_bound));
   generate_closure(fmt, context, true, binding.expr);
 }
 
 fn generate_spacetime(spacetime: Spacetime) -> String {
   use ast::Spacetime::*;
   match spacetime {
-    SingleSpace => String::from("Spacetime.SingleSpace"),
+    SingleSpace(_) => String::from("Spacetime.SingleSpace"),
     SingleTime => String::from("Spacetime.SingleTime"),
-    WorldLine => String::from("Spacetime.WorldLine")
+    WorldLine(_) => String::from("Spacetime.WorldLine"),
+    Product => String::from("Spacetime.SingleSpace")
   }
-}
-
-fn generate_let_in_store(_fmt: &mut CodeFormatter, _context: &Context,
-  _binding: LetBindingBase, _store: VarPath)
-{
-  panic!("Not yet implemented.");
-  // fmt.push(&format!("new LocationVar({}, \"{}\", \"{}\", ",
-  //   binding.name, binding.name, store.name()));
-  // generate_closure(fmt, context, true, binding.expr);
 }
 
 fn generate_entailment(fmt: &mut CodeFormatter, context: &Context, entailment: EntailmentRel) {

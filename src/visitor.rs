@@ -36,7 +36,7 @@ pub trait Visitor<H, R>
   fn visit_space(&mut self, children: Vec<Stmt>) -> R;
 
   fn visit_let(&mut self, let_stmt: LetStmt) -> R {
-    walk_binding(self, let_stmt.binding);
+    self.visit_binding(let_stmt.binding);
     self.visit_stmt(*(let_stmt.body))
   }
 
@@ -72,19 +72,7 @@ pub trait Visitor<H, R>
     self.visit_stmt(child)
   }
 
-  fn visit_binding_in_store(&mut self, in_store: LetBindingInStore) -> R {
-    self.visit_binding(in_store.binding)
-  }
-
-  fn visit_binding_spacetime(&mut self, sp: LetBindingSpacetime) -> R {
-    self.visit_binding(sp.binding)
-  }
-
-  fn visit_binding_module(&mut self, module: LetBindingModule) -> R {
-    self.visit_binding(module.binding)
-  }
-
-  fn visit_binding(&mut self, binding: LetBindingBase) -> R;
+  fn visit_binding(&mut self, _binding: Binding) {}
 }
 
 pub fn walk_modules<H, R, V: ?Sized>(visitor: &mut V, modules: Vec<Module<H>>) -> Vec<R> where
@@ -130,17 +118,6 @@ pub fn walk_stmts<H, R, V: ?Sized>(visitor: &mut V, stmts: Vec<Stmt>) -> Vec<R> 
   stmts.into_iter().map(|stmt| visitor.visit_stmt(stmt)).collect()
 }
 
-pub fn walk_binding<H, R, V: ?Sized>(visitor: &mut V, binding: LetBinding) -> R where
-  V: Visitor<H, R>
-{
-  use ast::LetBinding::*;
-  match binding {
-    InStore(in_store) => visitor.visit_binding_in_store(in_store),
-    Spacetime(spacetime) => visitor.visit_binding_spacetime(spacetime),
-    Module(module) => visitor.visit_binding_module(module)
-  }
-}
-
 /// We need this macro for factorizing the code since we can not specialize a trait on specific type parameter (we would need to specialize on `()` here).
 macro_rules! unit_visitor_impl {
   (bcrate, $H:ty) => (
@@ -168,7 +145,6 @@ macro_rules! unit_visitor_impl {
       walk_stmts(self, children);
     }
   );
-  (binding_base) => (fn visit_binding(&mut self, _binding: LetBindingBase) {});
   (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
   (pause) => (fn visit_pause(&mut self) {});
   (pause_up) => (fn visit_pause_up(&mut self) {});
@@ -187,7 +163,6 @@ macro_rules! unit_visitor_impl {
     unit_visitor_impl!(sequence);
     unit_visitor_impl!(parallel);
     unit_visitor_impl!(space);
-    unit_visitor_impl!(binding_base);
     unit_visitor_impl!(tell);
     unit_visitor_impl!(pause);
     unit_visitor_impl!(pause_up);

@@ -77,13 +77,13 @@ grammar! bonsai {
   java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE (COMMA java_ty)* LBRACE item+ RBRACE
 
   item
-    = module_attribute
+    = module_field
     / .. java_visibility? PROC identifier java_param_list block > make_process_item
     / java_method
-    / java_attr
+    / java_field
     / java_constructor
 
-  module_attribute = .. java_visibility? (CHANNEL->())? let_binding > make_module_attribute
+  module_field = .. java_visibility? (CHANNEL->())? binding > make_module_field
 
   expr_or_bot = expr > some_expr
               / BOT > make_bottom_expr
@@ -91,12 +91,11 @@ grammar! bonsai {
   fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
   fn make_bottom_expr() -> Option<Expr> { None }
 
-  fn make_module_attribute(span: Span, visibility: Option<JVisibility>, is_channel: Option<()>,
-    mut binding: LetBinding) -> Item
+  fn make_module_field(span: Span, visibility: Option<JVisibility>,
+    is_channel: Option<()>, binding: Binding) -> Item
   {
-    binding.base_mut().is_module_attr = true;
-    Item::Attribute(
-      ModuleAttribute {
+    Item::Field(
+      ModuleField {
         visibility: visibility.unwrap_or(JVisibility::Private),
         binding: binding,
         is_channel: is_channel.is_some(),
@@ -118,14 +117,14 @@ grammar! bonsai {
   java_constructor
     = .. java_visibility identifier java_param_list java_block kw_tail > make_java_constructor
 
-  java_attr
-    = .. (FINAL->())? java_visibility (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_attr
+  java_field
+    = .. (FINAL->())? java_visibility (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_field
 
-  fn make_java_attr(span: Span, is_final: Option<()>, visibility: JVisibility,
+  fn make_java_field(span: Span, is_final: Option<()>, visibility: JVisibility,
     is_static: Option<()>, ty: JType, name: String, expr: Option<Expr>) -> Item
   {
-    Item::JavaAttr(
-      JAttribute {
+    Item::JavaField(
+      JField {
         visibility: visibility,
         is_static: is_static.is_some(),
         is_final: is_final.is_some(),
@@ -212,7 +211,7 @@ grammar! bonsai {
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / let_binding > make_let_stmt
+    / binding > make_let_stmt
     / WHEN condition block > make_when
     / SUSPEND WHEN condition block > make_suspend
     / PAUSE UP SEMI_COLON > make_pause_up
@@ -240,43 +239,21 @@ grammar! bonsai {
     StmtKind::Space(extend_front(first, rest))
   }
 
-  fn make_let_stmt(binding: LetBinding) -> StmtKind {
+  fn make_let_stmt(binding: Binding) -> StmtKind {
     StmtKind::Let(LetStmt::imperative(binding))
   }
 
-  let_binding
-    = .. spacetime TRANSIENT? let_binding_base > make_spacetime_binding
-    / .. MODULE let_binding_base > make_module_binding
-    / .. java_ty identifier EQ var_path LEFT_ARROW expr SEMI_COLON > make_let_in_store_binding
+  binding
+    = .. spacetime java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_binding
 
-  let_binding_base = .. java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_let_binding
-
-  fn make_let_binding(span: Span, var_ty: JType,
-    var_name: String, expr: Option<Option<Expr>>) -> LetBindingBase
+  fn make_binding(span: Span, spacetime: Spacetime,
+    ty: JType, name: String, expr: Option<Option<Expr>>) -> Binding
   {
     let expr = match expr {
       Some(Some(expr)) => expr,
-      None | Some(None) => Expr::new(DUMMY_SP, ExprKind::Bottom(var_ty.clone()))
+      None | Some(None) => Expr::new(DUMMY_SP, ExprKind::Bottom(ty.clone()))
     };
-    LetBindingBase::new(span, var_name, var_ty, expr)
-  }
-
-  fn make_spacetime_binding(span: Span, spacetime: Spacetime, is_transient: Option<()>,
-    binding: LetBindingBase) -> LetBinding
-  {
-    LetBinding::Spacetime(LetBindingSpacetime::new(span, binding, spacetime, is_transient.is_some()))
-  }
-
-  fn make_module_binding(span: Span, binding: LetBindingBase) -> LetBinding {
-    LetBinding::Module(LetBindingModule::new(span, binding))
-  }
-
-  fn make_let_in_store_binding(span: Span, loc_ty: JType, location: String,
-    store: VarPath, expr: Expr) -> LetBinding
-  {
-    let binding = LetBindingBase::new(span, location, loc_ty, expr);
-    LetBinding::InStore(
-      LetBindingInStore::new(span, binding, store))
+    Binding::new(span, name, spacetime, ty, expr)
   }
 
   fn make_when(condition: Condition, body: Stmt) -> StmtKind {
@@ -429,10 +406,10 @@ grammar! bonsai {
     make_java_call(span, name, args.is_none(), args.unwrap_or(vec![]))
   }
 
-  fn make_java_call(span: Span, property: String, is_attribute: bool, args: Vec<Expr>) -> JavaCall {
+  fn make_java_call(span: Span, property: String, is_field: bool, args: Vec<Expr>) -> JavaCall {
     JavaCall {
       property: property,
-      is_attribute: is_attribute,
+      is_field: is_field,
       args: args,
       span: span
     }
@@ -519,13 +496,15 @@ grammar! bonsai {
   }
 
   spacetime
-    = WORLD_LINE > world_line
+    = WORLD_LINE TRANSIENT? > world_line
     / SINGLE_TIME > single_time
-    / SINGLE_SPACE > single_space
+    / SINGLE_SPACE TRANSIENT? > single_space
+    / MODULE > module_spacetime
 
-  fn world_line() -> Spacetime { Spacetime::WorldLine }
+  fn world_line(is_transient: Option<()>) -> Spacetime { Spacetime::WorldLine(is_transient.is_some()) }
   fn single_time() -> Spacetime { Spacetime::SingleTime }
-  fn single_space() -> Spacetime { Spacetime::SingleSpace }
+  fn single_space(is_transient: Option<()>) -> Spacetime { Spacetime::SingleSpace(is_transient.is_some()) }
+  fn module_spacetime() -> Spacetime { Spacetime::Product }
 
   java_visibility
     = PUBLIC > java_public
