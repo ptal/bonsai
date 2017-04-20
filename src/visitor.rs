@@ -23,6 +23,10 @@ pub trait Visitor<H, R>
 
   fn visit_module(&mut self, module: Module<H>) -> R;
 
+  fn visit_field(&mut self, field: ModuleField) -> R {
+    self.visit_binding(field.binding)
+  }
+
   fn visit_process(&mut self, process: Process) -> R {
     self.visit_stmt(process.body)
   }
@@ -72,13 +76,19 @@ pub trait Visitor<H, R>
     self.visit_stmt(child)
   }
 
-  fn visit_binding(&mut self, _binding: Binding) {}
+  fn visit_binding(&mut self, binding: Binding) -> R;
 }
 
 pub fn walk_modules<H, R, V: ?Sized>(visitor: &mut V, modules: Vec<Module<H>>) -> Vec<R> where
   V: Visitor<H, R>
 {
   modules.into_iter().map(|module| visitor.visit_module(module)).collect()
+}
+
+pub fn walk_fields<H, R, V: ?Sized>(visitor: &mut V, fields: Vec<ModuleField>) -> Vec<R> where
+  V: Visitor<H, R>
+{
+  fields.into_iter().map(|field| visitor.visit_field(field)).collect()
 }
 
 pub fn walk_processes<H, R, V: ?Sized>(visitor: &mut V, processes: Vec<Process>) -> Vec<R> where
@@ -127,6 +137,7 @@ macro_rules! unit_visitor_impl {
   );
   (module, $H:ty) => (
     fn visit_module(&mut self, module: Module<$H>) {
+      walk_fields(self, module.fields);
       walk_processes(self, module.processes);
     }
   );
@@ -145,6 +156,7 @@ macro_rules! unit_visitor_impl {
       walk_stmts(self, children);
     }
   );
+  (binding) => (fn visit_binding(&mut self, _binding: Binding) {});
   (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
   (pause) => (fn visit_pause(&mut self) {});
   (pause_up) => (fn visit_pause_up(&mut self) {});

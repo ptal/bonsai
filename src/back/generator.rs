@@ -23,8 +23,9 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
   for import in &module.host.imports {
     fmt.push_line(&format!("import {};", import));
   }
-  fmt.push(&format!("public class {} implements Executable", module.host.class_name));
-  fmt.terminate_line(&list_of_interfaces(module.host.interfaces.clone()));
+  fmt.push(&format!("public class {}", module.host.class_name));
+  generate_interfaces(&mut fmt, module.host.interfaces.clone());
+  fmt.newline();
   fmt.open_block();
   for field in module.host.java_fields.clone() {
     generate_java_field(&mut fmt, field);
@@ -46,25 +47,30 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
   Partial::Value(fmt.unwrap())
 }
 
-fn list_of_interfaces(interfaces: Vec<JType>) -> String {
-  let mut s = String::new();
-  for interface in interfaces {
-    s.push_str(&format!(", {}", interface));
+fn generate_interfaces(fmt: &mut CodeFormatter, interfaces: Vec<JType>) {
+  if !interfaces.is_empty() {
+    fmt.push(" implements ");
+    let len = interfaces.len();
+    for (i, interface) in interfaces.into_iter().enumerate() {
+      fmt.push(&format!("{}", interface));
+      if i != len - 1 {
+        fmt.push(", ");
+      }
+    }
   }
-  s
 }
 
 fn generate_main_method(context: &Context, fmt: &mut CodeFormatter, class_name: String) {
-  if let Some(main_class) = context.config().main_method.clone() {
-    if main_class == class_name {
+  if let Some(main) = context.config().main_method.clone() {
+    if main.class == class_name {
       fmt.push_line("public static void main(String[] args)");
       fmt.open_block();
       let machine_method = if context.config().debug { "createDebug" } else { "create" };
       fmt.push_block(format!("\
         {} current = new {}();\n\
-        Program program = current.execute();\n\
+        Program program = current.{}();\n\
         SpaceMachine machine = SpaceMachine.{}(program);\n\
-        machine.execute();", class_name.clone(), class_name, machine_method));
+        machine.execute();", class_name.clone(), class_name, main.method, machine_method));
       fmt.close_block();
       fmt.newline();
     }

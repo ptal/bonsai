@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod functionalize_module;
 mod duplicate;
 mod matching_ref;
 mod stream_bound;
 
 use context::*;
-pub use middle::functionalize_module::*;
 use middle::duplicate::*;
 use middle::matching_ref::*;
 use middle::stream_bound::*;

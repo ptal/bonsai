@@ -94,6 +94,27 @@ impl<Host> Module<Host> {
   }
 }
 
+impl Module<JClass> {
+  pub fn new(file: ModuleFile, ast: Program) -> Self {
+    let mut module = Module {
+      fields: vec![],
+      processes: vec![],
+      file: file,
+      host: JClass::new(ast.header, ast.package, ast.imports, ast.class_name, ast.interfaces)
+    };
+    for item in ast.items {
+      match item {
+        Item::Field(field) => module.fields.push(field),
+        Item::Proc(process) => module.processes.push(process),
+        Item::JavaMethod(decl) => module.host.java_methods.push(decl),
+        Item::JavaField(decl) => module.host.java_fields.push(decl),
+        Item::JavaConstructor(decl) => module.host.java_constructors.push(decl)
+      }
+    }
+    module
+  }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ModuleField {
   pub visibility: JVisibility,
@@ -160,11 +181,6 @@ impl Stmt {
     }
   }
 
-  pub fn field(binding: Binding) -> Self {
-    Stmt::new(binding.span,
-      StmtKind::Let(LetStmt::field(binding)))
-  }
-
   pub fn seq(seq: Vec<Stmt>) -> Self {
     assert!(seq.len() > 0, "Try to create an empty sequence");
     Stmt::new(
@@ -222,10 +238,6 @@ pub struct RunExpr {
 }
 
 impl RunExpr {
-  pub fn main(span: Span, module_path: VarPath) -> Self {
-    RunExpr::new(span, module_path, String::from("execute"))
-  }
-
   pub fn new(span: Span, module_path: VarPath, process: String) -> Self {
     RunExpr {
       module_path: module_path,
@@ -246,7 +258,6 @@ impl RunExpr {
 pub struct LetStmt {
   pub binding: Binding,
   pub body: Box<Stmt>,
-  pub is_field: bool,
   pub span: Span,
 }
 
@@ -255,15 +266,8 @@ impl LetStmt {
     LetStmt {
       binding: binding,
       body: body,
-      is_field: false,
       span: span
     }
-  }
-
-  pub fn field(binding: Binding) -> Self {
-    let mut stmt = Self::imperative(binding);
-    stmt.is_field = true;
-    stmt
   }
 
   pub fn imperative(binding: Binding) -> Self {
@@ -470,13 +474,6 @@ pub enum ExprKind {
 }
 
 impl ExprKind {
-  pub fn is_bottom(&self) -> bool {
-    match self {
-      &ExprKind::Bottom(_) => true,
-      _ => false
-    }
-  }
-
   #[allow(dead_code)]
   pub fn example() -> Self {
     ExprKind::Variable(StreamVar::simple(DUMMY_SP, String::from("<expr>")))

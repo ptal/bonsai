@@ -13,10 +13,10 @@
 // limitations under the License.
 
 pub mod grammar;
-pub mod let_lifting;
+mod functionalize;
 
 use self::grammar::*;
-use self::let_lifting::*;
+use self::functionalize::*;
 use ast::Program;
 use partial::*;
 use oak_runtime::*;
@@ -26,7 +26,7 @@ use std::rc::Rc;
 pub fn parse_bonsai(input: Rc<FileMap>) -> Partial<Program> {
   let state = bonsai::parse_program(input.into_state());
   let ast = match state.into_result() {
-    ParseResult::Success(program) => Partial::Value(program),
+    ParseResult::Success(ast) => Partial::Value(ast),
     ParseResult::Partial(_, expectation)
   | ParseResult::Failure(expectation) => {
       println!("{:?}", expectation);

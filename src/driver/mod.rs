@@ -61,7 +61,7 @@ fn run_front_module(session: &mut Session, file: ModuleFile) -> Partial<JModule>
         session.push_expected_diagnostic(diagnostic);
       }
       ast })
-    .and_then(|ast| middle::functionalize_module(file, ast))
+    .map(|ast| JModule::new(file, ast))
 }
 
 fn run_middle<'a>(context: Context<'a>) -> Partial<Context<'a>> {

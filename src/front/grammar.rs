@@ -34,12 +34,12 @@ grammar! bonsai {
     CompilerDiagnostic::new(level, code, line as usize, column as usize)
   }
 
-  fn make_java_program(span: Span, header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
+  fn make_java_program(span: Span, pre_header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
    package: FQN, imports: Vec<JImport>,
    class_name: String, interfaces: Vec<JType>, items: Vec<Item>) -> Program
   {
     Program {
-      header: header,
+      header: pre_header,
       expected_diagnostics: expected_diagnostics,
       package: package,
       imports: imports,
@@ -74,7 +74,19 @@ grammar! bonsai {
     FQN::new(span, extend_front(first, rest))
   }
 
-  java_class = PUBLIC CLASS identifier IMPLEMENTS EXECUTABLE (COMMA java_ty)* LBRACE item+ RBRACE
+  java_class = PUBLIC CLASS identifier IMPLEMENTS list_java_ty LBRACE item+ RBRACE
+
+  list_java_ty
+    = java_ty (COMMA java_ty)* > make_list_java_ty
+    / "" > empty_java_ty_list
+
+  fn make_list_java_ty(first: JType, rest: Vec<JType>) -> Vec<JType> {
+    extend_front(first, rest)
+  }
+
+  fn empty_java_ty_list() -> Vec<JType> {
+    vec![]
+  }
 
   item
     = module_field
@@ -314,13 +326,8 @@ grammar! bonsai {
 
   run_expr
     = .. var_path DOT identifier parens > make_run_expr
-    / .. var_path > make_identifier_run
 
   parens = LPAREN RPAREN
-
-  fn make_identifier_run(span: Span, module_path: VarPath) -> RunExpr {
-    RunExpr::main(span, module_path)
-  }
 
   fn make_run_expr(span: Span, module_path: VarPath, process: String) -> RunExpr {
     RunExpr::new(span, module_path, process)
@@ -571,7 +578,7 @@ grammar! bonsai {
   // Java keyword
   java_kw
     = "new" / "private" / "public" / "class"
-    / "implements" / "Executable" / "static"
+    / "implements" / "static"
     / "protected" / "final"
   NEW = "new" kw_tail
   PRIVATE = "private" kw_tail
@@ -579,7 +586,6 @@ grammar! bonsai {
   PROTECTED = "protected" kw_tail
   CLASS = "class" kw_tail
   IMPLEMENTS = "implements" kw_tail
-  EXECUTABLE = "Executable" kw_tail
   STATIC = "static" kw_tail
   FINAL = "final" kw_tail
   PACKAGE = "package" kw_tail

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// We create a module, ensure that an entry point exists (`execute` method) and move module attributes as `let` declarations wrapping the `execute` code.
-
 use context::*;
 
 pub fn matching_ref<'a>(context: Context<'a>) -> Partial<Context<'a>> {

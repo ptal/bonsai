@@ -22,9 +22,33 @@ pub struct Config
   pub input: PathBuf,
   pub output: PathBuf,
   pub libs: Vec<PathBuf>,
-  pub main_method: Option<String>,
+  pub main_method: Option<MainMethod>,
   pub debug: bool,
   pub testing_mode: bool
+}
+
+#[derive(Clone)]
+pub struct MainMethod
+{
+  pub class: String,
+  pub method: String
+}
+
+impl MainMethod
+{
+  pub fn from(class_method: &str) -> Self {
+    let class_method_split: Vec<&str> = class_method.split('.').collect();
+    if class_method_split.len() != 2 {
+      Error::with_description(&format!(
+        "`{}` is malformed. See `{} --help` for more information.",
+          class_method, EXEC_NAME),
+        ErrorKind::InvalidValue).exit();
+    }
+    MainMethod {
+      class: String::from(class_method_split[0]),
+      method: String::from(class_method_split[1])
+    }
+  }
 }
 
 static EXEC_NAME: &'static str = "bonsai";
@@ -38,7 +62,7 @@ impl Config
       .about("Compiler of the Bonsai programming language.")
       .args_from_usage(
         "-o, --output=[directory] 'Write compiled bonsai files to [directory]. The directory structure of the input project is preserved.'
-        --main=[classname]        'Generate a method main in the class [classname] for immediate testing.'
+        --main=[classname.method] 'Generate a method main in [classname] with [method] for immediate testing. Example: `--main=NQueens.solve`'
         --debug                   'Generate code with debug facility.'
         --lib=[directory]...      'Paths to bonsai libraries used inside this project. The code is not compiled to Java so you still have to import the .jar of these libraries in your project.'
         <input>                   'Root of the bonsai project to compile. All files terminating with the `.bonsai` extension are compiled.'")
@@ -57,7 +81,7 @@ impl Config
       input: input,
       output: output,
       libs: libs,
-      main_method: matches.value_of("main").map(String::from),
+      main_method: matches.value_of("main").map(MainMethod::from),
       debug: matches.is_present("debug"),
       testing_mode: false
     };
