@@ -34,7 +34,9 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
     generate_spacetime_field(&mut fmt, field);
   }
   generate_object_uid(&mut fmt, &module);
-  generate_main_method(&context, &mut fmt, module.host.class_name);
+  generate_init_method(&mut fmt, context, &module);
+  generate_destroy_method(&mut fmt, context, &module);
+  generate_main_method(&mut fmt, context, module.host.class_name);
   for process in module.processes {
     generate_process(&mut fmt, context, process);
   }
@@ -61,7 +63,7 @@ fn generate_interfaces(fmt: &mut CodeFormatter, interfaces: Vec<JType>) {
   }
 }
 
-fn generate_main_method(context: &Context, fmt: &mut CodeFormatter, class_name: String) {
+fn generate_main_method(fmt: &mut CodeFormatter, context: &Context, class_name: String) {
   if let Some(main) = context.config().main_method.clone() {
     if main.class == class_name {
       fmt.push_line("public static void main(String[] args)");
@@ -127,6 +129,40 @@ fn generate_spacetime_field(fmt: &mut CodeFormatter, field: ModuleField) {
     span: field.binding.span
   };
   generate_java_field(fmt, jfield);
+}
+
+fn generate_init_method(fmt: &mut CodeFormatter, context: &Context, module: &JModule) {
+  fmt.push_line("public void __init(SpaceEnvironment senv)");
+  fmt.open_block();
+  fmt.push_line("__num_instances++;");
+  fmt.push_line("__object_instance = __num_instances;");
+  for field in module.fields.clone() {
+    let binding = field.binding;
+    if binding.is_module() {
+      fmt.push_line(&format!("{}.__init(senv);", binding.name));
+    }
+    else {
+      fmt.push("senv.enterScope(");
+      generate_binding(fmt, context, binding, true, "__uid");
+      fmt.terminate_line(");");
+    }
+  }
+  fmt.close_block();
+}
+
+fn generate_destroy_method(fmt: &mut CodeFormatter, _context: &Context, module: &JModule) {
+  fmt.push_line("public void __destroy(SpaceEnvironment senv)");
+  fmt.open_block();
+  for field in module.fields.clone() {
+    let binding = field.binding;
+    if binding.is_module() {
+      fmt.push_line(&format!("{}.__destroy(senv);", binding.name));
+    }
+    else {
+      fmt.push_line(&format!("senv.exitScope(__uid(\"{}\"));", binding.name));
+    }
+  }
+  fmt.close_block();
 }
 
 fn generate_object_uid(fmt: &mut CodeFormatter, module: &JModule) {
@@ -382,22 +418,25 @@ fn generate_space(fmt: &mut CodeFormatter, context: &Context, branches: Vec<Stmt
 
 fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
   fmt.push(&format!("new LocalVar("));
-  generate_binding(fmt, context, let_decl.binding);
+  generate_binding(fmt, context, let_decl.binding, false, "__proc_uid.apply");
   fmt.terminate_line(",");
   generate_statement(fmt, context, *let_decl.body);
   fmt.push(")");
 }
 
-fn generate_binding(fmt: &mut CodeFormatter, context: &Context, binding: Binding)
+fn generate_binding(fmt: &mut CodeFormatter, context: &Context,
+  binding: Binding, is_field: bool, uid_fn: &str)
 {
   let spacetime = generate_spacetime(binding.spacetime);
   let stream_bound = context.stream_bound_of(&binding.name);
   fmt.push("new SpacetimeVar(");
-  generate_bottom(fmt, binding.ty.clone());
-  fmt.push(&format!("\"{}\", \"{}\", {}, {}, {},",
-    binding.name, binding.uid, spacetime,
+  if is_field { fmt.push(&binding.name); }
+  else { generate_bottom(fmt, binding.ty.clone()); }
+  fmt.push(&format!(",\"{}\", {}(\"{}\"), {}, {}, {},",
+    binding.name, uid_fn, binding.name, spacetime,
     binding.is_transient(), stream_bound));
   generate_closure(fmt, context, true, binding.expr);
+  fmt.push(")");
 }
 
 fn generate_spacetime(spacetime: Spacetime) -> String {

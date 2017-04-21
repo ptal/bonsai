@@ -179,19 +179,19 @@ public class SpaceEnvironment extends Clock {
     if (old != null) {
       throw new RuntimeException(
         "SpaceEnvironment.enterScope: The variable `" + var.name() +
-        "` (uid: `" + var.uid() + "`) was already in scope with the name `" + old.name() + "`.");
+        "` (uid: `" + var.uid() + "`) is already in scope with the name `" + old.name() + "`.");
     }
   }
 
-  public void exitScope(SpacetimeVar var) {
-    if (var == null) {
-      throw new RuntimeException("SpaceEnvironment.exitScope: null `var` parameter.");
+  public void exitScope(String uid) {
+    if (uid == null) {
+      throw new RuntimeException("SpaceEnvironment.exitScope: null `uid` parameter.");
     }
-    SpacetimeVar removed = vars().remove(var.uid());
+    SpacetimeVar removed = vars().remove(uid);
     if (removed == null) {
       throw new RuntimeException(
-        "SpaceEnvironment.enterScope: Try to exit the scope of the variable `" + var.name() +
-        "` (uid: `" + var.uid() + "`) but it was not in scope.");
+        "SpaceEnvironment.enterScope: Try to exit the scope of the variable " +
+        "with uid: `" + uid + "` but it is not in scope.");
     }
   }
 

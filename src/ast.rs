@@ -278,7 +278,6 @@ impl LetStmt {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Binding {
   pub name: String,
-  pub uid: String,
   pub spacetime: Spacetime,
   pub ty: JType,
   pub expr: Expr,
@@ -292,7 +291,6 @@ impl Binding
   {
     Binding {
       name: name,
-      uid: String::new(),
       spacetime: spacetime,
       ty: ty,
       expr: expr,

@@ -48,8 +48,8 @@ impl<'a> Context<'a> {
 
   pub fn init_module(&mut self, module: JModule) {
     self.name_to_bindings.clear();
-    for binding in module.ref_fields() {
-      self.insert_binding(binding.clone());
+    for field in module.fields.clone() {
+      self.insert_binding(field.binding);
     }
     self.visit_program(module);
   }

@@ -49,6 +49,6 @@ public class LocalVar extends Scoped
   }
 
   protected void exitScope(SpaceEnvironment env) {
-    env.exitScope(var);
+    env.exitScope(var.uid());
   }
 }
