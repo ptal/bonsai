@@ -16,11 +16,11 @@
 
 package test;
 
-public class DuplicateAttributeVar implements Executable
+public class DuplicateAttributeVar
 {
   single_time Dup d;
 
-  proc execute() {
+  proc test() {
     single_time Dup d;
   }
 }

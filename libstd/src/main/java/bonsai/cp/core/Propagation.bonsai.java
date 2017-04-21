@@ -22,7 +22,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class Propagation implements Executable, Resettable<Propagation>
+public class Propagation implements Resettable<Propagation>
 {
   private ref world_line VarStore domains = bot;
   private ref world_line ConstraintStore constraints = bot;

@@ -33,6 +33,7 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
   for field in module.fields.clone() {
     generate_spacetime_field(&mut fmt, field);
   }
+  generate_object_uid(&mut fmt, &module);
   generate_main_method(&context, &mut fmt, module.host.class_name);
   for process in module.processes {
     generate_process(&mut fmt, context, process);
@@ -128,6 +129,27 @@ fn generate_spacetime_field(fmt: &mut CodeFormatter, field: ModuleField) {
   generate_java_field(fmt, jfield);
 }
 
+fn generate_object_uid(fmt: &mut CodeFormatter, module: &JModule) {
+  fmt.push_line("private static int __num_instances = -1;");
+  fmt.push_line("private int __object_instance;");
+  fmt.push_line("public String __uid(String var)");
+  fmt.open_block();
+  // return "[package]." + "[classname]." + __object_instance + "." + var;
+  fmt.push_line(&format!(
+    "return \"{}.\" + \"{}.\" + __object_instance + \".\" + var;",
+    module.host.package, module.host.class_name));
+  fmt.close_block();
+}
+
+fn generate_proc_uid(fmt: &mut CodeFormatter, process: &Process, proc_instance: String) {
+  fmt.push_line(&format!("{}++;", proc_instance));
+  fmt.push_line(&format!("int __proc_instance = {};", proc_instance));
+  fmt.push_line("java.util.function.Function<String, String> __proc_uid = ");
+  fmt.push_line(&format!(
+    "  (var) -> __uid(\"{}.\" + __proc_instance + \".\" + var);",
+    process.name));
+}
+
 fn string_from_final(is_final: bool) -> String {
   if is_final {
     String::from("final ")
@@ -143,9 +165,12 @@ fn string_from_static(is_static: bool) -> String {
 }
 
 fn generate_process(fmt: &mut CodeFormatter, context: &Context, process: Process) {
+  let proc_instance = format!("__proc_{}_instance", process.name);
+  fmt.push_line(&format!("static int {} = -1;", proc_instance));
   fmt.push_line(&format!(
     "{} Program {}{}", process.visibility, process.name, process.params));
   fmt.open_block();
+  generate_proc_uid(fmt, &process, proc_instance);
   fmt.push_line("return");
   fmt.indent();
   generate_statement(fmt, context, process.body);

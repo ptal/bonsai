@@ -16,10 +16,10 @@
 
 package test;
 
-public class DuplicateAttribute implements Executable
+public class DuplicateAttribute
 {
   single_time Dup d;
   single_time Dup d;
 
-  proc execute() { nothing; }
+  proc test() { nothing; }
 }

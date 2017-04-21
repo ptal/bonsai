@@ -16,9 +16,9 @@
 
 package test;
 
-public class CannotFindModule implements Executable
+public class CannotFindModule
 {
-  proc execute() {
+  proc test() {
     module NotFound notFound;
   }
 }

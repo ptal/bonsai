@@ -25,7 +25,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class Branching implements Executable, Resettable<Branching>
+public class Branching implements Resettable<Branching>
 {
   private ref world_line VarStore domains = bot;
   private ref world_line ConstraintStore constraints = bot;
@@ -52,10 +52,6 @@ public class Branching implements Executable, Resettable<Branching>
   public void reset(Branching branching) {
     this.var = branching.var;
     this.val = branching.val;
-  }
-
-  public proc execute() {
-    split();
   }
 
   public proc exclude() {

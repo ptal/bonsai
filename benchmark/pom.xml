@@ -63,7 +63,7 @@
             <configuration>
               <executable>bonsai</executable>
               <arguments>
-                <argument>--main=GolombRuler</argument>
+                <argument>--main=GolombRuler.execute</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
                 <argument>${project.build.sourceDirectory}</argument>
               </arguments>

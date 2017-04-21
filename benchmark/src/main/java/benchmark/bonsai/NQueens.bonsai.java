@@ -11,7 +11,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class NQueens implements Executable
+public class NQueens
 {
   world_line VarStore domains = bot;
   world_line ConstraintStore constraints = bot;

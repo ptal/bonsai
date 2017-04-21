@@ -21,7 +21,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class OneSolution implements Executable, Resettable<OneSolution>
+public class OneSolution implements Resettable<OneSolution>
 {
   private ref single_time L<Consistent> consistent = bot;
 

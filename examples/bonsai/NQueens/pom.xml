@@ -69,7 +69,7 @@
               <executable>bonsai</executable>
               <arguments>
                 <argument>--debug</argument>
-                <argument>--main=NQueens</argument>
+                <argument>--main=NQueens.execute</argument>
                 <argument>--lib=../../../libstd/src/</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
                 <argument>${project.build.sourceDirectory}</argument>

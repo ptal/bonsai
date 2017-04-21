@@ -17,15 +17,15 @@
 
 package test;
 
-public class TwoDuplicateVar implements Executable
+public class TwoDuplicateVar
 {
   single_time Dup d;
 
-  proc execute() {
+  proc test1() {
     single_time Dup d;
   }
 
-  proc execute2() {
+  proc test2() {
     single_time Dup d;
   }
 }

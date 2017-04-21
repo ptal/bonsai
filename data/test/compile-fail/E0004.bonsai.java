@@ -17,12 +17,12 @@
 
 package test;
 
-public class DuplicateProc implements Executable
+public class DuplicateProc
 {
-  proc execute() { nothing; }
+  proc unique1() { nothing; }
   proc dup() { nothing; }
   proc dup() { nothing; }
 
-  proc unique() { nothing; }
+  proc unique2() { nothing; }
   proc dup() { nothing; }
 }

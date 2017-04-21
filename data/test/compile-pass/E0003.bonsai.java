@@ -16,13 +16,13 @@
 
 package test;
 
-public class DistinctScope implements Executable
+public class DistinctScope
 {
-  proc execute() {
+  proc test1() {
     single_time Dup d;
   }
 
-  proc execute2() {
+  proc test2() {
     single_time Dup d;
   }
 }

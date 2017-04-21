@@ -12,7 +12,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class GolombRuler implements Executable
+public class GolombRuler
 {
   world_line VarStore domains = bot;
   world_line ConstraintStore constraints = bot;

@@ -63,8 +63,6 @@
             <configuration>
               <executable>bonsai</executable>
               <arguments>
-                <argument>--main=NQueens</argument>
-                <argument>--debug</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
                 <argument>${project.build.sourceDirectory}</argument>
               </arguments>

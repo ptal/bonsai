@@ -21,7 +21,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.choco.*;
 import bonsai.runtime.sugarcubes.*;
 
-public class Statistics implements Executable, Resettable<Statistics>
+public class Statistics implements Resettable<Statistics>
 {
   public single_space transient L<BInteger> nodes = bot;
   public world_line transient W<BInteger> depth = bot;

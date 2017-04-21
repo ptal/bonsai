@@ -16,9 +16,9 @@
 
 package test;
 
-public class DuplicateVar implements Executable
+public class DuplicateVar
 {
-  proc execute() {
+  proc test() {
     single_time Dup d;
     single_time Dup d;
   }

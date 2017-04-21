@@ -74,10 +74,10 @@ grammar! bonsai {
     FQN::new(span, extend_front(first, rest))
   }
 
-  java_class = PUBLIC CLASS identifier IMPLEMENTS list_java_ty LBRACE item+ RBRACE
+  java_class = PUBLIC CLASS identifier interfaces_list LBRACE item+ RBRACE
 
-  list_java_ty
-    = java_ty (COMMA java_ty)* > make_list_java_ty
+  interfaces_list
+    = IMPLEMENTS java_ty (COMMA java_ty)* > make_list_java_ty
     / "" > empty_java_ty_list
 
   fn make_list_java_ty(first: JType, rest: Vec<JType>) -> Vec<JType> {
@@ -669,7 +669,7 @@ grammar! bonsai {
 //   fn test_grammar()
 //   {
 //     let state = bonsai::recognize_program(r#"
-//       public class Test implements Executable
+//       public class Test
 //       {
 //         // This is a test grammar.
 //         /* We can do multi-line comments
