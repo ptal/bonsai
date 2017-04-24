@@ -21,16 +21,16 @@ import inria.meije.rc.sugarcubes.implementation.*;
 
 public class LocalVar extends Scoped
 {
-  private SpacetimeVar var;
+  private Variable var;
 
-  public LocalVar(SpacetimeVar var, Program body)
+  public LocalVar(Variable var, Program body)
   {
     super(body);
     this.var = var;
   }
 
   public String actualToString() {
-    return var.name() + " in " + var.spacetime() + " = " + var.value(0) + ";\n" + body;
+    return var.name() + " = " + var.value(0) + ";\n" + body;
   }
 
   public LocalVar copy() {

@@ -17,10 +17,8 @@ package bonsai.runtime.sugarcubes;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 
-public class SpacetimeVar
+public class SpacetimeVar extends Variable
 {
-  private String name;
-  private String uid;
   private Spacetime spacetime;
   private Stream stream;
   private Function<SpaceEnvironment, Object> initValue;
@@ -36,12 +34,11 @@ public class SpacetimeVar
   private SpacetimeVar(String name, String uid, Spacetime spacetime,
     Function<SpaceEnvironment, Object> initValue, Stream stream)
   {
+    super(name, uid);
     if (stream.capacity() != 0 && spacetime == Spacetime.SingleTime) {
       throw new RuntimeException(
         "Single time variable cannot have a stream of past values. This is a bug.");
     }
-    this.name = name;
-    this.uid = uid;
     this.spacetime = spacetime;
     this.stream = stream;
     this.initValue = initValue;
@@ -58,29 +55,21 @@ public class SpacetimeVar
 
   public void save(Snapshot snapshot) {
     if (spacetime == Spacetime.WorldLine) {
-      snapshot.saveWorldLineVar(name, stream);
+      snapshot.saveWorldLineVar(uid(), stream);
     }
     else if (spacetime == Spacetime.SingleTime) {
-      snapshot.saveSingleTimeVar(name, value(0));
+      snapshot.saveSingleTimeVar(uid(), value(0));
     }
   }
 
   public void restore(SpaceEnvironment env, Snapshot snapshot) {
     if (spacetime == Spacetime.WorldLine) {
-      snapshot.restoreWorldLineVar(name, stream);
+      snapshot.restoreWorldLineVar(uid(), stream);
     }
     stream.next(() -> initValue.apply(env));
   }
 
   public Spacetime spacetime() {
     return spacetime;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public String uid() {
-    return uid;
   }
 }

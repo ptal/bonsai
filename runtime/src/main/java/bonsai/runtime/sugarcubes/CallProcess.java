@@ -19,28 +19,28 @@ import bonsai.runtime.core.*;
 import inria.meije.rc.sugarcubes.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 
-public class RunModule extends UnaryInstruction
+public class CallProcess extends UnaryInstruction
 {
-  private Function<SpaceEnvironment, Program> invokeModule;
+  private Function<SpaceEnvironment, Program> invokeProcess;
   private boolean firstActivation;
 
-  public RunModule(Function<SpaceEnvironment, Program> invokeModule)
+  public CallProcess(Function<SpaceEnvironment, Program> invokeProcess)
   {
     super();
-    this.invokeModule = invokeModule;
+    this.invokeProcess = invokeProcess;
     this.firstActivation = true;
   }
 
   public String actualToString() {
-    return "run " + invokeModule;
+    return "run " + invokeProcess;
   }
 
-  public RunModule copy() {
-    return new RunModule(invokeModule);
+  public CallProcess copy() {
+    return new CallProcess(invokeProcess);
   }
 
-  public RunModule prepareFor(Environment e) {
-    RunModule copy = copy();
+  public CallProcess prepareFor(Environment e) {
+    CallProcess copy = copy();
     copy.body.setParent(copy);
     return copy;
   }
@@ -55,7 +55,7 @@ public class RunModule extends UnaryInstruction
   public void firstActivation(SpaceEnvironment env) {
     if (firstActivation) {
       firstActivation = false;
-      body = (Instruction) invokeModule.apply(env);
+      body = (Instruction) invokeProcess.apply(env);
       body = body.prepareFor(env);
       body.setParent(this);
     }

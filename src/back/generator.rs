@@ -495,9 +495,8 @@ fn generate_suspend(fmt: &mut CodeFormatter, context: &Context,
   fmt.unindent();
 }
 
-
 fn generate_module_call(fmt: &mut CodeFormatter, context: &Context, run_expr: RunExpr) {
-  fmt.push(&format!("new RunModule("));
+  fmt.push(&format!("new CallProcess("));
   let expr = run_expr.to_expr();
   generate_closure(fmt, context, true, expr);
   fmt.push(")");

@@ -20,7 +20,7 @@ import inria.meije.rc.sugarcubes.implementation.*;
 import inria.meije.rc.sugarcubes.*;
 
 public class SpaceEnvironment extends Clock {
-  private HashMap<String, SpacetimeVar> vars;
+  private HashMap<String, Variable> vars;
   private ArrayDeque<Snapshot> futures;
   private ArrayList<SpaceBranch> branches;
   private ArrayList<Integer> activatedBranches;
@@ -96,7 +96,7 @@ public class SpaceEnvironment extends Clock {
   public void saveFutures() {
     for (Integer branchIdx: activatedBranches) {
       Snapshot future = new Snapshot(branchIdx);
-      for (SpacetimeVar var : vars().values()) {
+      for (Variable var : vars().values()) {
         var.save(future);
       }
       futures.push(future);
@@ -107,8 +107,8 @@ public class SpaceEnvironment extends Clock {
   // Precondition: !futures.isEmpty()
   public void instantiateFuture() {
     currentSnapshot = futures.pop();
-    for(Map.Entry<String, SpacetimeVar> var : vars().entrySet()) {
-      var.getValue().restore(this, currentSnapshot);
+    for(Variable var : vars().values()) {
+      var.restore(this, currentSnapshot);
     }
     int b = currentSnapshot.branch();
     currentBranch = branches.get(b);
@@ -130,27 +130,6 @@ public class SpaceEnvironment extends Clock {
     inSnapshot = false;
   }
 
-  // private void instantiateSSAndWL() {
-  //   instantiateVars(vars().entrySet()
-  //     .stream()
-  //     .map(v -> v.getValue())
-  //     .filter(v -> v.spacetime() == Spacetime.WorldLine
-  //               || v.spacetime() == Spacetime.SingleSpace));
-  // }
-
-  // private void instantiateST() {
-  //   instantiateVars(vars().entrySet()
-  //     .stream()
-  //     .map(v -> v.getValue())
-  //     .filter(v -> v.spacetime() == Spacetime.SingleTime));
-  // }
-
-  // private void instantiateVars(Stream<SpacetimeVar> varsStream) {
-  //   for(SpacetimeVar var : varsStream) {
-  //     var.restore(this, currentSnapshot);
-  //   }
-  // }
-
   public Integer registerSpaceBranch(SpaceBranch branch) {
     // FIXME: branches can be null because `SpaceEnvironment` is used in prepareFor of instructions but prepareFor is called in the constructor of Clock.
     if (branches == null) {
@@ -171,11 +150,11 @@ public class SpaceEnvironment extends Clock {
     }
   }
 
-  public void enterScope(SpacetimeVar var) {
+  public void enterScope(Variable var) {
     if (var == null) {
       throw new RuntimeException("SpaceEnvironment.enterScope: null `var` parameter.");
     }
-    SpacetimeVar old = vars().put(var.uid(), var);
+    Variable old = vars().put(var.uid(), var);
     if (old != null) {
       throw new RuntimeException(
         "SpaceEnvironment.enterScope: The variable `" + var.name() +
@@ -187,7 +166,7 @@ public class SpaceEnvironment extends Clock {
     if (uid == null) {
       throw new RuntimeException("SpaceEnvironment.exitScope: null `uid` parameter.");
     }
-    SpacetimeVar removed = vars().remove(uid);
+    Variable removed = vars().remove(uid);
     if (removed == null) {
       throw new RuntimeException(
         "SpaceEnvironment.enterScope: Try to exit the scope of the variable " +
@@ -200,19 +179,35 @@ public class SpaceEnvironment extends Clock {
     return Cast.toLattice(name, value);
   }
 
-  public Object var(String name, int time) {
+  public void checkVarNull(String uid, Variable v) {
+    if (v == null) {
+      throw new RuntimeException("The variable `" + uid
+        + "` is not registered in the environment.");
+    }
+  }
+
+  private Object access(String uid, int time) {
+    Variable v = vars().get(uid);
+    checkVarNull(uid, v);
+    // Generate an event on this variable to indicate it might has been modified.
+    // Note that `generatePure` does not read the new value of the variable yet–it is just used to wake up suspended statements—so it's OK to generate it after the actual modifications.
+    Event event = getDirectAccessToEvent(new StringID(uid));
+    event.generatePure(this);
+    return v.value(time);
+  }
+
+  public Object var(String uid, int time) {
     if (inSnapshot) {
-      Optional<Object> value = currentSnapshot.getSingleTimeValue(name);
+      Optional<Object> value = currentSnapshot.getSingleTimeValue(uid);
       if (value.isPresent()) {
         return value.get();
       }
     }
-    SpacetimeVar v = vars().get(name);
-    if (v == null) {
-      throw new RuntimeException("The variable `" + name
-        + "` is not registered in the environment.");
-    }
-    return v.value(time);
+    return access(uid, time);
+  }
+
+  public Object module(String uid) {
+    return access(uid, 0);
   }
 
   public boolean isEmpty() {
@@ -223,7 +218,7 @@ public class SpaceEnvironment extends Clock {
     return futures.size();
   }
 
-  private HashMap<String, SpacetimeVar> vars() {
+  private HashMap<String, Variable> vars() {
     // FIXME: similar problem than with `registerSpaceBranch`.
     if (vars == null) {
       vars = new HashMap();
