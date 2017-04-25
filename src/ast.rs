@@ -326,6 +326,13 @@ impl Condition {
       Condition::MetaEntailment(meta) => meta.left
     }
   }
+
+  pub fn unwrap_mut<'a>(&'a mut self) -> &'a mut EntailmentRel {
+    match self {
+      &mut Condition::Entailment(ref mut rel) => rel,
+      &mut Condition::MetaEntailment(ref mut meta) => &mut meta.left
+    }
+  }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

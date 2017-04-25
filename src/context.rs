@@ -46,6 +46,10 @@ impl<'a> Context<'a> {
     self.ast.clone()
   }
 
+  pub fn replace_ast(&mut self, ast: JCrate) {
+    self.ast = ast;
+  }
+
   pub fn init_module(&mut self, module: JModule) {
     self.name_to_bindings.clear();
     for field in module.fields.clone() {
