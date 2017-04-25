@@ -380,10 +380,18 @@ impl Display for VarPath {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum Permission {
+  Read,
+  ReadWrite
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct StreamVar {
   pub path: VarPath,
+  pub uid: usize,
   pub past: usize,
   pub args: Vec<StreamVar>,
+  pub perm: Permission,
   pub span: Span
 }
 
@@ -391,11 +399,14 @@ impl StreamVar {
   pub fn new(span: Span, path: VarPath, args: Vec<StreamVar>, past: usize) -> Self {
     StreamVar {
       path: path,
+      uid: 0,
       past: past,
       args: args,
+      perm: Permission::ReadWrite,
       span: span
     }
   }
+
   pub fn simple(span: Span, name: String) -> Self {
     Self::present(span, VarPath::new(span, vec![name]), vec![])
   }

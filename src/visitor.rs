@@ -12,93 +12,110 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![macro_use]
-
 use ast::*;
 use ast::StmtKind::*;
 
-pub trait Visitor<H, R>
+pub trait Visitor<H>
 {
-  fn visit_crate(&mut self, bcrate: Crate<H>) -> R;
+  fn visit_crate(&mut self, bcrate: Crate<H>) {
+    walk_modules(self, bcrate.modules);
+  }
 
-  fn visit_module(&mut self, module: Module<H>) -> R;
+  fn visit_module(&mut self, module: Module<H>) {
+    walk_fields(self, module.fields);
+    walk_processes(self, module.processes);
+  }
 
-  fn visit_field(&mut self, field: ModuleField) -> R {
+  fn visit_field(&mut self, field: ModuleField) {
     self.visit_binding(field.binding)
   }
 
-  fn visit_process(&mut self, process: Process) -> R {
+  fn visit_process(&mut self, process: Process) {
     self.visit_stmt(process.body)
   }
 
-  fn visit_stmt(&mut self, child: Stmt) -> R {
+  fn visit_stmt(&mut self, child: Stmt) {
     walk_stmt(self, child)
   }
 
-  fn visit_seq(&mut self, children: Vec<Stmt>) -> R;
-  fn visit_par(&mut self, children: Vec<Stmt>) -> R;
-  fn visit_space(&mut self, children: Vec<Stmt>) -> R;
+  fn visit_seq(&mut self, children: Vec<Stmt>) {
+    walk_stmts(self, children);
+  }
 
-  fn visit_let(&mut self, let_stmt: LetStmt) -> R {
+  fn visit_par(&mut self, children: Vec<Stmt>) {
+    walk_stmts(self, children);
+  }
+
+  fn visit_space(&mut self, children: Vec<Stmt>) {
+    walk_stmts(self, children);
+  }
+
+  fn visit_let(&mut self, let_stmt: LetStmt) {
     self.visit_binding(let_stmt.binding);
     self.visit_stmt(*(let_stmt.body))
   }
 
-  fn visit_when(&mut self, _cond: Condition, child: Stmt) -> R {
+  fn visit_when(&mut self, _cond: Condition, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_suspend(&mut self, _cond: Condition, child: Stmt) -> R {
+  fn visit_suspend(&mut self, _cond: Condition, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) -> R;
-  fn visit_pause(&mut self) -> R;
-  fn visit_pause_up(&mut self) -> R;
-  fn visit_stop(&mut self) -> R;
+  fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {}
+  fn visit_pause(&mut self) {}
+  fn visit_pause_up(&mut self) {}
+  fn visit_stop(&mut self) {}
 
-  fn visit_trap(&mut self, _name: String, child: Stmt) -> R {
+  fn visit_trap(&mut self, _name: String, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_exit(&mut self, name: String) -> R;
+  fn visit_exit(&mut self, _name: String) {}
 
-  fn visit_loop(&mut self, child: Stmt) -> R {
+  fn visit_loop(&mut self, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, name: String, args: Vec<Expr>) -> R;
-  fn visit_fn_call(&mut self, expr: Expr) -> R;
-  fn visit_module_call(&mut self, expr: RunExpr) -> R;
-  fn visit_nothing(&mut self) -> R;
+  fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {}
+  fn visit_fn_call(&mut self, _expr: Expr) {}
+  fn visit_module_call(&mut self, _expr: RunExpr) {}
+  fn visit_nothing(&mut self) {}
 
-  fn visit_universe(&mut self, child: Stmt) -> R {
+  fn visit_universe(&mut self, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_binding(&mut self, binding: Binding) -> R;
+  fn visit_binding(&mut self, _binding: Binding) {}
 }
 
-pub fn walk_modules<H, R, V: ?Sized>(visitor: &mut V, modules: Vec<Module<H>>) -> Vec<R> where
-  V: Visitor<H, R>
+pub fn walk_modules<H, V: ?Sized>(visitor: &mut V, modules: Vec<Module<H>>) where
+  V: Visitor<H>
 {
-  modules.into_iter().map(|module| visitor.visit_module(module)).collect()
+  for module in modules {
+    visitor.visit_module(module);
+  }
 }
 
-pub fn walk_fields<H, R, V: ?Sized>(visitor: &mut V, fields: Vec<ModuleField>) -> Vec<R> where
-  V: Visitor<H, R>
+pub fn walk_fields<H, V: ?Sized>(visitor: &mut V, fields: Vec<ModuleField>) where
+  V: Visitor<H>
 {
-  fields.into_iter().map(|field| visitor.visit_field(field)).collect()
+  for field in fields {
+    visitor.visit_field(field);
+  }
 }
 
-pub fn walk_processes<H, R, V: ?Sized>(visitor: &mut V, processes: Vec<Process>) -> Vec<R> where
-  V: Visitor<H, R>
+pub fn walk_processes<H, V: ?Sized>(visitor: &mut V, processes: Vec<Process>) where
+  V: Visitor<H>
 {
-  processes.into_iter().map(|process| visitor.visit_process(process)).collect()
+  for process in processes {
+    visitor.visit_process(process);
+  }
 }
 
-pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
-  V: Visitor<H, R>
+pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
+  V: Visitor<H>
 {
   match stmt.node {
     Seq(branches) => visitor.visit_seq(branches),
@@ -122,67 +139,143 @@ pub fn walk_stmt<H, R, V: ?Sized>(visitor: &mut V, stmt: Stmt) -> R where
   }
 }
 
-pub fn walk_stmts<H, R, V: ?Sized>(visitor: &mut V, stmts: Vec<Stmt>) -> Vec<R> where
-  V: Visitor<H, R>
+pub fn walk_stmts<H, V: ?Sized>(visitor: &mut V, stmts: Vec<Stmt>) where
+  V: Visitor<H>
 {
-  stmts.into_iter().map(|stmt| visitor.visit_stmt(stmt)).collect()
+  for stmt in stmts {
+    visitor.visit_stmt(stmt);
+  }
 }
 
-/// We need this macro for factorizing the code since we can not specialize a trait on specific type parameter (we would need to specialize on `()` here).
-macro_rules! unit_visitor_impl {
-  (bcrate, $H:ty) => (
-    fn visit_crate(&mut self, bcrate: Crate<$H>) {
-      walk_modules(self, bcrate.modules);
-    }
-  );
-  (module, $H:ty) => (
-    fn visit_module(&mut self, module: Module<$H>) {
-      walk_fields(self, module.fields);
-      walk_processes(self, module.processes);
-    }
-  );
-  (sequence) => (
-    fn visit_seq(&mut self, children: Vec<Stmt>) {
-      walk_stmts(self, children);
-    }
-  );
-  (parallel) => (
-    fn visit_par(&mut self, children: Vec<Stmt>) {
-      walk_stmts(self, children);
-    }
-  );
-  (space) => (
-    fn visit_space(&mut self, children: Vec<Stmt>) {
-      walk_stmts(self, children);
-    }
-  );
-  (binding) => (fn visit_binding(&mut self, _binding: Binding) {});
-  (tell) => (fn visit_tell(&mut self, _var: StreamVar, _expr: Expr) {});
-  (pause) => (fn visit_pause(&mut self) {});
-  (pause_up) => (fn visit_pause_up(&mut self) {});
-  (stop) => (fn visit_stop(&mut self) {});
-  (exit) => (fn visit_exit(&mut self, _name: String) {});
-  (proc_call) => (fn visit_proc_call(&mut self, _name: String, _args: Vec<Expr>) {});
-  (fn_call) => (fn visit_fn_call(&mut self, _expr: Expr) {});
-  (module_call) => (fn visit_module_call(&mut self, _expr: RunExpr) {});
-  (nothing) => (fn visit_nothing(&mut self) {});
-  (all, $H:ty) => (
-    unit_visitor_impl!(bcrate, $H);
-    unit_visitor_impl!(module, $H);
-    unit_visitor_impl!(all_stmt);
-  );
-  (all_stmt) => (
-    unit_visitor_impl!(sequence);
-    unit_visitor_impl!(parallel);
-    unit_visitor_impl!(space);
-    unit_visitor_impl!(tell);
-    unit_visitor_impl!(pause);
-    unit_visitor_impl!(pause_up);
-    unit_visitor_impl!(stop);
-    unit_visitor_impl!(exit);
-    unit_visitor_impl!(proc_call);
-    unit_visitor_impl!(fn_call);
-    unit_visitor_impl!(module_call);
-    unit_visitor_impl!(nothing);
-  );
+pub trait VisitorMut<H>
+{
+  fn visit_crate(&mut self, bcrate: &mut Crate<H>) {
+    walk_modules_mut(self, &mut bcrate.modules);
+  }
+
+  fn visit_module(&mut self, module: &mut Module<H>) {
+    walk_fields_mut(self, &mut module.fields);
+    walk_processes_mut(self, &mut module.processes);
+  }
+
+  fn visit_field(&mut self, field: &mut ModuleField) {
+    self.visit_binding(&mut field.binding)
+  }
+
+  fn visit_process(&mut self, process: &mut Process) {
+    self.visit_stmt(&mut process.body)
+  }
+
+  fn visit_stmt(&mut self, child: &mut Stmt) {
+    walk_stmt_mut(self, child)
+  }
+
+  fn visit_seq(&mut self, children: &mut Vec<Stmt>) {
+    walk_stmts_mut(self, children);
+  }
+
+  fn visit_par(&mut self, children: &mut Vec<Stmt>) {
+    walk_stmts_mut(self, children);
+  }
+
+  fn visit_space(&mut self, children: &mut Vec<Stmt>) {
+    walk_stmts_mut(self, children);
+  }
+
+  fn visit_let(&mut self, let_stmt: &mut LetStmt) {
+    self.visit_binding(&mut let_stmt.binding);
+    self.visit_stmt(&mut *(let_stmt.body))
+  }
+
+  fn visit_when(&mut self, _cond: &mut Condition, child: &mut Stmt) {
+    self.visit_stmt(child)
+  }
+
+  fn visit_suspend(&mut self, _cond: &mut Condition, child: &mut Stmt) {
+    self.visit_stmt(child)
+  }
+
+  fn visit_tell(&mut self, _var: &mut StreamVar, _expr: &mut Expr) {}
+  fn visit_pause(&mut self) {}
+  fn visit_pause_up(&mut self) {}
+  fn visit_stop(&mut self) {}
+
+  fn visit_trap(&mut self, _name: String, child: &mut Stmt) {
+    self.visit_stmt(child)
+  }
+
+  fn visit_exit(&mut self, _name: String) {}
+
+  fn visit_loop(&mut self, child: &mut Stmt) {
+    self.visit_stmt(child)
+  }
+
+  fn visit_proc_call(&mut self, _name: String, _args: &mut Vec<Expr>) {}
+  fn visit_fn_call(&mut self, _expr: &mut Expr) {}
+  fn visit_module_call(&mut self, _expr: &mut RunExpr) {}
+  fn visit_nothing(&mut self) {}
+
+  fn visit_universe(&mut self, child: &mut Stmt) {
+    self.visit_stmt(child)
+  }
+
+  fn visit_binding(&mut self, _binding: &mut Binding) {}
 }
+
+pub fn walk_modules_mut<H, V: ?Sized>(visitor: &mut V, modules: &mut Vec<Module<H>>) where
+  V: VisitorMut<H>
+{
+  for module in modules {
+    visitor.visit_module(module);
+  }
+}
+
+pub fn walk_fields_mut<H, V: ?Sized>(visitor: &mut V, fields: &mut Vec<ModuleField>) where
+  V: VisitorMut<H>
+{
+  for field in fields {
+    visitor.visit_field(field);
+  }
+}
+
+pub fn walk_processes_mut<H, V: ?Sized>(visitor: &mut V, processes: &mut Vec<Process>) where
+  V: VisitorMut<H>
+{
+  for process in processes {
+    visitor.visit_process(process);
+  }
+}
+
+pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
+  V: VisitorMut<H>
+{
+  match &mut stmt.node {
+    &mut Seq(ref mut branches) => visitor.visit_seq(branches),
+    &mut Par(ref mut branches) => visitor.visit_par(branches),
+    &mut Space(ref mut branches) => visitor.visit_space(branches),
+    &mut Let(ref mut stmt) => visitor.visit_let(stmt),
+    &mut When(ref mut cond, ref mut body) => visitor.visit_when(cond, &mut **body),
+    &mut Suspend(ref mut cond, ref mut body) => visitor.visit_suspend(cond, &mut **body),
+    &mut Tell(ref mut var, ref mut expr) => visitor.visit_tell(var, expr),
+    &mut Pause => visitor.visit_pause(),
+    &mut PauseUp => visitor.visit_pause_up(),
+    &mut Stop => visitor.visit_stop(),
+    &mut Trap(ref mut name, ref mut body) => visitor.visit_trap(name.clone(), &mut **body),
+    &mut Exit(ref mut name) => visitor.visit_exit(name.clone()),
+    &mut Loop(ref mut body) => visitor.visit_loop(&mut **body),
+    &mut ProcCall(ref mut name, ref mut args) => visitor.visit_proc_call(name.clone(), args),
+    &mut FnCall(ref mut expr) => visitor.visit_fn_call(expr),
+    &mut ModuleCall(ref mut expr) => visitor.visit_module_call(expr),
+    &mut Universe(ref mut body) => visitor.visit_universe(&mut **body),
+    &mut Nothing => visitor.visit_nothing()
+  }
+}
+
+pub fn walk_stmts_mut<H, V: ?Sized>(visitor: &mut V, stmts: &mut Vec<Stmt>) where
+  V: VisitorMut<H>
+{
+  for stmt in stmts {
+    visitor.visit_stmt(stmt);
+  }
+}
+

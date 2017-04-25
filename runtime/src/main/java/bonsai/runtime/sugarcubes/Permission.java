@@ -16,6 +16,5 @@ package bonsai.runtime.sugarcubes;
 
 public enum Permission {
   READ,
-  WRITE,
   READ_WRITE
 }

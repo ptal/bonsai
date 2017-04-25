@@ -110,22 +110,8 @@ impl<'a> Duplicate<'a> {
   }
 }
 
-impl<'a> Visitor<JClass, ()> for Duplicate<'a> {
-  unit_visitor_impl!(bcrate, JClass);
-  unit_visitor_impl!(sequence);
-  unit_visitor_impl!(parallel);
-  unit_visitor_impl!(space);
-  unit_visitor_impl!(tell);
-  unit_visitor_impl!(pause);
-  unit_visitor_impl!(pause_up);
-  unit_visitor_impl!(stop);
-  unit_visitor_impl!(exit);
-  unit_visitor_impl!(proc_call);
-  unit_visitor_impl!(fn_call);
-  unit_visitor_impl!(module_call);
-  unit_visitor_impl!(nothing);
-  unit_visitor_impl!(binding);
-
+impl<'a> Visitor<JClass> for Duplicate<'a>
+{
   fn visit_module(&mut self, module: JModule) {
     self.reset_dup_procs();
     self.reset_dup_mod_fields();

@@ -26,4 +26,5 @@ pub fn analyse_bonsai<'a>(context: Context<'a>) -> Partial<Context<'a>> {
     .and_then(|context| duplicate(context))
     .and_then(|context| matching_ref(context))
     .and_then(|context| stream_bound(context))
+    // .and_then(|context| approximate_permission(context))
 }

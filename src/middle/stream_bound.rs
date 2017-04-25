@@ -74,21 +74,8 @@ impl<'a> StreamBound<'a> {
   }
 }
 
-impl<'a> Visitor<JClass, ()> for StreamBound<'a> {
-  unit_visitor_impl!(bcrate, JClass);
-  unit_visitor_impl!(module, JClass);
-  unit_visitor_impl!(sequence);
-  unit_visitor_impl!(parallel);
-  unit_visitor_impl!(space);
-  unit_visitor_impl!(pause);
-  unit_visitor_impl!(pause_up);
-  unit_visitor_impl!(stop);
-  unit_visitor_impl!(exit);
-  unit_visitor_impl!(proc_call);
-  unit_visitor_impl!(fn_call);
-  unit_visitor_impl!(module_call);
-  unit_visitor_impl!(nothing);
-
+impl<'a> Visitor<JClass> for StreamBound<'a>
+{
   fn visit_binding(&mut self, binding: Binding) {
     self.bound_of(binding.name);
   }

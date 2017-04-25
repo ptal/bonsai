@@ -87,10 +87,8 @@ impl<'a> MatchingRef<'a> {
   }
 }
 
-impl<'a> Visitor<JClass, ()> for MatchingRef<'a> {
-  unit_visitor_impl!(module, JClass);
-  unit_visitor_impl!(all_stmt);
-
+impl<'a> Visitor<JClass> for MatchingRef<'a>
+{
   fn visit_crate(&mut self, bcrate: JCrate) {
     for (i, module) in bcrate.modules.into_iter().enumerate() {
       self.current_mod = i;
