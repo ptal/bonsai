@@ -174,8 +174,8 @@ public class SpaceEnvironment extends Clock {
     }
   }
 
-  public LatticeVar latticeVar(String name, int time) {
-    Object value = var(name, time);
+  public LatticeVar latticeVar(String name, int time, Permission permission) {
+    Object value = var(name, time, permission);
     return Cast.toLattice(name, value);
   }
 
@@ -186,28 +186,30 @@ public class SpaceEnvironment extends Clock {
     }
   }
 
-  private Object access(String uid, int time) {
+  private Object access(String uid, int time, Permission permission) {
     Variable v = vars().get(uid);
     checkVarNull(uid, v);
     // Generate an event on this variable to indicate it might has been modified.
     // Note that `generatePure` does not read the new value of the variable yet–it is just used to wake up suspended statements—so it's OK to generate it after the actual modifications.
-    Event event = getDirectAccessToEvent(new StringID(uid));
-    event.generatePure(this);
+    if (time == 0 && permission != Permission.READ) {
+      Event event = getDirectAccessToEvent(new StringID(uid));
+      event.generatePure(this);
+    }
     return v.value(time);
   }
 
-  public Object var(String uid, int time) {
+  public Object var(String uid, int time, Permission permission) {
     if (inSnapshot) {
       Optional<Object> value = currentSnapshot.getSingleTimeValue(uid);
       if (value.isPresent()) {
         return value.get();
       }
     }
-    return access(uid, time);
+    return access(uid, time, permission);
   }
 
   public Object module(String uid) {
-    return access(uid, 0);
+    return access(uid, 0, Permission.READ);
   }
 
   public boolean isEmpty() {
