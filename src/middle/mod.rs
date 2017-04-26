@@ -13,20 +13,20 @@
 // limitations under the License.
 
 mod duplicate;
-// mod undeclared;
+mod undeclared;
 mod matching_ref;
 mod stream_bound;
 
 use context::*;
 use middle::duplicate::*;
-// use middle::undeclared::*;
+use middle::undeclared::*;
 use middle::matching_ref::*;
 use middle::stream_bound::*;
 
 pub fn analyse_bonsai<'a>(context: Context<'a>) -> Partial<Context<'a>> {
   Partial::Value(context)
     .and_then(|context| duplicate(context))
-    // .and_then(|context| undeclared(context))
+    .and_then(|context| undeclared(context))
     .and_then(|context| matching_ref(context))
     .and_then(|context| stream_bound(context))
     // .and_then(|context| approximate_permission(context))

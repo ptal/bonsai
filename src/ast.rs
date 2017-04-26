@@ -373,6 +373,10 @@ impl VarPath {
   pub fn name(&self) -> String {
     self.properties.last().unwrap().clone()
   }
+
+  pub fn target(&self) -> String {
+    self.properties.first().unwrap().clone()
+  }
 }
 
 impl Display for VarPath {

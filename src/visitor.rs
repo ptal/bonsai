@@ -308,7 +308,9 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
-  fn visit_binding(&mut self, _binding: &mut Binding) {}
+  fn visit_binding(&mut self, binding: &mut Binding) {
+    self.visit_expr(&mut binding.expr)
+  }
 
   fn visit_expr(&mut self, expr: &mut Expr) {
     walk_expr_mut(self, expr)
