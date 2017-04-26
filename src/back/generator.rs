@@ -60,9 +60,9 @@ fn generate_interfaces(fmt: &mut CodeFormatter, interfaces: Vec<JType>) {
   }
 }
 
-fn generate_main_method(fmt: &mut CodeFormatter, context: &Context, class_name: String) {
+fn generate_main_method(fmt: &mut CodeFormatter, context: &Context, class_name: Ident) {
   if let Some(main) = context.config().main_method.clone() {
-    if main.class == class_name {
+    if main.class == *class_name {
       fmt.push_line("public static void main(String[] args)");
       fmt.open_block();
       let machine_method = if context.config().debug { "createDebug" } else { "create" };
@@ -82,7 +82,7 @@ fn generate_java_method(fmt: &mut CodeFormatter, method: JMethod) {
     format!("{} ", method.visibility),
     string_from_static(method.is_static),
     format!("{} ", method.return_ty),
-    method.name,
+    method.name.unwrap(),
     method.parameters,
     method.body
   ].iter().flat_map(|x| x.chars()).collect();
@@ -92,7 +92,7 @@ fn generate_java_method(fmt: &mut CodeFormatter, method: JMethod) {
 fn generate_java_constructor(fmt: &mut CodeFormatter, constructor: JConstructor) {
   let code = vec![
     format!("{} ", constructor.visibility),
-    constructor.name,
+    constructor.name.unwrap(),
     constructor.parameters,
     constructor.body
   ].iter().flat_map(|x| x.chars()).collect();
@@ -105,7 +105,7 @@ fn generate_field(fmt: &mut CodeFormatter, field: ModuleField) {
     format!("{} ", field.visibility),
     string_from_static(field.is_static),
     format!("{} ", field.binding.ty),
-    field.binding.name
+    field.binding.name.unwrap()
   ].iter().flat_map(|x| x.chars()).collect();
   fmt.push(&code);
   if let Some(expr) = field.binding.expr {
@@ -270,7 +270,7 @@ fn generate_expr(fmt: &mut CodeFormatter, expr: Expr) {
   }
 }
 
-fn generate_fun_call(fmt: &mut CodeFormatter, name: String, args: Vec<Expr>) {
+fn generate_fun_call(fmt: &mut CodeFormatter, name: Ident, args: Vec<Expr>) {
   let args_len = args.len();
   fmt.push(&format!("{}(", name));
   for (i, arg) in args.into_iter().enumerate() {
@@ -284,10 +284,10 @@ fn generate_fun_call(fmt: &mut CodeFormatter, name: String, args: Vec<Expr>) {
 
 fn generate_java_new(fmt: &mut CodeFormatter, ty: JType, args: Vec<Expr>) {
   fmt.push("new ");
-  generate_fun_call(fmt, format!("{}", ty), args);
+  generate_fun_call(fmt, Ident::new(ty.span, format!("{}", ty)), args);
 }
 
-fn generate_java_object_call(fmt: &mut CodeFormatter, object: String,
+fn generate_java_object_call(fmt: &mut CodeFormatter, object: Ident,
   methods: Vec<JavaCall>)
 {
   let methods_len = methods.len();
@@ -550,7 +550,7 @@ fn generate_java_call(fmt: &mut CodeFormatter, context: &Context, java_call: Exp
 }
 
 fn generate_trap(fmt: &mut CodeFormatter, context: &Context,
-  name: String, body: Box<Stmt>)
+  name: Ident, body: Box<Stmt>)
 {
   fmt.push_line(&format!("SC.until(\"{}\",", name));
   fmt.indent();
@@ -559,7 +559,7 @@ fn generate_trap(fmt: &mut CodeFormatter, context: &Context,
   fmt.push(")");
 }
 
-fn generate_exit(fmt: &mut CodeFormatter, name: String) {
+fn generate_exit(fmt: &mut CodeFormatter, name: Ident) {
   fmt.push(&format!("SC.generate(\"{}\")", name));
 }
 

@@ -70,14 +70,14 @@ impl<'a> Duplicate<'a> {
 
   // Note: Due to the borrowing of session, we cannot take `dups` as mutable (both are owned by `self`).
   fn duplicate(dups: &HashMap<String, Span>, session: &Session,
-    name: String, span: Span, code: &str, what: &str) -> bool
+    name: Ident, code: &str, what: &str) -> bool
   {
-    match dups.get(&name) {
+    match dups.get(&*name) {
       Some(prev_span) => {
-        session.struct_span_err_with_code(span,
+        session.struct_span_err_with_code(name.span,
           &format!("duplicate {} definitions with name `{}`", what, name.clone()),
           code)
-        .span_label(span, &"duplicate definition")
+        .span_label(name.span, &"duplicate definition")
         .span_label(*prev_span, &format!("previous definition of `{}` here", name.clone()))
         .emit();
         true
@@ -90,23 +90,23 @@ impl<'a> Duplicate<'a> {
     let binding = field.binding.clone();
     let name = binding.name.clone();
     let err = Self::duplicate(&self.dup_mod_fields, self.session(),
-      name.clone(), field.span, "E0002", "spacetime field");
-    if !err { self.dup_mod_fields.insert(name, field.span); }
+      name.clone(), "E0002", "spacetime field");
+    if !err { self.dup_mod_fields.insert(name.unwrap(), field.span); }
   }
 
   fn duplicate_local_var(&mut self, let_stmt: &LetStmt) {
     let binding = let_stmt.binding.clone();
     let name = binding.name.clone();
     let err = Self::duplicate(&self.dup_local_vars, self.session(),
-      name.clone(), let_stmt.span, "E0003", "local variable");
-    if !err { self.dup_local_vars.insert(name, let_stmt.span); }
+      name.clone(), "E0003", "local variable");
+    if !err { self.dup_local_vars.insert(name.unwrap(), let_stmt.span); }
   }
 
   fn duplicate_proc(&mut self, process: &Process) {
     let name = process.name.clone();
     let err = Self::duplicate(&self.dup_procs, self.session(),
-      name.clone(), process.span, "E0004", "process");
-    if !err { self.dup_procs.insert(name, process.span); }
+      name.clone(), "E0004", "process");
+    if !err { self.dup_procs.insert(name.unwrap(), process.span); }
   }
 }
 

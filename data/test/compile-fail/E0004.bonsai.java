@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0004, 24, 2)]
-#[error(E0004, 27, 2)]
+#[error(E0004, 24, 7)]
+#[error(E0004, 27, 7)]
 
 package test;
 

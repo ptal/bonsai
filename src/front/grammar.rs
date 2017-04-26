@@ -25,8 +25,8 @@ grammar! bonsai {
 
   program = .. pre_header header java_class > make_java_program
 
-  diagnostic_attr = HASH LBRACKET identifier
-    LPAREN identifier COMMA number COMMA number RPAREN RBRACKET > make_diagnostic
+  diagnostic_attr = HASH LBRACKET string_identifier
+    LPAREN string_identifier COMMA number COMMA number RPAREN RBRACKET > make_diagnostic
 
   fn make_diagnostic(level: String, code: String,
    line: u64, column: u64) -> CompilerDiagnostic
@@ -36,7 +36,7 @@ grammar! bonsai {
 
   fn make_java_program(span: Span, pre_header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
    package: FQN, imports: Vec<JImport>,
-   class_name: String, interfaces: Vec<JType>, items: Vec<Item>) -> Program
+   class_name: Ident, interfaces: Vec<JType>, items: Vec<Item>) -> Program
   {
     Program {
       header: pre_header,
@@ -70,7 +70,7 @@ grammar! bonsai {
 
   fully_qualified_name = .. identifier (DOT identifier)* > make_fully_qualified_name
 
-  fn make_fully_qualified_name(span: Span, first: String, rest: Vec<String>) -> FQN {
+  fn make_fully_qualified_name(span: Span, first: Ident, rest: Vec<Ident>) -> FQN {
     FQN::new(span, extend_front(first, rest))
   }
 
@@ -110,7 +110,7 @@ grammar! bonsai {
       span, visibility, binding, is_ref.is_some()))
   }
 
-  fn make_process_item(span: Span, visibility: Option<JVisibility>, name: String,
+  fn make_process_item(span: Span, visibility: Option<JVisibility>, name: Ident,
     params: JParameters, body: Stmt) -> Item
   {
     Item::Proc(Process::new(span, visibility, name, params, body))
@@ -133,7 +133,7 @@ grammar! bonsai {
   }
 
   fn make_java_method(span: Span, visibility: JVisibility, is_static: Option<()>,
-    return_ty: JType, name: String,
+    return_ty: JType, name: Ident,
     parameters: JParameters, body: JavaBlock) -> Item
   {
     let decl = JMethod {
@@ -148,7 +148,7 @@ grammar! bonsai {
     Item::JavaMethod(decl)
   }
 
-  fn make_java_constructor(span: Span, visibility: JVisibility, name: String,
+  fn make_java_constructor(span: Span, visibility: JVisibility, name: Ident,
     parameters: JParameters, body: JavaBlock) -> Item
   {
     let decl = JConstructor {
@@ -176,11 +176,11 @@ grammar! bonsai {
     = identifier (COMMA identifier)* > make_list_ident
     / "" > empty_ident_list
 
-  fn make_list_ident(first: String, rest: Vec<String>) -> Vec<String> {
+  fn make_list_ident(first: Ident, rest: Vec<Ident>) -> Vec<Ident> {
     extend_front(first, rest)
   }
 
-  fn empty_ident_list() -> Vec<String> {
+  fn empty_ident_list() -> Vec<Ident> {
     vec![]
   }
 
@@ -204,6 +204,7 @@ grammar! bonsai {
   stmt
     = .. stmt_kind > make_stmt
     / block
+
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
@@ -247,7 +248,7 @@ grammar! bonsai {
   java_binding = .. java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_binding
 
   fn make_bonsai_binding(span: Span, kind: Kind,
-    ty: JType, name: String, expr: Option<Option<Expr>>) -> Binding
+    ty: JType, name: Ident, expr: Option<Option<Expr>>) -> Binding
   {
     let expr = match expr {
       None | Some(None) => Some(Expr::new(DUMMY_SP, ExprKind::Bottom(ty.clone()))),
@@ -256,7 +257,7 @@ grammar! bonsai {
     Binding::new(span, name, kind, ty, expr)
   }
 
-  fn make_java_binding(span: Span, ty: JType, name: String, expr: Option<Expr>) -> Binding {
+  fn make_java_binding(span: Span, ty: JType, name: Ident, expr: Option<Expr>) -> Binding {
     Binding::new(span, name, Kind::Host, ty, expr)
   }
 
@@ -284,11 +285,11 @@ grammar! bonsai {
     StmtKind::Nothing
   }
 
-  fn make_trap(name: String, body: Stmt) -> StmtKind {
+  fn make_trap(name: Ident, body: Stmt) -> StmtKind {
     StmtKind::Trap(name, Box::new(body))
   }
 
-  fn make_exit(name: String) -> StmtKind {
+  fn make_exit(name: Ident) -> StmtKind {
     StmtKind::Exit(name)
   }
 
@@ -304,7 +305,7 @@ grammar! bonsai {
     StmtKind::Tell(var, expr)
   }
 
-  fn make_proc_call(process: String, args: Vec<Expr>) -> StmtKind {
+  fn make_proc_call(process: Ident, args: Vec<Expr>) -> StmtKind {
     StmtKind::ProcCall(process, args)
   }
 
@@ -321,14 +322,14 @@ grammar! bonsai {
 
   parens = LPAREN RPAREN
 
-  fn make_run_expr(span: Span, module_path: VarPath, process: String) -> RunExpr {
+  fn make_run_expr(span: Span, module_path: VarPath, process: Ident) -> RunExpr {
     RunExpr::new(span, module_path, process)
   }
 
   java_ty
     = .. identifier java_generic_list (LBRACKET RBRACKET -> ())? > make_java_ty
 
-  fn make_java_ty(span: Span, name: String, generics: Vec<JType>, is_array: Option<()>) -> JType {
+  fn make_java_ty(span: Span, name: Ident, generics: Vec<JType>, is_array: Option<()>) -> JType {
     JType {
       name: name,
       generics: generics,
@@ -382,7 +383,7 @@ grammar! bonsai {
     ExprKind::JavaNew(class_ty, args)
   }
 
-  fn java_object_calls(object: String, calls: Vec<JavaCall>) -> ExprKind {
+  fn java_object_calls(object: Ident, calls: Vec<JavaCall>) -> ExprKind {
     ExprKind::JavaObjectCall(object, calls)
   }
 
@@ -397,15 +398,15 @@ grammar! bonsai {
   java_call = .. identifier list_args > make_java_method_call
   java_property_call = .. DOT identifier (list_args)? > make_java_property
 
-  fn make_java_method_call(span: Span, name: String, args: Vec<Expr>) -> JavaCall {
+  fn make_java_method_call(span: Span, name: Ident, args: Vec<Expr>) -> JavaCall {
     make_java_call(span, name, false, args)
   }
 
-  fn make_java_property(span: Span, name: String, args: Option<Vec<Expr>>) -> JavaCall {
+  fn make_java_property(span: Span, name: Ident, args: Option<Vec<Expr>>) -> JavaCall {
     make_java_call(span, name, args.is_none(), args.unwrap_or(vec![]))
   }
 
-  fn make_java_call(span: Span, property: String, is_field: bool, args: Vec<Expr>) -> JavaCall {
+  fn make_java_call(span: Span, property: Ident, is_field: bool, args: Vec<Expr>) -> JavaCall {
     JavaCall {
       property: property,
       is_field: is_field,
@@ -472,7 +473,7 @@ grammar! bonsai {
 
   var_path = .. identifier (DOT identifier !parens)* > make_var_path
 
-  fn make_var_path(span: Span, first: String, rest: Vec<String>) -> VarPath {
+  fn make_var_path(span: Span, first: Ident, rest: Vec<Ident>) -> VarPath {
     VarPath::new(span, extend_front(first, rest))
   }
 
@@ -519,7 +520,13 @@ grammar! bonsai {
   fn java_private() -> JVisibility { JVisibility::Private }
   fn java_protected() -> JVisibility { JVisibility::Protected }
 
-  identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
+  identifier = .. string_identifier > to_ident
+
+  fn to_ident(span: Span, value: String) -> Ident {
+    Ident::new(span, value)
+  }
+
+  string_identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
 
   number = digits > make_number

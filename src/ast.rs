@@ -15,6 +15,8 @@
 use driver::module_file::ModuleFile;
 use std::fmt::{Display, Error, Formatter};
 use std::cmp::PartialEq;
+use std::ops::Deref;
+use std::hash::{Hash, Hasher};
 pub use syntex_pos::Span;
 pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
 pub use syntex_errors::Level;
@@ -151,14 +153,13 @@ impl ModuleField {
   }
 }
 
-
 #[derive(Clone, Debug)]
 pub struct Program {
   pub header: String,
   pub expected_diagnostics: Vec<CompilerDiagnostic>,
   pub package: FQN,
   pub imports: Vec<JImport>,
-  pub class_name: String,
+  pub class_name: Ident,
   pub interfaces: Vec<JType>,
   pub items: Vec<Item>,
   pub span: Span
@@ -175,14 +176,14 @@ pub enum Item {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Process {
   pub visibility: JVisibility,
-  pub name: String,
+  pub name: Ident,
   pub params: JParameters,
   pub body: Stmt,
   pub span: Span
 }
 
 impl Process {
-  pub fn new(span: Span, visibility: Option<JVisibility>, name: String,
+  pub fn new(span: Span, visibility: Option<JVisibility>, name: Ident,
    params: JParameters, body: Stmt) -> Self
   {
     Process {
@@ -241,10 +242,10 @@ pub enum StmtKind {
   Pause,
   PauseUp,
   Stop,
-  Trap(String, Box<Stmt>),
-  Exit(String),
+  Trap(Ident, Box<Stmt>),
+  Exit(Ident),
   Loop(Box<Stmt>),
-  ProcCall(String, Vec<Expr>),
+  ProcCall(Ident, Vec<Expr>),
   FnCall(Expr),
   ModuleCall(RunExpr),
   Universe(Box<Stmt>),
@@ -261,12 +262,12 @@ impl StmtKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RunExpr {
   pub module_path: VarPath,
-  pub process: String,
+  pub process: Ident,
   pub span: Span
 }
 
 impl RunExpr {
-  pub fn new(span: Span, module_path: VarPath, process: String) -> Self {
+  pub fn new(span: Span, module_path: VarPath, process: Ident) -> Self {
     RunExpr {
       module_path: module_path,
       process: process,
@@ -305,7 +306,7 @@ impl LetStmt {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Binding {
-  pub name: String,
+  pub name: Ident,
   pub uid: usize,
   pub kind: Kind,
   pub ty: JType,
@@ -315,7 +316,7 @@ pub struct Binding {
 
 impl Binding
 {
-  pub fn new(span: Span, name: String,
+  pub fn new(span: Span, name: Ident,
     kind: Kind, ty: JType, expr: Option<Expr>) -> Self
   {
     Binding {
@@ -338,7 +339,7 @@ impl Binding
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Binding::new(DUMMY_SP, String::from("<name>"), Kind::example(),
+    Binding::new(DUMMY_SP, Ident::example("<name>"), Kind::example(),
       JType::example(), Some(Expr::example()))
   }
 }
@@ -380,15 +381,64 @@ pub struct MetaEntailmentRel {
   pub span: Span
 }
 
+#[derive(Clone, Debug, Eq)]
+pub struct Ident {
+  pub value: String,
+  pub span: Span
+}
+
+impl Ident {
+  pub fn new(span: Span, value: String) -> Self {
+    Ident {
+      value: value,
+      span: span
+    }
+  }
+
+  pub fn unwrap(&self) -> String {
+    self.value.clone()
+  }
+
+  #[allow(dead_code)]
+  pub fn example(value: &str) -> Self {
+    Ident::new(DUMMY_SP, String::from(value))
+  }
+}
+
+impl Deref for Ident {
+  type Target = String;
+  fn deref(&self) -> &String {
+    &self.value
+  }
+}
+
+impl Display for Ident {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    fmt.write_str(&self.value)
+  }
+}
+
+impl PartialEq for Ident {
+  fn eq(&self, other: &Ident) -> bool {
+    self.value == other.value
+  }
+}
+
+impl Hash for Ident {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.value.hash(state);
+  }
+}
+
 /// A variable path can be `x`, `m.x`, `m.m2.y`,... where `m` and `m2` must be checked to be module.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct VarPath {
-  pub properties: Vec<String>,
+  pub properties: Vec<Ident>,
   pub span: Span
 }
 
 impl VarPath {
-  pub fn new(span: Span, properties: Vec<String>) -> Self {
+  pub fn new(span: Span, properties: Vec<Ident>) -> Self {
     VarPath {
       properties: properties,
       span: span
@@ -400,11 +450,11 @@ impl VarPath {
       .collect()
   }
 
-  pub fn name(&self) -> String {
+  pub fn name(&self) -> Ident {
     self.properties.last().unwrap().clone()
   }
 
-  pub fn target(&self) -> String {
+  pub fn target(&self) -> Ident {
     self.properties.first().unwrap().clone()
   }
 }
@@ -448,7 +498,7 @@ impl StreamVar {
     }
   }
 
-  pub fn simple(span: Span, name: String) -> Self {
+  pub fn simple(span: Span, name: Ident) -> Self {
     Self::present(span, VarPath::new(span, vec![name]), vec![])
   }
 
@@ -456,13 +506,13 @@ impl StreamVar {
     Self::new(span, path, args, 0)
   }
 
-  pub fn name(&self) -> String {
+  pub fn name(&self) -> Ident {
     self.path.name()
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Self::simple(DUMMY_SP, String::from("x"))
+    Self::simple(DUMMY_SP, Ident::example("x"))
   }
 }
 
@@ -538,7 +588,7 @@ impl Expr {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
   JavaNew(JType, Vec<Expr>),
-  JavaObjectCall(String, Vec<JavaCall>),
+  JavaObjectCall(Ident, Vec<JavaCall>),
   JavaThisCall(JavaCall),
   Boolean(bool),
   Number(u64),
@@ -550,19 +600,19 @@ pub enum ExprKind {
 impl ExprKind {
   #[allow(dead_code)]
   pub fn example() -> Self {
-    ExprKind::Variable(StreamVar::simple(DUMMY_SP, String::from("<expr>")))
+    ExprKind::Variable(StreamVar::simple(DUMMY_SP, Ident::example("<expr>")))
   }
 }
 
 /// Java fully qualified name (FQN).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FQN {
-  pub names: Vec<String>,
+  pub names: Vec<Ident>,
   pub span: Span
 }
 
 impl FQN {
-  pub fn new(span: Span, names: Vec<String>) -> Self {
+  pub fn new(span: Span, names: Vec<Ident>) -> Self {
     FQN {
       names: names,
       span: span
@@ -614,7 +664,7 @@ pub struct JClass {
   pub header: String,
   pub package: FQN,
   pub imports: Vec<JImport>,
-  pub class_name: String,
+  pub class_name: Ident,
   pub interfaces: Vec<JType>,
   pub java_methods: Vec<JMethod>,
   pub java_constructors: Vec<JConstructor>,
@@ -622,7 +672,7 @@ pub struct JClass {
 
 impl JClass {
   pub fn new(header: String, package: FQN, imports: Vec<JImport>,
-    class_name: String, interfaces: Vec<JType>) -> Self
+    class_name: Ident, interfaces: Vec<JType>) -> Self
   {
     JClass {
       header: header,
@@ -644,7 +694,7 @@ pub struct JMethod {
   pub visibility: JVisibility,
   pub is_static: bool,
   pub return_ty: JType,
-  pub name: String,
+  pub name: Ident,
   pub parameters: JParameters,
   pub body: JavaBlock,
   pub span: Span
@@ -653,7 +703,7 @@ pub struct JMethod {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JConstructor {
   pub visibility: JVisibility,
-  pub name: String,
+  pub name: Ident,
   pub parameters: JParameters,
   pub body: JavaBlock,
   pub span: Span
@@ -664,14 +714,14 @@ pub type JParameters = String;
 
 #[derive(Clone, Debug, Eq)]
 pub struct JType {
-  pub name: String,
+  pub name: Ident,
   pub generics: Vec<JType>,
   pub is_array: bool,
   pub span: Span
 }
 
 impl JType {
-  pub fn simple(span: Span, name: String) -> Self {
+  pub fn simple(span: Span, name: Ident) -> Self {
     JType {
       name: name,
       generics: vec![],
@@ -681,7 +731,7 @@ impl JType {
   }
 
   pub fn example() -> Self {
-    JType::simple(DUMMY_SP, String::from("<Java type>"))
+    JType::simple(DUMMY_SP, Ident::example("<Java type>"))
   }
 }
 
@@ -735,14 +785,14 @@ impl Display for JVisibility {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JavaCall {
-  pub property: String, // can be a field or a method.
+  pub property: Ident, // can be a field or a method.
   pub is_field: bool,
   pub args: Vec<Expr>,
   pub span: Span
 }
 
 impl JavaCall {
-  pub fn empty_method(span: Span, name: String) -> Self {
+  pub fn empty_method(span: Span, name: Ident) -> Self {
     JavaCall {
       property: name,
       is_field: false,
@@ -751,7 +801,7 @@ impl JavaCall {
     }
   }
 
-  pub fn field(span: Span, name: String) -> Self {
+  pub fn field(span: Span, name: Ident) -> Self {
     JavaCall {
       property: name,
       is_field: true,

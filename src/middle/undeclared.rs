@@ -24,7 +24,7 @@ pub fn undeclared<'a>(context: Context<'a>) -> Partial<Context<'a>> {
 struct Undeclared<'a> {
   context: Context<'a>,
   last_uid: usize,
-  in_scope_vars: Vec<(String, usize)>,
+  in_scope_vars: Vec<(Ident, usize)>,
   visiting_fields: bool,
 }
 
@@ -68,7 +68,7 @@ impl<'a> Undeclared<'a> {
     self.in_scope_vars.pop();
   }
 
-  fn lookup(&self, name: String) -> Option<usize> {
+  fn lookup(&self, name: Ident) -> Option<usize> {
     self.in_scope_vars.iter()
       .find(|&&(ref name2, _)| &name == name2)
       .map(|&(_, uid)| uid)

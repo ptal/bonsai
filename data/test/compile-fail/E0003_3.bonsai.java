@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0003, 25, 4)]
-#[error(E0003, 29, 4)]
+#[error(E0003, 25, 20)]
+#[error(E0003, 29, 20)]
 
 package test;
 

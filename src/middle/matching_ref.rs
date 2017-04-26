@@ -51,7 +51,7 @@ impl<'a> MatchingRef<'a> {
   }
 
   fn find_field_by_name(&self, module: &JModule,
-    name: String) -> Option<Binding>
+    name: Ident) -> Option<Binding>
   {
     module.fields.iter()
       .map(|field| field.binding.clone())
@@ -100,7 +100,7 @@ impl<'a> Visitor<JClass> for MatchingRef<'a>
     if binding.is_module() {
       let mod_a = self.ast().modules[self.current_mod].clone();
       let mod_a_name = mod_a.file.mod_name();
-      let mod_b_name = binding.ty.name.clone();
+      let mod_b_name = binding.ty.name.unwrap();
       let mod_b = self.ast().find_mod_by_name(mod_b_name.clone());
       if mod_b.is_none() {
         let sp = binding.ty.span;

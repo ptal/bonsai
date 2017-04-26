@@ -66,7 +66,7 @@ impl<'a> Context<'a> {
 
   fn insert_binding(&mut self, binding: Binding) {
     self.name_to_bindings.insert(
-      binding.name.clone(),
+      binding.name.unwrap(),
       binding);
   }
 

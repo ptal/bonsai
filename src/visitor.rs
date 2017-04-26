@@ -75,17 +75,17 @@ pub trait Visitor<H>
   fn visit_pause_up(&mut self) {}
   fn visit_stop(&mut self) {}
 
-  fn visit_trap(&mut self, _name: String, child: Stmt) {
+  fn visit_trap(&mut self, _name: Ident, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_exit(&mut self, _name: String) {}
+  fn visit_exit(&mut self, _name: Ident) {}
 
   fn visit_loop(&mut self, child: Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, _name: String, args: Vec<Expr>) {
+  fn visit_proc_call(&mut self, _name: Ident, args: Vec<Expr>) {
     walk_exprs(self, args)
   }
 
@@ -117,7 +117,7 @@ pub trait Visitor<H>
     walk_exprs(self, args)
   }
 
-  fn visit_object_call(&mut self, _object: String, calls: Vec<JavaCall>) {
+  fn visit_object_call(&mut self, _object: Ident, calls: Vec<JavaCall>) {
     walk_jcalls(self, calls)
   }
 
@@ -283,17 +283,17 @@ pub trait VisitorMut<H>
   fn visit_pause_up(&mut self) {}
   fn visit_stop(&mut self) {}
 
-  fn visit_trap(&mut self, _name: String, child: &mut Stmt) {
+  fn visit_trap(&mut self, _name: Ident, child: &mut Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_exit(&mut self, _name: String) {}
+  fn visit_exit(&mut self, _name: Ident) {}
 
   fn visit_loop(&mut self, child: &mut Stmt) {
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, _name: String, args: &mut Vec<Expr>) {
+  fn visit_proc_call(&mut self, _name: Ident, args: &mut Vec<Expr>) {
     walk_exprs_mut(self, args)
   }
 
@@ -322,7 +322,7 @@ pub trait VisitorMut<H>
     walk_exprs_mut(self, args)
   }
 
-  fn visit_object_call(&mut self, _object: String, calls: &mut Vec<JavaCall>) {
+  fn visit_object_call(&mut self, _object: Ident, calls: &mut Vec<JavaCall>) {
     walk_jcalls_mut(self, calls)
   }
 
