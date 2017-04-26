@@ -58,9 +58,10 @@ impl<'a> Undeclared<'a> {
     self.last_uid
   }
 
-  fn enter_scope(&mut self, name: String) {
+  fn enter_scope(&mut self, binding: &mut Binding) {
     let uid = self.gen_uid();
-    self.in_scope_vars.push((name, uid));
+    binding.uid = uid;
+    self.in_scope_vars.push((binding.name.clone(), uid));
   }
 
   fn exit_scope(&mut self) {
@@ -114,7 +115,7 @@ impl<'a> VisitorMut<JClass> for Undeclared<'a>
   fn visit_module(&mut self, module: &mut JModule) {
     self.visiting_fields = true;
     for field in &mut module.fields {
-      self.enter_scope(field.binding.name.clone());
+      self.enter_scope(&mut field.binding);
       self.visit_field(field);
     }
     self.visiting_fields = false;
@@ -129,7 +130,7 @@ impl<'a> VisitorMut<JClass> for Undeclared<'a>
   }
 
   fn visit_let(&mut self, let_stmt: &mut LetStmt) {
-    self.enter_scope(let_stmt.binding.name.clone());
+    self.enter_scope(&mut let_stmt.binding);
     self.visit_binding(&mut let_stmt.binding);
     self.visit_stmt(&mut *(let_stmt.body));
     self.exit_scope();

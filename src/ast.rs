@@ -107,7 +107,6 @@ impl Module<JClass> {
         Item::Field(field) => module.fields.push(field),
         Item::Proc(process) => module.processes.push(process),
         Item::JavaMethod(decl) => module.host.java_methods.push(decl),
-        Item::JavaField(decl) => module.host.java_fields.push(decl),
         Item::JavaConstructor(decl) => module.host.java_constructors.push(decl)
       }
     }
@@ -120,8 +119,38 @@ pub struct ModuleField {
   pub visibility: JVisibility,
   pub binding: Binding,
   pub is_ref: bool,
+  pub is_static: bool,
+  pub is_final: bool,
   pub span: Span
 }
+
+impl ModuleField {
+  fn new(span: Span, visibility: Option<JVisibility>,
+    binding: Binding, is_ref: bool, is_static: bool, is_final: bool) -> Self
+  {
+    ModuleField {
+      visibility: visibility.unwrap_or(JVisibility::Private),
+      binding: binding,
+      is_ref: is_ref,
+      is_static: is_static,
+      is_final: is_final,
+      span: span
+    }
+  }
+
+  pub fn bonsai_field(span: Span, visibility: Option<JVisibility>,
+    binding: Binding, is_ref: bool) -> Self
+  {
+    ModuleField::new(span, visibility, binding, is_ref, false, true)
+  }
+
+  pub fn java_field(span: Span, visibility: Option<JVisibility>,
+    binding: Binding, is_static: bool, is_final: bool) -> Self
+  {
+    ModuleField::new(span, visibility, binding, false, is_static, is_final)
+  }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct Program {
@@ -140,7 +169,6 @@ pub enum Item {
   Field(ModuleField),
   Proc(Process),
   JavaMethod(JMethod),
-  JavaField(JField),
   JavaConstructor(JConstructor),
 }
 
@@ -154,11 +182,11 @@ pub struct Process {
 }
 
 impl Process {
-  pub fn new(span: Span, vis: JVisibility, name: String,
+  pub fn new(span: Span, visibility: Option<JVisibility>, name: String,
    params: JParameters, body: Stmt) -> Self
   {
     Process {
-      visibility: vis,
+      visibility: visibility.unwrap_or(JVisibility::Private),
       name: name,
       params: params,
       body: body,
@@ -278,20 +306,22 @@ impl LetStmt {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Binding {
   pub name: String,
-  pub spacetime: Spacetime,
+  pub uid: usize,
+  pub kind: Kind,
   pub ty: JType,
-  pub expr: Expr,
+  pub expr: Option<Expr>,
   pub span: Span
 }
 
 impl Binding
 {
   pub fn new(span: Span, name: String,
-    spacetime: Spacetime, ty: JType, expr: Expr) -> Self
+    kind: Kind, ty: JType, expr: Option<Expr>) -> Self
   {
     Binding {
       name: name,
-      spacetime: spacetime,
+      uid: 0,
+      kind: kind,
       ty: ty,
       expr: expr,
       span: span
@@ -299,17 +329,17 @@ impl Binding
   }
 
   pub fn is_transient(&self) -> bool {
-    self.spacetime.is_transient()
+    self.kind.is_transient()
   }
 
   pub fn is_module(&self) -> bool {
-    self.spacetime == Spacetime::Product
+    self.kind == Kind::Product
   }
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Binding::new(DUMMY_SP, String::from("<name>"), Spacetime::example(),
-      JType::example(), Expr::example())
+    Binding::new(DUMMY_SP, String::from("<name>"), Kind::example(),
+      JType::example(), Some(Expr::example()))
   }
 }
 
@@ -436,13 +466,37 @@ impl StreamVar {
   }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Kind {
+  /// A spacetime variable, either as a module's field or local to a process.
+  Spacetime(Spacetime),
+  /// A module variable: it is a Bonsai module, i.e. the product of heterogeneous spacetime variables.
+  Product,
+  /// A variable from the host language.
+  Host
+}
+
+impl Kind {
+  pub fn is_transient(self) -> bool {
+    use self::Kind::*;
+    match self {
+      Spacetime(sp) => sp.is_transient(),
+      _ => false
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn example() -> Self {
+    Kind::Spacetime(Spacetime::example())
+  }
+}
+
 /// The spacetime of a variable describes how it evolves in each instant. For `WorldLine` and `SingleSpace` we can additional set a boolean to `true` if the variable is transient (i.e. its value is re-initialized to bottom between each instant). The `Product` variant is used for records where variables have fields with various spacetime.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Spacetime {
   WorldLine(bool),
   SingleSpace(bool),
   SingleTime,
-  Product
 }
 
 impl Spacetime {
@@ -563,7 +617,6 @@ pub struct JClass {
   pub class_name: String,
   pub interfaces: Vec<JType>,
   pub java_methods: Vec<JMethod>,
-  pub java_fields: Vec<JField>,
   pub java_constructors: Vec<JConstructor>,
 }
 
@@ -578,7 +631,6 @@ impl JClass {
       class_name: class_name,
       interfaces: interfaces,
       java_methods: vec![],
-      java_fields: vec![],
       java_constructors: vec![]
     }
   }
@@ -604,17 +656,6 @@ pub struct JConstructor {
   pub name: String,
   pub parameters: JParameters,
   pub body: JavaBlock,
-  pub span: Span
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct JField {
-  pub visibility: JVisibility,
-  pub is_static: bool,
-  pub is_final: bool,
-  pub ty: JType,
-  pub name: String,
-  pub expr: Option<Expr>,
   pub span: Span
 }
 

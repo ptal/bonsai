@@ -101,7 +101,7 @@ pub trait Visitor<H>
   }
 
   fn visit_binding(&mut self, binding: Binding) {
-    self.visit_expr(binding.expr)
+    if let Some(expr) = binding.expr { self.visit_expr(expr) }
   }
 
   fn visit_entailment(&mut self, rel: EntailmentRel) {
@@ -309,7 +309,9 @@ pub trait VisitorMut<H>
   }
 
   fn visit_binding(&mut self, binding: &mut Binding) {
-    self.visit_expr(&mut binding.expr)
+    if let &mut Some(ref mut expr) = &mut binding.expr {
+      self.visit_expr(expr)
+    }
   }
 
   fn visit_expr(&mut self, expr: &mut Expr) {

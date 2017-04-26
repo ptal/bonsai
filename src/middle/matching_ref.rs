@@ -68,7 +68,7 @@ impl<'a> MatchingRef<'a> {
     if field_a.is_transient() != field_b.is_transient() {
       msg_err("Transient");
     }
-    if field_a.spacetime != field_b.spacetime {
+    if field_a.kind != field_b.kind {
       msg_err("Spacetime");
     }
     self.cmp_base_binding(field_a, field_b,

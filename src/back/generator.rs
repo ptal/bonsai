@@ -27,11 +27,8 @@ pub fn generate_module<'a>(context: &Context, module: JModule) -> Partial<String
   generate_interfaces(&mut fmt, module.host.interfaces.clone());
   fmt.newline();
   fmt.open_block();
-  for field in module.host.java_fields.clone() {
-    generate_java_field(&mut fmt, field);
-  }
   for field in module.fields.clone() {
-    generate_spacetime_field(&mut fmt, field);
+    generate_field(&mut fmt, field);
   }
   generate_object_uid(&mut fmt, &module);
   generate_init_method(&mut fmt, context, &module);
@@ -102,33 +99,20 @@ fn generate_java_constructor(fmt: &mut CodeFormatter, constructor: JConstructor)
   fmt.push_java_method(code);
 }
 
-fn generate_java_field(fmt: &mut CodeFormatter, jfield: JField) {
+fn generate_field(fmt: &mut CodeFormatter, field: ModuleField) {
   let code: String = vec![
-    string_from_final(jfield.is_final),
-    format!("{} ", jfield.visibility),
-    string_from_static(jfield.is_static),
-    format!("{} ", jfield.ty),
-    jfield.name
+    string_from_final(field.is_final),
+    format!("{} ", field.visibility),
+    string_from_static(field.is_static),
+    format!("{} ", field.binding.ty),
+    field.binding.name
   ].iter().flat_map(|x| x.chars()).collect();
   fmt.push(&code);
-  if let Some(expr) = jfield.expr {
+  if let Some(expr) = field.binding.expr {
     fmt.push(" = ");
     generate_expr(fmt, expr);
   }
   fmt.terminate_line(";");
-}
-
-fn generate_spacetime_field(fmt: &mut CodeFormatter, field: ModuleField) {
-  let jfield = JField {
-    visibility: field.visibility,
-    is_static: false,
-    is_final: true,
-    ty: field.binding.ty.clone(),
-    name: field.binding.name,
-    expr: Some(field.binding.expr),
-    span: field.binding.span
-  };
-  generate_java_field(fmt, jfield);
 }
 
 fn generate_init_method(fmt: &mut CodeFormatter, context: &Context, module: &JModule) {
@@ -427,7 +411,22 @@ fn generate_let(fmt: &mut CodeFormatter, context: &Context, let_decl: LetStmt) {
 fn generate_binding(fmt: &mut CodeFormatter, context: &Context,
   binding: Binding, is_field: bool, uid_fn: &str)
 {
-  let spacetime = generate_spacetime(binding.spacetime);
+  match binding.kind {
+    Kind::Spacetime(spacetime) =>
+      generate_spacetime_binding(fmt, context, binding,
+        spacetime, is_field, uid_fn),
+    Kind::Product =>
+      generate_module_binding(fmt, context, binding, uid_fn),
+    Kind::Host => panic!(
+      "BUG: Host variables are not stored inside the \
+       environment, and therefore binding cannot be generated.")
+  }
+}
+
+fn generate_spacetime_binding(fmt: &mut CodeFormatter, context: &Context,
+  binding: Binding, spacetime: Spacetime, is_field: bool, uid_fn: &str)
+{
+  let spacetime = generate_spacetime(spacetime);
   let stream_bound = context.stream_bound_of(&binding.name);
   fmt.push("new SpacetimeVar(");
   if is_field { fmt.push(&binding.name); }
@@ -435,7 +434,18 @@ fn generate_binding(fmt: &mut CodeFormatter, context: &Context,
   fmt.push(&format!(",\"{}\", {}(\"{}\"), {}, {}, {},",
     binding.name, uid_fn, binding.name, spacetime,
     binding.is_transient(), stream_bound));
-  generate_closure(fmt, context, true, binding.expr);
+  generate_closure(fmt, context, true,
+    binding.expr.expect("BUG: Generate binding without an expression."));
+  fmt.push(")");
+}
+
+fn generate_module_binding(fmt: &mut CodeFormatter, context: &Context,
+  binding: Binding, uid_fn: &str)
+{
+  fmt.push(&format!("new ModuleVar(\"{}\", {}(\"{}\"), ",
+    binding.name, uid_fn, binding.name));
+  generate_closure(fmt, context, true,
+    binding.expr.expect("BUG: Generate binding without an expression."));
   fmt.push(")");
 }
 
@@ -444,8 +454,7 @@ fn generate_spacetime(spacetime: Spacetime) -> String {
   match spacetime {
     SingleSpace(_) => String::from("Spacetime.SingleSpace"),
     SingleTime => String::from("Spacetime.SingleTime"),
-    WorldLine(_) => String::from("Spacetime.WorldLine"),
-    Product => String::from("Spacetime.SingleSpace")
+    WorldLine(_) => String::from("Spacetime.WorldLine")
   }
 }
 

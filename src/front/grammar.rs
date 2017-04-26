@@ -91,11 +91,11 @@ grammar! bonsai {
   item
     = module_field
     / .. java_visibility? PROC identifier java_param_list block > make_process_item
-    / java_method
     / java_field
+    / java_method
     / java_constructor
 
-  module_field = .. java_visibility? (REF->())? binding > make_module_field
+  module_field = .. java_visibility? (REF->())? bonsai_binding > make_module_field
 
   expr_or_bot = expr > some_expr
               / BOT > make_bottom_expr
@@ -106,21 +106,14 @@ grammar! bonsai {
   fn make_module_field(span: Span, visibility: Option<JVisibility>,
     is_ref: Option<()>, binding: Binding) -> Item
   {
-    Item::Field(
-      ModuleField {
-        visibility: visibility.unwrap_or(JVisibility::Private),
-        binding: binding,
-        is_ref: is_ref.is_some(),
-        span: span
-      }
-    )
+    Item::Field(ModuleField::bonsai_field(
+      span, visibility, binding, is_ref.is_some()))
   }
 
   fn make_process_item(span: Span, visibility: Option<JVisibility>, name: String,
     params: JParameters, body: Stmt) -> Item
   {
-    Item::Proc(Process::new(span, visibility.unwrap_or(JVisibility::Private),
-      name, params, body))
+    Item::Proc(Process::new(span, visibility, name, params, body))
   }
 
   java_method
@@ -130,22 +123,13 @@ grammar! bonsai {
     = .. java_visibility identifier java_param_list java_block kw_tail > make_java_constructor
 
   java_field
-    = .. (FINAL->())? java_visibility (STATIC->())? java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_field
+    = .. (FINAL->())? java_visibility? (STATIC->())? java_binding > make_java_field
 
-  fn make_java_field(span: Span, is_final: Option<()>, visibility: JVisibility,
-    is_static: Option<()>, ty: JType, name: String, expr: Option<Expr>) -> Item
+  fn make_java_field(span: Span, is_final: Option<()>, visibility: Option<JVisibility>,
+    is_static: Option<()>, binding: Binding) -> Item
   {
-    Item::JavaField(
-      JField {
-        visibility: visibility,
-        is_static: is_static.is_some(),
-        is_final: is_final.is_some(),
-        ty: ty,
-        name: name,
-        expr: expr,
-        span: span
-      }
-    )
+    Item::Field(ModuleField::java_field(
+      span, visibility, binding, is_static.is_some(), is_final.is_some()))
   }
 
   fn make_java_method(span: Span, visibility: JVisibility, is_static: Option<()>,
@@ -256,16 +240,24 @@ grammar! bonsai {
   }
 
   binding
-    = .. spacetime java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_binding
+    = bonsai_binding
+    / java_binding
 
-  fn make_binding(span: Span, spacetime: Spacetime,
+  bonsai_binding = .. kind java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_bonsai_binding
+  java_binding = .. java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_binding
+
+  fn make_bonsai_binding(span: Span, kind: Kind,
     ty: JType, name: String, expr: Option<Option<Expr>>) -> Binding
   {
     let expr = match expr {
-      Some(Some(expr)) => expr,
-      None | Some(None) => Expr::new(DUMMY_SP, ExprKind::Bottom(ty.clone()))
+      None | Some(None) => Some(Expr::new(DUMMY_SP, ExprKind::Bottom(ty.clone()))),
+      Some(expr) => expr,
     };
-    Binding::new(span, name, spacetime, ty, expr)
+    Binding::new(span, name, kind, ty, expr)
+  }
+
+  fn make_java_binding(span: Span, ty: JType, name: String, expr: Option<Expr>) -> Binding {
+    Binding::new(span, name, Kind::Host, ty, expr)
   }
 
   fn make_when(condition: Condition, body: Stmt) -> StmtKind {
@@ -502,16 +494,21 @@ grammar! bonsai {
     StreamVar::present(span, var_path, args.unwrap_or(vec![]))
   }
 
+  kind
+    = spacetime > kind_spacetime
+    / MODULE > kind_product
+
   spacetime
     = WORLD_LINE TRANSIENT? > world_line
     / SINGLE_TIME > single_time
     / SINGLE_SPACE TRANSIENT? > single_space
-    / MODULE > module_spacetime
 
   fn world_line(is_transient: Option<()>) -> Spacetime { Spacetime::WorldLine(is_transient.is_some()) }
   fn single_time() -> Spacetime { Spacetime::SingleTime }
   fn single_space(is_transient: Option<()>) -> Spacetime { Spacetime::SingleSpace(is_transient.is_some()) }
-  fn module_spacetime() -> Spacetime { Spacetime::Product }
+
+  fn kind_product() -> Kind { Kind::Product }
+  fn kind_spacetime(spacetime: Spacetime) -> Kind { Kind::Spacetime(spacetime) }
 
   java_visibility
     = PUBLIC > java_public
