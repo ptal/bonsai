@@ -85,8 +85,8 @@ pub trait Visitor<H>
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, var: Variable, _process: Ident) {
-    self.visit_var(var);
+  fn visit_proc_call(&mut self, var: Option<Variable>, _process: Ident) {
+    walk_proc_call(self, var);
   }
 
   fn visit_expr_stmt(&mut self, expr: Expr) {
@@ -223,6 +223,12 @@ pub fn walk_binding<H, V: ?Sized>(visitor: &mut V, binding: Binding) where
   if let Some(expr) = binding.expr { visitor.visit_expr(expr) }
 }
 
+pub fn walk_proc_call<H, V: ?Sized>(visitor: &mut V, var: Option<Variable>) where
+  V: Visitor<H>
+{
+  if let Some(var) = var { visitor.visit_var(var) }
+}
+
 pub trait VisitorMut<H>
 {
   fn visit_crate(&mut self, bcrate: &mut Crate<H>) {
@@ -292,8 +298,8 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, var: &mut Variable, _process: Ident) {
-    self.visit_var(var)
+  fn visit_proc_call(&mut self, var: &mut Option<Variable>, _process: Ident) {
+    walk_proc_call_mut(self, var)
   }
 
   fn visit_expr_stmt(&mut self, expr: &mut Expr) {
@@ -429,5 +435,13 @@ pub fn walk_binding_mut<H, V: ?Sized>(visitor: &mut V, binding: &mut Binding) wh
 {
   if let &mut Some(ref mut expr) = &mut binding.expr {
     visitor.visit_expr(expr)
+  }
+}
+
+pub fn walk_proc_call_mut<H, V: ?Sized>(visitor: &mut V, var: &mut Option<Variable>) where
+  V: VisitorMut<H>
+{
+  if let &mut Some(ref mut var) = var {
+    visitor.visit_var(var)
   }
 }

@@ -25,6 +25,7 @@ pub fn undeclared<'a>(context: Context<'a>) -> Partial<Context<'a>> {
 struct Undeclared<'a> {
   context: Context<'a>,
   in_scope_vars: Vec<(Ident, usize)>,
+  in_scope_processes: Vec<Ident>,
   visiting_fields: bool,
 }
 
@@ -33,6 +34,7 @@ impl<'a> Undeclared<'a> {
     Undeclared {
       context: context,
       in_scope_vars: Vec::new(),
+      in_scope_processes: Vec::new(),
       visiting_fields: false,
     }
   }
@@ -49,6 +51,18 @@ impl<'a> Undeclared<'a> {
       Partial::Fake(self.context)
     } else {
       Partial::Value(self.context)
+    }
+  }
+
+  fn enter_scope_processes(&mut self, processes: &Vec<Process>) {
+    for process in processes {
+      self.in_scope_processes.push(process.name.clone());
+    }
+  }
+
+  fn exit_scope_processes(&mut self, num_processes: usize) {
+    for _ in 0..num_processes {
+      self.in_scope_processes.pop();
     }
   }
 
@@ -89,6 +103,12 @@ impl<'a> Undeclared<'a> {
     }
   }
 
+  fn undeclared_process(&mut self, process: Ident) {
+    if !self.in_scope_processes.contains(&process) {
+      self.err_undeclared_process(process);
+    }
+  }
+
   fn err_var_in_field(&mut self, var: &mut Variable) {
     self.session().struct_span_err_with_code(var.span,
       &format!("forbidden occurrence of variable `{}` when declaring a field.", var.path.clone()),
@@ -104,6 +124,14 @@ impl<'a> Undeclared<'a> {
     .span_label(var.span, &format!("undeclared variable"))
     .emit();
   }
+
+  fn err_undeclared_process(&mut self, process: Ident) {
+    self.session().struct_span_err_with_code(process.span,
+      &format!("cannot find process `{}` in the current module.", process),
+      "E0007")
+    .span_label(process.span, &format!("undeclared process"))
+    .emit();
+  }
 }
 
 impl<'a> VisitorMut<JClass> for Undeclared<'a>
@@ -115,9 +143,18 @@ impl<'a> VisitorMut<JClass> for Undeclared<'a>
       self.visit_field(field);
     }
     self.visiting_fields = false;
+    self.enter_scope_processes(&module.processes);
     walk_processes_mut(self, &mut module.processes);
+    self.exit_scope_processes(module.processes.len());
     for _ in &module.fields {
       self.exit_scope();
+    }
+  }
+
+  fn visit_proc_call(&mut self, var: &mut Option<Variable>, process: Ident) {
+    match var {
+      &mut Some(ref mut var) => self.visit_var(var),
+      &mut None => self.undeclared_process(process)
     }
   }
 

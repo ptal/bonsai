@@ -304,7 +304,7 @@ grammar! bonsai {
     StmtKind::ExprStmt(expr)
   }
 
-  fn make_proc_call(var: Variable, process: Ident) -> StmtKind {
+  fn make_proc_call(var: Option<Variable>, process: Ident) -> StmtKind {
     StmtKind::ProcCall(var, process)
   }
 
@@ -312,7 +312,7 @@ grammar! bonsai {
     StmtKind::Universe(Box::new(body))
   }
 
-  proc_call = variable DOT identifier LPAREN RPAREN
+  proc_call = (variable DOT)? identifier LPAREN RPAREN
 
   java_ty
     = .. identifier java_generic_list (LBRACKET RBRACKET -> ())? > make_java_ty

@@ -250,7 +250,7 @@ pub enum StmtKind {
   Trap(Ident, Box<Stmt>),
   Exit(Ident),
   Loop(Box<Stmt>),
-  ProcCall(Variable, Ident),
+  ProcCall(Option<Variable>, Ident),
   ExprStmt(Expr),
   Universe(Box<Stmt>),
   Nothing
