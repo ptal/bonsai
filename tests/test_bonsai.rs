@@ -57,11 +57,11 @@ fn test_data_directory()
   let mut test_path = PathBuf::new();
   test_path.push(data_path);
   test_path.push(Path::new("test"));
-  let lib_path = PathBuf::from("libstd/src");
-  if !lib_path.is_dir() {
-    panic!(format!("`{}` must be the directory of the standard bonsai library.", lib_path.display()));
+  let test_lib = PathBuf::from("data/test/lib");
+  if !test_lib.is_dir() {
+    panic!(format!("`{}` must be the directory of the standard bonsai library.", test_lib.display()));
   }
-  let mut test_engine = TestEngine::new(test_path, lib_path);
+  let mut test_engine = TestEngine::new(test_path, test_lib);
   test_engine.run();
 }
 
@@ -74,20 +74,20 @@ enum ExpectedResult {
 struct TestEngine
 {
   test_path: PathBuf,
-  lib_path: PathBuf,
+  test_lib: PathBuf,
   display: TestDisplay
 }
 
 impl TestEngine
 {
-  fn new(test_path: PathBuf, lib_path: PathBuf) -> TestEngine
+  fn new(test_path: PathBuf, test_lib: PathBuf) -> TestEngine
   {
     if !test_path.is_dir() {
       panic!(format!("`{}` is not a valid test directory.", test_path.display()));
     }
     TestEngine{
       test_path: test_path,
-      lib_path: lib_path,
+      test_lib: test_lib,
       display: TestDisplay::new()
     }
   }
@@ -129,7 +129,7 @@ impl TestEngine
     let (result, expected_diagnostics) = {
       let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
       let mut session = Session::testing_mode(filepath.clone(),
-        vec![self.lib_path.clone()], codemap.clone(), emitter);
+        vec![self.test_lib.clone()], codemap.clone(), emitter);
       let result = front_mid_run(&mut session).map(|c| c.clone_ast());
       (result, session.expected_diagnostics)
     };

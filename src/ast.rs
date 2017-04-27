@@ -236,18 +236,17 @@ pub enum StmtKind {
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
   Let(LetStmt),
-  When(Condition, Box<Stmt>),
-  Suspend(Condition, Box<Stmt>),
-  Tell(StreamVar, Expr),
+  When(EntailmentRel, Box<Stmt>),
+  Suspend(EntailmentRel, Box<Stmt>),
+  Tell(Variable, Expr),
   Pause,
   PauseUp,
   Stop,
   Trap(Ident, Box<Stmt>),
   Exit(Ident),
   Loop(Box<Stmt>),
-  ProcCall(Ident, Vec<Expr>),
-  FnCall(Expr),
-  ModuleCall(RunExpr),
+  ProcCall(Variable, Ident),
+  ExprStmt(Expr),
   Universe(Box<Stmt>),
   Nothing
 }
@@ -255,31 +254,7 @@ pub enum StmtKind {
 impl StmtKind {
   #[allow(dead_code)]
   pub fn example() -> Self {
-    StmtKind::Tell(StreamVar::example(), Expr::example())
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RunExpr {
-  pub module_path: VarPath,
-  pub process: Ident,
-  pub span: Span
-}
-
-impl RunExpr {
-  pub fn new(span: Span, module_path: VarPath, process: Ident) -> Self {
-    RunExpr {
-      module_path: module_path,
-      process: process,
-      span: span
-    }
-  }
-
-  pub fn to_expr(mut self) -> Expr {
-    let head_var = self.module_path.properties.remove(0);
-    let mut jcalls = self.module_path.to_java_calls();
-    jcalls.push(JavaCall::empty_method(DUMMY_SP, self.process));
-    Expr::new(self.span, ExprKind::JavaObjectCall(head_var, jcalls))
+    StmtKind::Tell(Variable::example(), Expr::example())
   }
 }
 
@@ -339,45 +314,16 @@ impl Binding
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Binding::new(DUMMY_SP, Ident::example("<name>"), Kind::example(),
+    Binding::new(DUMMY_SP, Ident::gen("<name>"), Kind::example(),
       JType::example(), Some(Expr::example()))
   }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Condition {
-  Entailment(EntailmentRel),
-  MetaEntailment(MetaEntailmentRel)
-}
-
-impl Condition {
-  pub fn unwrap(self) -> EntailmentRel {
-    match self {
-      Condition::Entailment(rel) => rel,
-      Condition::MetaEntailment(meta) => meta.left
-    }
-  }
-
-  pub fn unwrap_mut<'a>(&'a mut self) -> &'a mut EntailmentRel {
-    match self {
-      &mut Condition::Entailment(ref mut rel) => rel,
-      &mut Condition::MetaEntailment(ref mut meta) => &mut meta.left
-    }
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntailmentRel {
-  pub left: StreamVar,
+  pub left: Variable,
   pub right: Expr,
   pub strict: bool,
-  pub span: Span
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MetaEntailmentRel {
-  pub left: EntailmentRel,
-  pub right: bool,
   pub span: Span
 }
 
@@ -395,13 +341,12 @@ impl Ident {
     }
   }
 
-  pub fn unwrap(&self) -> String {
-    self.value.clone()
+  pub fn gen(value: &str) -> Self {
+    Ident::new(DUMMY_SP, String::from(value))
   }
 
-  #[allow(dead_code)]
-  pub fn example(value: &str) -> Self {
-    Ident::new(DUMMY_SP, String::from(value))
+  pub fn unwrap(&self) -> String {
+    self.value.clone()
   }
 }
 
@@ -433,40 +378,43 @@ impl Hash for Ident {
 /// A variable path can be `x`, `m.x`, `m.m2.y`,... where `m` and `m2` must be checked to be module.
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct VarPath {
-  pub properties: Vec<Ident>,
+  pub fragments: Vec<Ident>,
   pub span: Span
 }
 
 impl VarPath {
-  pub fn new(span: Span, properties: Vec<Ident>) -> Self {
+  pub fn new(span: Span, fragments: Vec<Ident>) -> Self {
     VarPath {
-      properties: properties,
+      fragments: fragments,
       span: span
     }
   }
-  pub fn to_java_calls(&self) -> Vec<JavaCall> {
-    self.properties.clone().into_iter()
-      .map(|p| JavaCall::field(DUMMY_SP, p))
-      .collect()
+
+  pub fn gen(value: &str) -> Self {
+    VarPath::new(DUMMY_SP, vec![Ident::gen(value)])
+  }
+
+  pub fn empty() -> Self {
+    VarPath::new(DUMMY_SP, vec![])
   }
 
   pub fn name(&self) -> Ident {
-    self.properties.last().unwrap().clone()
+    self.fragments.last().unwrap().clone()
   }
 
   pub fn target(&self) -> Ident {
-    self.properties.first().unwrap().clone()
+    self.fragments.first().unwrap().clone()
   }
 }
 
 impl Display for VarPath {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     let mut i = 0;
-    while i < self.properties.len() - 1 {
-      fmt.write_fmt(format_args!("{}.", self.properties[i]))?;
+    while i < self.fragments.len() - 1 {
+      fmt.write_fmt(format_args!("{}.", self.fragments[i]))?;
       i += 1;
     }
-    fmt.write_str(self.properties[i].as_str())
+    fmt.write_str(self.fragments[i].as_str())
   }
 }
 
@@ -477,33 +425,31 @@ pub enum Permission {
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct StreamVar {
+pub struct Variable {
   pub path: VarPath,
   pub uid: usize,
   pub past: usize,
-  pub args: Vec<StreamVar>,
   pub perm: Permission,
   pub span: Span
 }
 
-impl StreamVar {
-  pub fn new(span: Span, path: VarPath, args: Vec<StreamVar>, past: usize) -> Self {
-    StreamVar {
+impl Variable {
+  pub fn new(span: Span, path: VarPath, past: usize) -> Self {
+    Variable {
       path: path,
       uid: 0,
       past: past,
-      args: args,
       perm: Permission::ReadWrite,
       span: span
     }
   }
 
   pub fn simple(span: Span, name: Ident) -> Self {
-    Self::present(span, VarPath::new(span, vec![name]), vec![])
+    Self::present(span, VarPath::new(span, vec![name]))
   }
 
-  pub fn present(span: Span, path: VarPath, args: Vec<StreamVar>) -> Self {
-    Self::new(span, path, args, 0)
+  pub fn present(span: Span, path: VarPath) -> Self {
+    Self::new(span, path, 0)
   }
 
   pub fn name(&self) -> Ident {
@@ -512,7 +458,7 @@ impl StreamVar {
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Self::simple(DUMMY_SP, Ident::example("x"))
+    Self::simple(DUMMY_SP, Ident::gen("x"))
   }
 }
 
@@ -587,20 +533,66 @@ impl Expr {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
-  JavaNew(JType, Vec<Expr>),
-  JavaObjectCall(Ident, Vec<JavaCall>),
-  JavaThisCall(JavaCall),
+  NewInstance(JType, Vec<Expr>),
+  CallChain(MethodCallChain),
   Boolean(bool),
   Number(u64),
   StringLiteral(String),
-  Variable(StreamVar),
+  Var(Variable),
   Bottom(JType)
 }
 
 impl ExprKind {
   #[allow(dead_code)]
   pub fn example() -> Self {
-    ExprKind::Variable(StreamVar::simple(DUMMY_SP, Ident::example("<expr>")))
+    ExprKind::Var(Variable::simple(DUMMY_SP, Ident::gen("<expr>")))
+  }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MethodCallChain {
+  pub calls: Vec<MethodCall>,
+  pub span: Span
+}
+
+impl MethodCallChain {
+  pub fn new(span: Span, calls: Vec<MethodCall>) -> Self {
+    MethodCallChain {
+      calls: calls,
+      span: span
+    }
+  }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MethodCall {
+  pub target: VarPath,
+  pub method: Ident,
+  pub args: Vec<Expr>,
+  pub span: Span
+}
+
+impl MethodCall {
+  fn new(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> Self {
+    MethodCall {
+      target: target,
+      method: method,
+      args: args,
+      span: span,
+    }
+  }
+
+  pub fn call_on_var(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> Self {
+    MethodCall::new(span, target, method, args)
+  }
+
+  pub fn call_on_this(span: Span, method: Ident, args: Vec<Expr>) -> Self {
+    MethodCall::new(span, VarPath::gen("this"), method, args)
+  }
+
+  /// The target of the method is part of the `MethodCallChain` structure.
+  pub fn call_fragment(span: Span, method: Ident, args: Vec<Expr>) -> Self {
+    MethodCall::new(span, VarPath::empty(), method, args)
   }
 }
 
@@ -633,9 +625,9 @@ impl Display for FQN {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JImport {
-  fqn: FQN,
-  import_all: bool,
-  span: Span
+  pub fqn: FQN,
+  pub import_all: bool,
+  pub span: Span
 }
 
 impl JImport {
@@ -731,7 +723,7 @@ impl JType {
   }
 
   pub fn example() -> Self {
-    JType::simple(DUMMY_SP, Ident::example("<Java type>"))
+    JType::simple(DUMMY_SP, Ident::gen("<Java type>"))
   }
 }
 
@@ -779,34 +771,6 @@ impl Display for JVisibility {
       &Public => formatter.write_str("public"),
       &Protected => formatter.write_str("protected"),
       &Private => formatter.write_str("private"),
-    }
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct JavaCall {
-  pub property: Ident, // can be a field or a method.
-  pub is_field: bool,
-  pub args: Vec<Expr>,
-  pub span: Span
-}
-
-impl JavaCall {
-  pub fn empty_method(span: Span, name: Ident) -> Self {
-    JavaCall {
-      property: name,
-      is_field: false,
-      args: vec![],
-      span: span
-    }
-  }
-
-  pub fn field(span: Span, name: Ident) -> Self {
-    JavaCall {
-      property: name,
-      is_field: true,
-      args: vec![],
-      span: span
     }
   }
 }

@@ -15,7 +15,7 @@
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 grammar! bonsai {
-  // #![show_api]
+  // #![debug_api]
   use std::str::FromStr;
   use ast::*;
   use syntex_pos::Span;
@@ -95,7 +95,7 @@ grammar! bonsai {
     / java_method
     / java_constructor
 
-  module_field = .. java_visibility? (REF->())? bonsai_binding > make_module_field
+  module_field = .. java_visibility? (REF->())? bonsai_binding SEMI_COLON > make_module_field
 
   expr_or_bot = expr > some_expr
               / BOT > make_bottom_expr
@@ -123,7 +123,7 @@ grammar! bonsai {
     = .. java_visibility identifier java_param_list java_block kw_tail > make_java_constructor
 
   java_field
-    = .. (FINAL->())? java_visibility? (STATIC->())? java_binding > make_java_field
+    = .. (FINAL->())? java_visibility? (STATIC->())? java_binding SEMI_COLON > make_java_field
 
   fn make_java_field(span: Span, is_final: Option<()>, visibility: Option<JVisibility>,
     is_static: Option<()>, binding: Binding) -> Item
@@ -208,9 +208,9 @@ grammar! bonsai {
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / binding > make_let_stmt
-    / WHEN condition block > make_when
-    / SUSPEND WHEN condition block > make_suspend
+    / binding SEMI_COLON > make_let_stmt
+    / WHEN entailment block > make_when
+    / SUSPEND WHEN entailment block > make_suspend
     / PAUSE UP SEMI_COLON > make_pause_up
     / STOP SEMI_COLON > make_stop
     / PAUSE SEMI_COLON > make_pause
@@ -218,11 +218,10 @@ grammar! bonsai {
     / TRAP identifier block > make_trap
     / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
-    / TILDE java_call_expr SEMI_COLON > make_java_call_stmt
-    / RUN run_expr SEMI_COLON > make_run
     / UNIVERSE block > make_universe
-    / var LEFT_ARROW expr SEMI_COLON > make_tell
-    / identifier list_args SEMI_COLON > make_proc_call
+    / RUN proc_call SEMI_COLON > make_proc_call
+    / expr SEMI_COLON > make_expr_stmt
+    / variable LEFT_ARROW expr SEMI_COLON > make_tell
 
   fn make_stmt(span: Span, stmt_kind: StmtKind) -> Stmt {
     Stmt::new(span, stmt_kind)
@@ -244,8 +243,8 @@ grammar! bonsai {
     = bonsai_binding
     / java_binding
 
-  bonsai_binding = .. kind java_ty identifier (EQ expr_or_bot)? SEMI_COLON > make_bonsai_binding
-  java_binding = .. java_ty identifier (EQ java_expr)? SEMI_COLON > make_java_binding
+  bonsai_binding = .. kind java_ty identifier (EQ expr_or_bot)? > make_bonsai_binding
+  java_binding = .. java_ty identifier (EQ expr)? > make_java_binding
 
   fn make_bonsai_binding(span: Span, kind: Kind,
     ty: JType, name: Ident, expr: Option<Option<Expr>>) -> Binding
@@ -261,12 +260,12 @@ grammar! bonsai {
     Binding::new(span, name, Kind::Host, ty, expr)
   }
 
-  fn make_when(condition: Condition, body: Stmt) -> StmtKind {
-    StmtKind::When(condition, Box::new(body))
+  fn make_when(entailment: EntailmentRel, body: Stmt) -> StmtKind {
+    StmtKind::When(entailment, Box::new(body))
   }
 
-  fn make_suspend(condition: Condition, body: Stmt) -> StmtKind {
-    StmtKind::Suspend(condition, Box::new(body))
+  fn make_suspend(entailment: EntailmentRel, body: Stmt) -> StmtKind {
+    StmtKind::Suspend(entailment, Box::new(body))
   }
 
   fn make_pause() -> StmtKind {
@@ -297,34 +296,23 @@ grammar! bonsai {
     StmtKind::Loop(Box::new(body))
   }
 
-  fn make_java_call_stmt(java_call: Expr) -> StmtKind {
-    StmtKind::FnCall(java_call)
-  }
-
-  fn make_tell(var: StreamVar, expr: Expr) -> StmtKind {
+  fn make_tell(var: Variable, expr: Expr) -> StmtKind {
     StmtKind::Tell(var, expr)
   }
 
-  fn make_proc_call(process: Ident, args: Vec<Expr>) -> StmtKind {
-    StmtKind::ProcCall(process, args)
+  fn make_expr_stmt(expr: Expr) -> StmtKind {
+    StmtKind::ExprStmt(expr)
   }
 
-  fn make_run(run_expr: RunExpr) -> StmtKind {
-    StmtKind::ModuleCall(run_expr)
+  fn make_proc_call(var: Variable, process: Ident) -> StmtKind {
+    StmtKind::ProcCall(var, process)
   }
 
   fn make_universe(body: Stmt) -> StmtKind {
     StmtKind::Universe(Box::new(body))
   }
 
-  run_expr
-    = .. var_path DOT identifier parens > make_run_expr
-
-  parens = LPAREN RPAREN
-
-  fn make_run_expr(span: Span, module_path: VarPath, process: Ident) -> RunExpr {
-    RunExpr::new(span, module_path, process)
-  }
+  proc_call = variable DOT identifier LPAREN RPAREN
 
   java_ty
     = .. identifier java_generic_list (LBRACKET RBRACKET -> ())? > make_java_ty
@@ -350,71 +338,6 @@ grammar! bonsai {
     vec![]
   }
 
-  list_args = LPAREN list_expr RPAREN
-
-  expr
-    = java_expr
-    / .. stream_var > make_stream_var_expr
-
-  fn make_stream_var_expr(span: Span, var: StreamVar) -> Expr {
-    Expr::new(span, ExprKind::Variable(var))
-  }
-
-  java_expr = .. java_expr_kind > make_java_expr
-  java_expr_kind
-    = java_new_expr
-    / java_call_expr_kind
-    / boolean > make_boolean_expr
-    / number > make_number_expr
-    / string_literal > make_string_literal
-
-  fn make_java_expr(span: Span, node: ExprKind) -> Expr {
-    Expr::new(span, node)
-  }
-
-  java_new_expr = NEW java_ty list_args > java_new
-
-  java_call_expr = .. java_call_expr_kind > make_java_expr
-  java_call_expr_kind
-    = identifier java_property_call+ > java_object_calls
-    / java_call > java_this_call
-
-  fn java_new(class_ty: JType, args: Vec<Expr>) -> ExprKind {
-    ExprKind::JavaNew(class_ty, args)
-  }
-
-  fn java_object_calls(object: Ident, calls: Vec<JavaCall>) -> ExprKind {
-    ExprKind::JavaObjectCall(object, calls)
-  }
-
-  fn java_this_call(java_call: JavaCall) -> ExprKind {
-    ExprKind::JavaThisCall(java_call)
-  }
-
-  fn make_boolean_expr(b: bool) -> ExprKind { ExprKind::Boolean(b) }
-  fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
-  fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
-
-  java_call = .. identifier list_args > make_java_method_call
-  java_property_call = .. DOT identifier (list_args)? > make_java_property
-
-  fn make_java_method_call(span: Span, name: Ident, args: Vec<Expr>) -> JavaCall {
-    make_java_call(span, name, false, args)
-  }
-
-  fn make_java_property(span: Span, name: Ident, args: Option<Vec<Expr>>) -> JavaCall {
-    make_java_call(span, name, args.is_none(), args.unwrap_or(vec![]))
-  }
-
-  fn make_java_call(span: Span, property: Ident, is_field: bool, args: Vec<Expr>) -> JavaCall {
-    JavaCall {
-      property: property,
-      is_field: is_field,
-      args: args,
-      span: span
-    }
-  }
-
   list_expr
     = expr (COMMA expr)* > make_expr_list
     / "" > empty_expr_list
@@ -427,72 +350,82 @@ grammar! bonsai {
     vec![]
   }
 
-  condition
-    = meta_entailment > make_meta_condition
-    / entailment > make_condition
-    / strict_entailment > make_condition
+  expr = .. expr_kind > make_expr
+  expr_kind
+    = new_instance_expr > make_new_instance
+    / method_call_chain > make_call_chain
+    / variable > make_var_expr
+    / boolean > make_boolean_expr
+    / number > make_number_expr
+    / string_literal > make_string_literal
 
-  meta_entailment = .. LPAREN entailment RPAREN ENTAILMENT boolean > make_meta_entailment_rel
-  entailment = .. stream_var ENTAILMENT expr > make_entailment_rel
-  strict_entailment = .. stream_var GT expr > make_strict_entailment_rel
-
-  fn make_meta_condition(entailment: MetaEntailmentRel) -> Condition {
-    Condition::MetaEntailment(entailment)
-  }
-  fn make_condition(entailment: EntailmentRel) -> Condition {
-    Condition::Entailment(entailment)
+  fn make_expr(span: Span, node: ExprKind) -> Expr {
+    Expr::new(span, node)
   }
 
-  fn make_entailment_rel(span: Span, left: StreamVar, right: Expr) -> EntailmentRel {
-    EntailmentRel {
-      left: left,
-      right: right,
-      strict: false,
-      span: span
-    }
+  fn make_new_instance(class_ty: JType, args: Vec<Expr>) -> ExprKind {
+    ExprKind::NewInstance(class_ty, args)
   }
+  fn make_call_chain(calls: MethodCallChain) -> ExprKind { ExprKind::CallChain(calls) }
+  fn make_boolean_expr(b: bool) -> ExprKind { ExprKind::Boolean(b) }
+  fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
+  fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
 
-  fn make_strict_entailment_rel(span: Span, left: StreamVar, right: Expr) -> EntailmentRel {
-    EntailmentRel {
-      left: left,
-      right: right,
-      strict: true,
-      span: span
-    }
-  }
+  new_instance_expr = NEW java_ty LPAREN list_expr RPAREN
 
-  fn make_meta_entailment_rel(span: Span,
-   left: EntailmentRel, right: bool) -> MetaEntailmentRel
-  {
-    MetaEntailmentRel {
-      left: left,
-      right: right,
-      span: span
-    }
-  }
+  fn make_var_expr(variable: Variable) -> ExprKind { ExprKind::Var(variable) }
 
-  var_path = .. identifier (DOT identifier !parens)* > make_var_path
+  var_path = .. identifier (DOT identifier !LPAREN)* > make_var_path
 
   fn make_var_path(span: Span, first: Ident, rest: Vec<Ident>) -> VarPath {
     VarPath::new(span, extend_front(first, rest))
   }
 
-  stream_var = .. PRE* var_path (LBRACKET list_stream_var RBRACKET)? > make_stream_var
-  list_stream_var = stream_var (COMMA stream_var)* > concat_list_stream_var
+  variable = .. PRE* var_path !LPAREN !DOT > make_variable
 
-  fn make_stream_var(span: Span, past: Vec<()>, var_path: VarPath, args: Option<Vec<StreamVar>>) -> StreamVar {
-    StreamVar::new(span, var_path, args.unwrap_or(vec![]), past.len())
+  fn make_variable(span: Span, past: Vec<()>, path: VarPath) -> Variable {
+    Variable::new(span, path, past.len())
   }
 
-  fn concat_list_stream_var(first: StreamVar, rest: Vec<StreamVar>) -> Vec<StreamVar> {
-    extend_front(first, rest)
+  method_call_chain = .. method_call (DOT method_chain_fragment)* > make_method_call_chain
+
+  method_call
+    = .. var_path DOT identifier LPAREN list_expr RPAREN > make_method_call
+    / fn_call > make_this_call
+
+  method_chain_fragment = fn_call > make_chain_fragment
+
+  fn_call = .. identifier LPAREN list_expr RPAREN
+
+  fn make_method_call(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> MethodCall {
+    MethodCall::call_on_var(span, target, method, args)
   }
 
-  var = .. var_path (LBRACKET list_var RBRACKET)? > make_var
-  list_var = var (COMMA var)* > concat_list_stream_var
+  fn make_this_call(span: Span, method: Ident, args: Vec<Expr>) -> MethodCall {
+    MethodCall::call_on_this(span, method, args)
+  }
 
-  fn make_var(span: Span, var_path: VarPath, args: Option<Vec<StreamVar>>) -> StreamVar {
-    StreamVar::present(span, var_path, args.unwrap_or(vec![]))
+  fn make_chain_fragment(span: Span, method: Ident, args: Vec<Expr>) -> MethodCall {
+    MethodCall::call_fragment(span, method, args)
+  }
+
+  fn make_method_call_chain(span: Span, target: MethodCall, chain: Vec<MethodCall>) -> MethodCallChain {
+    MethodCallChain::new(span, extend_front(target, chain))
+  }
+
+  entailment = .. variable is_strict expr > make_entailment_rel
+
+  is_strict
+    = ENTAILMENT > make_false
+    / GT > make_true
+
+  fn make_entailment_rel(span: Span, left: Variable, strict: bool, right: Expr) -> EntailmentRel {
+    EntailmentRel {
+      left: left,
+      right: right,
+      strict: strict,
+      span: span
+    }
   }
 
   kind
@@ -544,7 +477,7 @@ grammar! bonsai {
   fn make_false() -> bool { false }
 
   keyword
-    = "let" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
+    = "let" / "proc" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "run" / "true" / "false" / "nothing" / "universe" / "suspend" / java_kw
@@ -583,7 +516,7 @@ grammar! bonsai {
   java_kw
     = "new" / "private" / "public" / "class"
     / "implements" / "static"
-    / "protected" / "final"
+    / "protected" / "final" / "import" / "package"
   NEW = "new" kw_tail
   PRIVATE = "private" kw_tail
   PUBLIC = "public" kw_tail
@@ -596,7 +529,6 @@ grammar! bonsai {
   IMPORT = "import" kw_tail
 
   UNDERSCORE = "_"
-  TILDE = "~"
   DOTDOT = ".." spacing
   SEMI_COLON = ";" spacing
   COLON = ":" spacing

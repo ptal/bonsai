@@ -228,17 +228,17 @@ fn generate_closure(fmt: &mut CodeFormatter, context: &Context, return_expr: boo
 }
 
 /// Collect all the variables appearing in `expr` and insert them in `variables`.
-fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr: Expr) {
+fn collect_variable(context: &Context, variables: &mut HashSet<Variable>, expr: Expr) {
   use ast::ExprKind::*;
   match expr.node {
-    JavaNew(_, args) => {
+    NewInstance(_, args) => {
       for arg in args {
         collect_variable(context, variables, arg);
       }
     }
     JavaObjectCall(object, methods) => {
       if context.is_bonsai_var(&object) {
-        variables.insert(StreamVar::simple(expr.span, object));
+        variables.insert(Variable::simple(expr.span, object));
       }
       for method in methods {
         for arg in method.args {
@@ -259,7 +259,7 @@ fn collect_variable(context: &Context, variables: &mut HashSet<StreamVar>, expr:
 fn generate_expr(fmt: &mut CodeFormatter, expr: Expr) {
   use ast::ExprKind::*;
   match expr.node {
-    JavaNew(ty, args) => generate_java_new(fmt, ty, args),
+    NewInstance(ty, args) => generate_java_new(fmt, ty, args),
     JavaObjectCall(object, methods) => generate_java_object_call(fmt, object, methods),
     JavaThisCall(method) => generate_java_this_call(fmt, method),
     Boolean(b) => generate_boolean(fmt, b),
@@ -321,7 +321,7 @@ fn generate_literal(fmt: &mut CodeFormatter, lit: String) {
   fmt.push(&format!("\"{}\"", lit));
 }
 
-fn generate_stream_var(fmt: &mut CodeFormatter, var: StreamVar) {
+fn generate_stream_var(fmt: &mut CodeFormatter, var: Variable) {
   fmt.push(&var.name());
 }
 
@@ -511,7 +511,7 @@ fn generate_module_call(fmt: &mut CodeFormatter, context: &Context, run_expr: Ru
   fmt.push(")");
 }
 
-fn generate_tell(fmt: &mut CodeFormatter, context: &Context, var: StreamVar, expr: Expr) {
+fn generate_tell(fmt: &mut CodeFormatter, context: &Context, var: Variable, expr: Expr) {
   fmt.push("new Tell(\"");
   generate_stream_var(fmt, var);
   fmt.push("\", ");

@@ -42,36 +42,6 @@ impl<'a> StreamBound<'a> {
   fn bound_of<'b>(&'b mut self, var: String) -> &'b mut usize {
     self.context.stream_bound.entry(var).or_insert(0)
   }
-
-  fn visit_stream_var(&mut self, var: StreamVar) {
-    let bound = self.bound_of(var.name().unwrap());
-    *bound = max(*bound, var.past);
-  }
-
-  fn visit_expr(&mut self, expr: Expr) {
-    use ast::ExprKind::*;
-    match expr.node {
-      JavaNew(_, args) => {
-        for arg in args {
-          self.visit_expr(arg);
-        }
-      }
-      JavaObjectCall(_, methods) => {
-        for method in methods {
-          for arg in method.args {
-            self.visit_expr(arg);
-          }
-        }
-      }
-      JavaThisCall(method) => {
-        for arg in method.args {
-          self.visit_expr(arg);
-        }
-      }
-      Variable(var) => { self.visit_stream_var(var); }
-      _ => ()
-    }
-  }
 }
 
 impl<'a> Visitor<JClass> for StreamBound<'a>
@@ -80,15 +50,8 @@ impl<'a> Visitor<JClass> for StreamBound<'a>
     self.bound_of(binding.name.unwrap());
   }
 
-  fn visit_tell(&mut self, var: StreamVar, expr: Expr) {
-    self.visit_stream_var(var);
-    self.visit_expr(expr);
-  }
-
-  fn visit_when(&mut self, cond: Condition, child: Stmt) {
-    let rel = cond.unwrap();
-    self.visit_stream_var(rel.left);
-    self.visit_expr(rel.right);
-    self.visit_stmt(child)
+  fn visit_var(&mut self, var: Variable) {
+    let bound = self.bound_of(var.name().unwrap());
+    *bound = max(*bound, var.past);
   }
 }

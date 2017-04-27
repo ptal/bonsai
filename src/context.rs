@@ -100,7 +100,7 @@ impl<'a> Context<'a> {
     .clone()
   }
 
-  pub fn type_of_var(&self, var: &StreamVar) -> JType {
+  pub fn type_of_var(&self, var: &Variable) -> JType {
     self.binding_of(&var.name()).ty.clone()
   }
 

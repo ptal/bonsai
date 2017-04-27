@@ -56,17 +56,17 @@ pub trait Visitor<H>
     self.visit_stmt(*(let_stmt.body))
   }
 
-  fn visit_when(&mut self, cond: Condition, child: Stmt) {
-    self.visit_entailment(cond.unwrap());
+  fn visit_when(&mut self, entailment: EntailmentRel, child: Stmt) {
+    self.visit_entailment(entailment);
     self.visit_stmt(child)
   }
 
-  fn visit_suspend(&mut self, cond: Condition, child: Stmt) {
-    self.visit_entailment(cond.unwrap());
+  fn visit_suspend(&mut self, entailment: EntailmentRel, child: Stmt) {
+    self.visit_entailment(entailment);
     self.visit_stmt(child)
   }
 
-  fn visit_tell(&mut self, var: StreamVar, expr: Expr) {
+  fn visit_tell(&mut self, var: Variable, expr: Expr) {
     self.visit_var(var);
     self.visit_expr(expr);
   }
@@ -85,15 +85,14 @@ pub trait Visitor<H>
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, _name: Ident, args: Vec<Expr>) {
-    walk_exprs(self, args)
+  fn visit_proc_call(&mut self, var: Variable, _process: Ident) {
+    self.visit_var(var);
   }
 
-  fn visit_fn_call(&mut self, expr: Expr) {
-    self.visit_expr(expr)
+  fn visit_expr_stmt(&mut self, expr: Expr) {
+    self.visit_expr(expr);
   }
 
-  fn visit_module_call(&mut self, _expr: RunExpr) {}
   fn visit_nothing(&mut self) {}
 
   fn visit_universe(&mut self, child: Stmt) {
@@ -101,7 +100,7 @@ pub trait Visitor<H>
   }
 
   fn visit_binding(&mut self, binding: Binding) {
-    if let Some(expr) = binding.expr { self.visit_expr(expr) }
+    walk_binding(self, binding)
   }
 
   fn visit_entailment(&mut self, rel: EntailmentRel) {
@@ -113,26 +112,22 @@ pub trait Visitor<H>
     walk_expr(self, expr)
   }
 
-  fn visit_jnew(&mut self, _ty: JType, args: Vec<Expr>) {
+  fn visit_new_instance(&mut self, _ty: JType, args: Vec<Expr>) {
     walk_exprs(self, args)
   }
 
-  fn visit_object_call(&mut self, _object: Ident, calls: Vec<JavaCall>) {
-    walk_jcalls(self, calls)
+  fn visit_method_call_chain(&mut self, chain: MethodCallChain) {
+    walk_call_chain(self, chain.calls)
   }
 
-  fn visit_this_call(&mut self, call: JavaCall) {
-    self.visit_jcall(call);
-  }
-
-  fn visit_jcall(&mut self, call: JavaCall) {
-    walk_exprs(self, call.args);
+  fn visit_method_call(&mut self, call: MethodCall) {
+    walk_exprs(self, call.args)
   }
 
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
-  fn visit_var(&mut self, _var: StreamVar) {}
+  fn visit_var(&mut self, _var: Variable) {}
   fn visit_bot(&mut self, _ty: JType) {}
 }
 
@@ -177,9 +172,8 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     Trap(name, body) => visitor.visit_trap(name, *body),
     Exit(name) => visitor.visit_exit(name),
     Loop(body) => visitor.visit_loop(*body),
-    ProcCall(name, args) => visitor.visit_proc_call(name, args),
-    FnCall(expr) => visitor.visit_fn_call(expr),
-    ModuleCall(expr) => visitor.visit_module_call(expr),
+    ExprStmt(expr) => visitor.visit_expr_stmt(expr),
+    ProcCall(var, process) => visitor.visit_proc_call(var, process),
     Universe(body) => visitor.visit_universe(*body),
     Nothing => visitor.visit_nothing()
   }
@@ -197,13 +191,12 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
   V: Visitor<H>
 {
   match expr.node {
-    JavaNew(ty, args) => visitor.visit_jnew(ty, args),
-    JavaObjectCall(object, calls) => visitor.visit_object_call(object, calls),
-    JavaThisCall(call) => visitor.visit_this_call(call),
+    NewInstance(ty, args) => visitor.visit_new_instance(ty, args),
+    CallChain(chain) => visitor.visit_method_call_chain(chain),
     Boolean(value) => visitor.visit_boolean(value),
     Number(value) => visitor.visit_number(value),
     StringLiteral(value) => visitor.visit_string_lit(value),
-    Variable(var) => visitor.visit_var(var),
+    Var(var) => visitor.visit_var(var),
     Bottom(ty) => visitor.visit_bot(ty)
   }
 }
@@ -216,12 +209,18 @@ pub fn walk_exprs<H, V: ?Sized>(visitor: &mut V, exprs: Vec<Expr>) where
   }
 }
 
-pub fn walk_jcalls<H, V: ?Sized>(visitor: &mut V, jcalls: Vec<JavaCall>) where
+pub fn walk_call_chain<H, V: ?Sized>(visitor: &mut V, chain: Vec<MethodCall>) where
   V: Visitor<H>
 {
-  for jcall in jcalls {
-    visitor.visit_jcall(jcall);
+  for fragment in chain {
+    visitor.visit_method_call(fragment);
   }
+}
+
+pub fn walk_binding<H, V: ?Sized>(visitor: &mut V, binding: Binding) where
+  V: Visitor<H>
+{
+  if let Some(expr) = binding.expr { visitor.visit_expr(expr) }
 }
 
 pub trait VisitorMut<H>
@@ -264,17 +263,17 @@ pub trait VisitorMut<H>
     self.visit_stmt(&mut *(let_stmt.body))
   }
 
-  fn visit_when(&mut self, cond: &mut Condition, child: &mut Stmt) {
-    self.visit_entailment(cond.unwrap_mut());
+  fn visit_when(&mut self, entailment: &mut EntailmentRel, child: &mut Stmt) {
+    self.visit_entailment(entailment);
     self.visit_stmt(child)
   }
 
-  fn visit_suspend(&mut self, cond: &mut Condition, child: &mut Stmt) {
-    self.visit_entailment(cond.unwrap_mut());
+  fn visit_suspend(&mut self, entailment: &mut EntailmentRel, child: &mut Stmt) {
+    self.visit_entailment(entailment);
     self.visit_stmt(child)
   }
 
-  fn visit_tell(&mut self, var: &mut StreamVar, expr: &mut Expr) {
+  fn visit_tell(&mut self, var: &mut Variable, expr: &mut Expr) {
     self.visit_var(var);
     self.visit_expr(expr);
   }
@@ -293,15 +292,14 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, _name: Ident, args: &mut Vec<Expr>) {
-    walk_exprs_mut(self, args)
+  fn visit_proc_call(&mut self, var: &mut Variable, _process: Ident) {
+    self.visit_var(var)
   }
 
-  fn visit_fn_call(&mut self, expr: &mut Expr) {
+  fn visit_expr_stmt(&mut self, expr: &mut Expr) {
     self.visit_expr(expr)
   }
 
-  fn visit_module_call(&mut self, _expr: &mut RunExpr) {}
   fn visit_nothing(&mut self) {}
 
   fn visit_universe(&mut self, child: &mut Stmt) {
@@ -309,29 +307,23 @@ pub trait VisitorMut<H>
   }
 
   fn visit_binding(&mut self, binding: &mut Binding) {
-    if let &mut Some(ref mut expr) = &mut binding.expr {
-      self.visit_expr(expr)
-    }
+    walk_binding_mut(self, binding);
   }
 
   fn visit_expr(&mut self, expr: &mut Expr) {
     walk_expr_mut(self, expr)
   }
 
-  fn visit_jnew(&mut self, _ty: JType, args: &mut Vec<Expr>) {
+  fn visit_new_instance(&mut self, _ty: JType, args: &mut Vec<Expr>) {
     walk_exprs_mut(self, args)
   }
 
-  fn visit_object_call(&mut self, _object: Ident, calls: &mut Vec<JavaCall>) {
-    walk_jcalls_mut(self, calls)
+  fn visit_method_call_chain(&mut self, chain: &mut MethodCallChain) {
+    walk_call_chain_mut(self, &mut chain.calls)
   }
 
-  fn visit_this_call(&mut self, call: &mut JavaCall) {
-    self.visit_jcall(call);
-  }
-
-  fn visit_jcall(&mut self, call: &mut JavaCall) {
-    walk_exprs_mut(self, &mut call.args);
+  fn visit_method_call(&mut self, call: &mut MethodCall) {
+    walk_exprs_mut(self, &mut call.args)
   }
 
   fn visit_entailment(&mut self, rel: &mut EntailmentRel) {
@@ -339,8 +331,7 @@ pub trait VisitorMut<H>
     self.visit_expr(&mut rel.right);
   }
 
-  fn visit_var(&mut self, _var: &mut StreamVar) {}
-
+  fn visit_var(&mut self, _var: &mut Variable) {}
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
@@ -385,12 +376,11 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut Pause => visitor.visit_pause(),
     &mut PauseUp => visitor.visit_pause_up(),
     &mut Stop => visitor.visit_stop(),
-    &mut Trap(ref mut name, ref mut body) => visitor.visit_trap(name.clone(), &mut **body),
-    &mut Exit(ref mut name) => visitor.visit_exit(name.clone()),
+    &mut Trap(ref name, ref mut body) => visitor.visit_trap(name.clone(), &mut **body),
+    &mut Exit(ref name) => visitor.visit_exit(name.clone()),
     &mut Loop(ref mut body) => visitor.visit_loop(&mut **body),
-    &mut ProcCall(ref mut name, ref mut args) => visitor.visit_proc_call(name.clone(), args),
-    &mut FnCall(ref mut expr) => visitor.visit_fn_call(expr),
-    &mut ModuleCall(ref mut expr) => visitor.visit_module_call(expr),
+    &mut ProcCall(ref mut var, ref process) => visitor.visit_proc_call(var, process.clone()),
+    &mut ExprStmt(ref mut expr) => visitor.visit_expr_stmt(expr),
     &mut Universe(ref mut body) => visitor.visit_universe(&mut **body),
     &mut Nothing => visitor.visit_nothing()
   }
@@ -408,13 +398,12 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
   V: VisitorMut<H>
 {
   match &mut expr.node {
-    &mut JavaNew(ref ty, ref mut args) => visitor.visit_jnew(ty.clone(), args),
-    &mut JavaObjectCall(ref object, ref mut calls) => visitor.visit_object_call(object.clone(), calls),
-    &mut JavaThisCall(ref mut call) => visitor.visit_this_call(call),
+    &mut NewInstance(ref ty, ref mut args) => visitor.visit_new_instance(ty.clone(), args),
+    &mut CallChain(ref mut chain) => visitor.visit_method_call_chain(chain),
     &mut Boolean(value) => visitor.visit_boolean(value),
     &mut Number(value) => visitor.visit_number(value),
     &mut StringLiteral(ref value) => visitor.visit_string_lit(value.clone()),
-    &mut Variable(ref mut var) => visitor.visit_var(var),
+    &mut Var(ref mut var) => visitor.visit_var(var),
     &mut Bottom(ref ty) => visitor.visit_bot(ty.clone())
   }
 }
@@ -427,11 +416,18 @@ pub fn walk_exprs_mut<H, V: ?Sized>(visitor: &mut V, exprs: &mut Vec<Expr>) wher
   }
 }
 
-pub fn walk_jcalls_mut<H, V: ?Sized>(visitor: &mut V, jcalls: &mut Vec<JavaCall>) where
+pub fn walk_call_chain_mut<H, V: ?Sized>(visitor: &mut V, chain: &mut Vec<MethodCall>) where
   V: VisitorMut<H>
 {
-  for jcall in jcalls {
-    visitor.visit_jcall(jcall);
+  for fragment in chain {
+    visitor.visit_method_call(fragment);
   }
 }
 
+pub fn walk_binding_mut<H, V: ?Sized>(visitor: &mut V, binding: &mut Binding) where
+  V: VisitorMut<H>
+{
+  if let &mut Some(ref mut expr) = &mut binding.expr {
+    visitor.visit_expr(expr)
+  }
+}

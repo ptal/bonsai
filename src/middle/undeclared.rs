@@ -74,7 +74,7 @@ impl<'a> Undeclared<'a> {
       .map(|&(_, uid)| uid)
   }
 
-  fn undeclared_var(&mut self, var: &mut StreamVar) {
+  fn undeclared_var(&mut self, var: &mut Variable) {
     if self.visiting_fields {
       self.err_var_in_field(var);
     }
@@ -84,7 +84,7 @@ impl<'a> Undeclared<'a> {
     }
   }
 
-  fn undeclared_target(&mut self, var: &mut StreamVar) {
+  fn undeclared_target(&mut self, var: &mut Variable) {
     match self.lookup(var.path.target()) {
       Some(uid) => { var.uid = uid; }
       None => {
@@ -93,7 +93,7 @@ impl<'a> Undeclared<'a> {
     }
   }
 
-  fn err_var_in_field(&mut self, var: &mut StreamVar) {
+  fn err_var_in_field(&mut self, var: &mut Variable) {
     self.session().struct_span_err_with_code(var.span,
       &format!("forbidden occurrence of variable `{}` when declaring a field.", var.path.clone()),
       "E0005")
@@ -101,7 +101,7 @@ impl<'a> Undeclared<'a> {
     .emit();
   }
 
-  fn err_undeclared_var(&mut self, var: &mut StreamVar) {
+  fn err_undeclared_var(&mut self, var: &mut Variable) {
     self.session().struct_span_err_with_code(var.span,
       &format!("cannot find variable `{}` in this scope.", var.path.clone()),
       "E0006")
@@ -125,7 +125,7 @@ impl<'a> VisitorMut<JClass> for Undeclared<'a>
     }
   }
 
-  fn visit_var(&mut self, var: &mut StreamVar) {
+  fn visit_var(&mut self, var: &mut Variable) {
     self.undeclared_var(var);
   }
 
