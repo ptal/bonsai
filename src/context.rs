@@ -17,15 +17,32 @@ pub use session::*;
 pub use visitor::*;
 pub use partial::*;
 use driver::config::Config;
-use std::collections::HashMap;
 use std::ops::Deref;
 
 pub struct Context<'a> {
   pub session: &'a Session,
   pub ast: JCrate,
+  pub vars: Vec<VarInfo>,
+}
+
+#[derive(Clone, Debug)]
+pub struct VarInfo {
+  pub name: Ident,
+  pub kind: Kind,
+  pub ty: JType,
   // For each variable, compute the maximum number of `pre` that can possibly happen. This is useful to compute the size of the stream. For example: `pre pre x` gives `[x: 2]`.
-  pub stream_bound: HashMap<String, usize>,
-  pub name_to_bindings: HashMap<String, Binding>,
+  pub stream_bound: usize,
+}
+
+impl VarInfo {
+  pub fn new(name: Ident, kind: Kind, ty: JType) -> Self {
+    VarInfo {
+      name: name,
+      kind: kind,
+      ty: ty,
+      stream_bound: 0
+    }
+  }
 }
 
 impl<'a> Context<'a> {
@@ -33,8 +50,7 @@ impl<'a> Context<'a> {
     Context {
       session: session,
       ast: ast,
-      stream_bound: HashMap::new(),
-      name_to_bindings: HashMap::new()
+      vars: vec![]
     }
   }
 
@@ -50,67 +66,21 @@ impl<'a> Context<'a> {
     self.ast = ast;
   }
 
-  pub fn init_module(&mut self, module: JModule) {
-    self.name_to_bindings.clear();
-    for field in module.fields.clone() {
-      self.insert_binding(field.binding);
-    }
-    self.visit_program(module);
+  pub fn alloc_var(&mut self, binding: &mut Binding) -> usize {
+    let idx = self.vars.len();
+    self.vars.push(VarInfo::new(binding.name.clone(), binding.kind, binding.ty.clone()));
+    binding.uid = idx;
+    idx
   }
 
-  fn visit_program(&mut self, module: JModule) {
-    for process in module.processes {
-      self.visit_stmt(process.body);
-    }
+  pub fn var_by_uid<'b>(&'b self, uid: usize) -> &'b VarInfo {
+    assert!(self.vars.len() > uid, "var_by_uid: Variable not declared.");
+    &self.vars[uid]
   }
 
-  fn insert_binding(&mut self, binding: Binding) {
-    self.name_to_bindings.insert(
-      binding.name.unwrap(),
-      binding);
-  }
-
-  fn visit_stmts(&mut self, stmts: Vec<Stmt>) {
-    for stmt in stmts {
-      self.visit_stmt(stmt);
-    }
-  }
-
-  fn visit_stmt(&mut self, stmt: Stmt) {
-    use ast::StmtKind::*;
-    match stmt.node {
-      Let(decl) => {
-        self.insert_binding(decl.binding);
-        self.visit_stmt(*decl.body);
-      }
-      Seq(branches)
-    | Par(branches)
-    | Space(branches) => self.visit_stmts(branches),
-      When(_, stmt)
-    | Suspend(_, stmt)
-    | Trap(_, stmt)
-    | Loop(stmt) => self.visit_stmt(*stmt),
-      _ => ()
-    }
-  }
-
-  pub fn binding_of(&self, name: &String) -> Binding {
-    self.name_to_bindings.get(name)
-    .expect(&format!("Undeclared variable `{}`.", name))
-    .clone()
-  }
-
-  pub fn type_of_var(&self, var: &Variable) -> JType {
-    self.binding_of(&var.name()).ty.clone()
-  }
-
-  pub fn is_bonsai_var(&self, name: &String) -> bool {
-    self.name_to_bindings.contains_key(name)
-  }
-
-  pub fn stream_bound_of(&self, name: &String) -> usize {
-    *self.stream_bound.get(name)
-    .expect(&format!("Undeclared variable `{}`.", name))
+  pub fn var_by_uid_mut<'b>(&'b mut self, uid: usize) -> &'b mut VarInfo {
+    assert!(self.vars.len() > uid, "var_by_uid_mut: Variable not declared.");
+    &mut self.vars[uid]
   }
 }
 

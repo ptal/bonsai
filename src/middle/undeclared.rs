@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Check for undeclared variables. In addition, it computes a unique identifier (UID) for each variables which is independent of the scope.
+/// Check for undeclared variables.
+/// In addition, it computes a unique identifier (UID) for variables local to modules. It does not assign a UID to variable of the form `m.a` or `m.a.b` because the UID for each module's variables is not yet accessible—since being computed. This next step is done in `resolve.rs`.
 
 use context::*;
 
@@ -23,7 +24,6 @@ pub fn undeclared<'a>(context: Context<'a>) -> Partial<Context<'a>> {
 
 struct Undeclared<'a> {
   context: Context<'a>,
-  last_uid: usize,
   in_scope_vars: Vec<(Ident, usize)>,
   visiting_fields: bool,
 }
@@ -32,7 +32,6 @@ impl<'a> Undeclared<'a> {
   pub fn new(context: Context<'a>) -> Self {
     Undeclared {
       context: context,
-      last_uid: 0,
       in_scope_vars: Vec::new(),
       visiting_fields: false,
     }
@@ -53,14 +52,8 @@ impl<'a> Undeclared<'a> {
     }
   }
 
-  fn gen_uid(&mut self) -> usize {
-    self.last_uid += 1;
-    self.last_uid
-  }
-
   fn enter_scope(&mut self, binding: &mut Binding) {
-    let uid = self.gen_uid();
-    binding.uid = uid;
+    let uid = self.context.alloc_var(binding);
     self.in_scope_vars.push((binding.name.clone(), uid));
   }
 
@@ -80,13 +73,16 @@ impl<'a> Undeclared<'a> {
     }
     else {
       self.undeclared_target(var);
-      // self.valid_path
     }
   }
 
   fn undeclared_target(&mut self, var: &mut Variable) {
     match self.lookup(var.path.target()) {
-      Some(uid) => { var.uid = uid; }
+      Some(uid) => {
+        if var.path.is_unary() {
+          var.uid = uid;
+        }
+      }
       None => {
         self.err_undeclared_var(var);
       }

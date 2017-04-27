@@ -94,6 +94,11 @@ impl<Host> Module<Host> {
       .map(|a| a.binding)
       .collect()
   }
+
+  pub fn find_field_by_name(&self, name: String) -> Option<ModuleField> {
+    self.fields.iter()
+      .find(|f| *f.binding.name == name).cloned()
+  }
 }
 
 impl Module<JClass> {
@@ -398,6 +403,10 @@ impl VarPath {
     VarPath::new(DUMMY_SP, vec![])
   }
 
+  pub fn is_unary(&self) -> bool {
+    self.fragments.len() == 1
+  }
+
   pub fn name(&self) -> Ident {
     self.fragments.last().unwrap().clone()
   }
@@ -424,9 +433,10 @@ pub enum Permission {
   ReadWrite
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq)]
 pub struct Variable {
   pub path: VarPath,
+  /// This UID refers to the last variable of the path. In `m.x.y`, it refers to `y` and in `x`, it refers to `x`. This UID is used to retrieve global information about this variable through `Context`.
   pub uid: usize,
   pub past: usize,
   pub perm: Permission,
@@ -459,6 +469,20 @@ impl Variable {
   #[allow(dead_code)]
   pub fn example() -> Self {
     Self::simple(DUMMY_SP, Ident::gen("x"))
+  }
+}
+
+impl PartialEq for Variable {
+  fn eq(&self, other: &Variable) -> bool {
+    assert!(self.uid > 0 && other.uid > 0,
+      "Cannot compare variable before the UID is computed.");
+    self.uid == other.uid
+  }
+}
+
+impl Hash for Variable {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.uid.hash(state);
   }
 }
 

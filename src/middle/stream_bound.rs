@@ -39,19 +39,15 @@ impl<'a> StreamBound<'a> {
     Partial::Value(self.context)
   }
 
-  fn bound_of<'b>(&'b mut self, var: String) -> &'b mut usize {
-    self.context.stream_bound.entry(var).or_insert(0)
+  fn bound_of<'b>(&'b mut self, uid: usize) -> &'b mut usize {
+    &mut self.context.var_by_uid_mut(uid).stream_bound
   }
 }
 
 impl<'a> Visitor<JClass> for StreamBound<'a>
 {
-  fn visit_binding(&mut self, binding: Binding) {
-    self.bound_of(binding.name.unwrap());
-  }
-
   fn visit_var(&mut self, var: Variable) {
-    let bound = self.bound_of(var.name().unwrap());
+    let bound = self.bound_of(var.uid);
     *bound = max(*bound, var.past);
   }
 }
