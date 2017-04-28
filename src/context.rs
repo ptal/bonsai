@@ -56,7 +56,7 @@ impl<'a> Context<'a> {
     Context {
       session: session,
       ast: ast,
-      vars: vec![]
+      vars: vec![VarInfo::new(Ident::gen("<does-not-exist>"), Kind::example(), JType::example())]
     }
   }
 

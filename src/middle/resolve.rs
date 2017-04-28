@@ -53,6 +53,12 @@ impl<'a> Resolve<'a> {
     }
   }
 
+  fn find_mod(&self, info: &VarInfo) -> JModule {
+    self.context.ast
+      .find_mod_by_name(&info.mod_name())
+      .expect("[BUG] Every module variable is supposed to exist (analysis in `undeclared.rs`)")
+  }
+
   fn resolve_path(&mut self, var: &mut Variable) {
     let mut i = 1;
     // At each iteration, we check if the field `var[i]` is a field of the module given by the type of `var[i-1]`.
@@ -63,16 +69,14 @@ impl<'a> Resolve<'a> {
       if info.kind != Kind::Product {
         break;
       }
-      let module = self.context.ast
-        .find_mod_by_name(&info.mod_name())
-        .expect("[BUG] Every module variable is supposed to exist (analysis in `undeclared.rs`)");
-      let field = var.path.fragments[i].clone();
-      match module.find_field_by_name(&field) {
+      let module = self.find_mod(&info);
+      let field_name = var.path.fragments[i].clone();
+      match module.find_field_by_name(&field_name) {
         Some(field) => {
           var.path.uids[i] = field.binding.uid;
         }
         None => {
-          self.err_unknown_field(module, field);
+          self.err_unknown_field(module, field_name);
           break;
         }
       }
@@ -80,11 +84,46 @@ impl<'a> Resolve<'a> {
     }
   }
 
+  fn resolve_process(&mut self, var: &mut Variable, process: Ident) {
+    let target_uid = *var.path.uids.last().unwrap();
+    if target_uid != 0 { // It is equals to 0 if `resolve_path` failed.
+      let info = self.context.var_by_uid(target_uid);
+      if info.kind != Kind::Product {
+        self.err_foreign_process_call(&info, process.clone());
+      }
+      else {
+        let module = self.find_mod(&info);
+        if let None = module.find_process_by_name(&process) {
+          self.err_unknown_process(module, process);
+        }
+      }
+    }
+  }
+
   fn err_unknown_field(&mut self, module: JModule, field: Ident) {
-    self.session().struct_span_err_with_code(field.span,
-      &format!("no field `{}` in module `{}`.", field.clone(), module.mod_name()),
-      "E0008")
-    .span_label(field.span, &format!("unknown field"))
+    self.err_unknown_item(module, field, "field", "E0008");
+  }
+
+  fn err_unknown_process(&mut self, module: JModule, process: Ident) {
+    self.err_unknown_item(module, process, "process", "E0009");
+  }
+
+  fn err_unknown_item(&mut self, module: JModule, item: Ident,
+    name_of_item: &str, code: &str)
+  {
+    self.session().struct_span_err_with_code(item.span,
+      &format!("no {} `{}` in module `{}`.", name_of_item, item.clone(), module.mod_name()),
+      code)
+    .span_label(item.span, &format!("unknown {}", name_of_item))
+    .emit();
+  }
+
+  fn err_foreign_process_call(&mut self, info: &VarInfo, process: Ident) {
+    self.session().struct_span_err_with_code(process.span,
+      &format!("forbidden call of the process `{}` on type `{}` because it is not a Bonsai module.",
+        process.clone(), info.mod_name()),
+      "E0010")
+    .span_label(process.span, &format!("not a process"))
     .emit();
   }
 }
@@ -100,6 +139,13 @@ impl<'a> VisitorMut<JClass> for Resolve<'a>
 
   fn visit_var(&mut self, var: &mut Variable) {
     self.resolve_path(var);
+  }
+
+  fn visit_proc_call(&mut self, var: &mut Option<Variable>, process: Ident) {
+    if let &mut Some(ref mut var) = var {
+      self.visit_var(var);
+      self.resolve_process(var, process);
+    }
   }
 }
 

@@ -381,7 +381,7 @@ grammar! bonsai {
     VarPath::new(span, extend_front(first, rest))
   }
 
-  variable = .. PRE* var_path !LPAREN !DOT > make_variable
+  variable = .. PRE* var_path !LPAREN > make_variable
 
   fn make_variable(span: Span, past: Vec<()>, path: VarPath) -> Variable {
     Variable::new(span, path, past.len())

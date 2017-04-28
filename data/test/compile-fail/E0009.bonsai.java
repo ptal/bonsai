@@ -12,12 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[error(E0009, 26, 10)]
+#[error(E0009, 28, 12)]
+
 package test;
 
-public class Module
+public class UnknownProcess
 {
-  public single_space T a;
-  public module Module2 b;
+  module Module m = new Module();
 
-  proc test() { nothing; }
+  proc test() {
+    run m.test();
+    run m.wrong();
+    run m.b.test();
+    run m.b.wrong();
+  }
 }

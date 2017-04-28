@@ -100,6 +100,11 @@ impl<Host> Module<Host> {
     self.fields.iter()
       .find(|f| &f.binding.name == name).cloned()
   }
+
+  pub fn find_process_by_name(&self, name: &Ident) -> Option<Process> {
+    self.processes.iter()
+      .find(|p| &p.name == name).cloned()
+  }
 }
 
 impl Module<JClass> {

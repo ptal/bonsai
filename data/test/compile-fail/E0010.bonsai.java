@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[error(E0010, 26, 12)]
+#[error(E0010, 27, 14)]
+
 package test;
 
-public class Module
+public class ForeignProcessCall
 {
-  public single_space T a;
-  public module Module2 b;
+  module Module m = new Module();
 
-  proc test() { nothing; }
+  proc test() {
+    run m.test();
+    run m.a.foreign();
+    run m.b.a.foreign();
+  }
 }
