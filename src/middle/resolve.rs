@@ -47,7 +47,7 @@ impl<'a> Resolve<'a> {
     self.visit_crate(&mut bcrate_clone);
     self.context.replace_ast(bcrate_clone);
     if self.session().has_errors() {
-      Partial::Fake(self.context)
+      Partial::Nothing
     } else {
       Partial::Value(self.context)
     }

@@ -101,25 +101,16 @@ impl<'a> Visitor<JClass> for MatchingRef<'a>
       let mod_a = self.ast().modules[self.current_mod].clone();
       let mod_a_name = mod_a.file.mod_name();
       let mod_b_name = binding.ty.name.clone();
-      let mod_b = self.ast().find_mod_by_name(&mod_b_name);
-      if mod_b.is_none() {
-        let sp = binding.ty.span;
-        self.session().struct_span_err_with_code(sp,
-          &format!("Cannot find bonsai module `{}`.", mod_b_name.clone()),
-          "E0001")
-        .span_label(sp, &format!("not found in this scope"))
-        .emit();
-      }
-      else {
-        let mod_b = mod_b.unwrap();
-        let ref_fields = mod_b.ref_fields();
-        for field_b in ref_fields {
-          let field_a = self.find_field_by_name(&mod_a, field_b.name.clone());
-          let field_a = field_a.expect(&format!(
-            "The module attribute {} could not be found in {} but is marked with `ref` in {}.",
-            field_b.name.clone(), mod_a_name.clone(), mod_b_name.clone()));
-          self.cmp_binding(field_a, field_b, mod_a_name.clone(), mod_b_name.unwrap());
-        }
+      let mod_b = self.ast()
+        .find_mod_by_name(&mod_b_name)
+        .expect("[BUG] All bonsai module must exist (analysis in undeclared.rs).");
+      let ref_fields = mod_b.ref_fields();
+      for field_b in ref_fields {
+        let field_a = self.find_field_by_name(&mod_a, field_b.name.clone());
+        let field_a = field_a.expect(&format!(
+          "The module attribute {} could not be found in {} but is marked with `ref` in {}.",
+          field_b.name.clone(), mod_a_name.clone(), mod_b_name.clone()));
+        self.cmp_binding(field_a, field_b, mod_a_name.clone(), mod_b_name.unwrap());
       }
     }
   }

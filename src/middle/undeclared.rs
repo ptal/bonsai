@@ -107,6 +107,16 @@ impl<'a> Undeclared<'a> {
     }
   }
 
+  fn unknown_module_ty(&mut self, binding: &Binding) {
+    if binding.kind == Kind::Product {
+      let ty_name = binding.ty.name.clone();
+      let module = self.context.ast.find_mod_by_name(&ty_name);
+      if let None = module {
+        self.err_unknown_module(&ty_name);
+      }
+    }
+  }
+
   fn err_var_in_field(&mut self, var: &mut Variable) {
     self.session().struct_span_err_with_code(var.span,
       &format!("forbidden occurrence of variable `{}` when declaring a field.", var.path.clone()),
@@ -128,6 +138,15 @@ impl<'a> Undeclared<'a> {
       &format!("cannot find process `{}` in the current module.", process),
       "E0007")
     .span_label(process.span, &format!("undeclared process"))
+    .emit();
+  }
+
+  fn err_unknown_module(&mut self, module_ty: &Ident) {
+    self.session().struct_span_err_with_code(module_ty.span,
+      &format!("cannot find bonsai module `{}`.", module_ty.clone()),
+      "E0001")
+    .span_label(module_ty.span, &format!("unknown module"))
+    .help(&"Bonsai module must have the extension `.bonsai.java` and either in the current project directory or as a library.")
     .emit();
   }
 }
@@ -165,6 +184,11 @@ impl<'a> VisitorMut<JClass> for Undeclared<'a>
     self.visit_binding(&mut let_stmt.binding);
     self.visit_stmt(&mut *(let_stmt.body));
     self.exit_scope();
+  }
+
+  fn visit_binding(&mut self, binding: &mut Binding) {
+    self.unknown_module_ty(binding);
+    walk_binding_mut(self, binding);
   }
 }
 
