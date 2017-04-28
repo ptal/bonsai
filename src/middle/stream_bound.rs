@@ -47,7 +47,7 @@ impl<'a> StreamBound<'a> {
 impl<'a> Visitor<JClass> for StreamBound<'a>
 {
   fn visit_var(&mut self, var: Variable) {
-    let bound = self.bound_of(var.uid);
+    let bound = self.bound_of(var.last_uid());
     *bound = max(*bound, var.past);
   }
 }

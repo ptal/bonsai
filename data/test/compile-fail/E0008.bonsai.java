@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0005, 24, 28)]
-#[error(E0005, 24, 34)]
+#[error(E0008, 26, 6)]
+#[error(E0008, 27, 20)]
 
 package test;
 
-public class IllegalInitialization
+public class UnknownField
 {
-  single_space T a;
-  module Module2 t1;
-  single_space T t2 = new T(t1.a, t1.b);
+  module Module m = new Module();
 
-  proc test() { nothing; }
+  proc test() {
+    m.a;
+    m.c;
+    J.inside_args(m.d, m.a);
+  }
 }

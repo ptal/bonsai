@@ -86,16 +86,14 @@ impl<'a> Undeclared<'a> {
       self.err_var_in_field(var);
     }
     else {
-      self.undeclared_target(var);
+      self.undeclared_local(var);
     }
   }
 
-  fn undeclared_target(&mut self, var: &mut Variable) {
-    match self.lookup(var.path.target()) {
+  fn undeclared_local(&mut self, var: &mut Variable) {
+    match self.lookup(var.path.first()) {
       Some(uid) => {
-        if var.path.is_unary() {
-          var.uid = uid;
-        }
+        var.path.uids[0] = uid;
       }
       None => {
         self.err_undeclared_var(var);

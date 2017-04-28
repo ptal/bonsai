@@ -72,7 +72,8 @@ impl<Host> Crate<Host> where Host: Clone {
     }
   }
 
-  pub fn find_mod_by_name(&self, name: String) -> Option<Module<Host>> {
+  pub fn find_mod_by_name(&self, name: &Ident) -> Option<Module<Host>> {
+    let name = name.unwrap();
     self.modules.iter()
       .find(|m| m.file.mod_name() == name).cloned()
   }
@@ -95,9 +96,9 @@ impl<Host> Module<Host> {
       .collect()
   }
 
-  pub fn find_field_by_name(&self, name: String) -> Option<ModuleField> {
+  pub fn find_field_by_name(&self, name: &Ident) -> Option<ModuleField> {
     self.fields.iter()
-      .find(|f| *f.binding.name == name).cloned()
+      .find(|f| &f.binding.name == name).cloned()
   }
 }
 
@@ -118,6 +119,10 @@ impl Module<JClass> {
       }
     }
     module
+  }
+
+  pub fn mod_name(&self) -> Ident {
+    self.host.class_name.clone()
   }
 }
 
@@ -381,16 +386,20 @@ impl Hash for Ident {
 }
 
 /// A variable path can be `x`, `m.x`, `m.m2.y`,... where `m` and `m2` must be checked to be module.
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq)]
 pub struct VarPath {
   pub fragments: Vec<Ident>,
+  /// These UIDs match the fragments of the path. These UIDs are used to retrieve global information about variables through `Context`.
+  pub uids: Vec<usize>,
   pub span: Span
 }
 
 impl VarPath {
   pub fn new(span: Span, fragments: Vec<Ident>) -> Self {
+    let len = fragments.len();
     VarPath {
       fragments: fragments,
+      uids: (0..len).map(|_| 0).collect(),
       span: span
     }
   }
@@ -403,16 +412,16 @@ impl VarPath {
     VarPath::new(DUMMY_SP, vec![])
   }
 
-  pub fn is_unary(&self) -> bool {
-    self.fragments.len() == 1
+  pub fn len(&self) -> usize {
+    self.fragments.len()
   }
 
-  pub fn name(&self) -> Ident {
-    self.fragments.last().unwrap().clone()
+  pub fn first(&self) -> Ident {
+    self.fragments[0].clone()
   }
 
-  pub fn target(&self) -> Ident {
-    self.fragments.first().unwrap().clone()
+  pub fn last_uid(&self) -> usize {
+    *self.uids.last().unwrap()
   }
 }
 
@@ -427,6 +436,28 @@ impl Display for VarPath {
   }
 }
 
+impl PartialEq for VarPath {
+  fn eq(&self, other: &VarPath) -> bool {
+    if self.uids.len() == other.uids.len() {
+      for i in 0..self.uids.len() {
+        assert!(self.uids[i] > 0 && other.uids[i] > 0,
+          "Cannot compare variable before their UIDs are computed.");
+        if self.uids[i] != other.uids[i] {
+          return false;
+        }
+      }
+      true
+    }
+    else { false }
+  }
+}
+
+impl Hash for VarPath {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.uids.hash(state);
+  }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Permission {
   Read,
@@ -436,8 +467,6 @@ pub enum Permission {
 #[derive(Clone, Debug, Eq)]
 pub struct Variable {
   pub path: VarPath,
-  /// This UID refers to the last variable of the path. In `m.x.y`, it refers to `y` and in `x`, it refers to `x`. This UID is used to retrieve global information about this variable through `Context`.
-  pub uid: usize,
   pub past: usize,
   pub perm: Permission,
   pub span: Span
@@ -447,7 +476,6 @@ impl Variable {
   pub fn new(span: Span, path: VarPath, past: usize) -> Self {
     Variable {
       path: path,
-      uid: 0,
       past: past,
       perm: Permission::ReadWrite,
       span: span
@@ -462,8 +490,12 @@ impl Variable {
     Self::new(span, path, 0)
   }
 
-  pub fn name(&self) -> Ident {
-    self.path.name()
+  pub fn last_uid(&self) -> usize {
+    self.path.last_uid()
+  }
+
+  pub fn len(&self) -> usize {
+    self.path.len()
   }
 
   #[allow(dead_code)]
@@ -474,15 +506,13 @@ impl Variable {
 
 impl PartialEq for Variable {
   fn eq(&self, other: &Variable) -> bool {
-    assert!(self.uid > 0 && other.uid > 0,
-      "Cannot compare variable before the UID is computed.");
-    self.uid == other.uid
+    self.path == other.path
   }
 }
 
 impl Hash for Variable {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.uid.hash(state);
+    self.path.hash(state);
   }
 }
 

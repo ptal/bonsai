@@ -45,6 +45,12 @@ impl VarInfo {
   }
 }
 
+impl VarInfo {
+  pub fn mod_name(&self) -> Ident {
+    self.ty.name.clone()
+  }
+}
+
 impl<'a> Context<'a> {
   pub fn new(session: &'a Session, ast: JCrate) -> Self {
     Context {
@@ -73,9 +79,9 @@ impl<'a> Context<'a> {
     idx
   }
 
-  pub fn var_by_uid<'b>(&'b self, uid: usize) -> &'b VarInfo {
+  pub fn var_by_uid(&self, uid: usize) -> VarInfo {
     assert!(self.vars.len() > uid, "var_by_uid: Variable not declared.");
-    &self.vars[uid]
+    self.vars[uid].clone()
   }
 
   pub fn var_by_uid_mut<'b>(&'b mut self, uid: usize) -> &'b mut VarInfo {
