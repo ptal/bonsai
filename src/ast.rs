@@ -463,9 +463,10 @@ impl Hash for VarPath {
   }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Permission {
   Read,
+  Write,
   ReadWrite
 }
 
@@ -473,7 +474,7 @@ pub enum Permission {
 pub struct Variable {
   pub path: VarPath,
   pub past: usize,
-  pub perm: Permission,
+  pub permission: Permission,
   pub span: Span
 }
 
@@ -482,7 +483,7 @@ impl Variable {
     Variable {
       path: path,
       past: past,
-      perm: Permission::ReadWrite,
+      permission: Permission::ReadWrite,
       span: span
     }
   }

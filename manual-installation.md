@@ -9,7 +9,7 @@ See [README.md](README.md)
 ## Installing the bonsai compiler
 
 ```sh
-rustup override set nightly-2017-01-24
+rustup override set nightly-2017-04-27
 cargo install
 ```
 
