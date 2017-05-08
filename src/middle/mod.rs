@@ -18,6 +18,7 @@ mod resolve;
 mod matching_ref;
 mod stream_bound;
 mod approximate_permission;
+mod ref_initialization;
 
 use context::*;
 use middle::duplicate::*;
@@ -26,12 +27,14 @@ use middle::resolve::*;
 use middle::matching_ref::*;
 use middle::stream_bound::*;
 use middle::approximate_permission::*;
+use middle::ref_initialization::*;
 
 pub fn analyse_bonsai<'a>(context: Context<'a>) -> Partial<Context<'a>> {
   Partial::Value(context)
     .and_then(duplicate)
     .and_then(undeclared)
     .and_then(resolve)
+    .and_then(ref_initialization)
     .and_then(matching_ref)
     .and_then(stream_bound)
     .and_then(approximate_permission)

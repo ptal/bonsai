@@ -128,7 +128,7 @@ pub trait Visitor<H>
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_var(&mut self, _var: Variable) {}
-  fn visit_bot(&mut self, _ty: JType) {}
+  fn visit_bot(&mut self) {}
 }
 
 pub fn walk_modules<H, V: ?Sized>(visitor: &mut V, modules: Vec<Module<H>>) where
@@ -197,7 +197,7 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
     Number(value) => visitor.visit_number(value),
     StringLiteral(value) => visitor.visit_string_lit(value),
     Var(var) => visitor.visit_var(var),
-    Bottom(ty) => visitor.visit_bot(ty)
+    Bottom => visitor.visit_bot()
   }
 }
 
@@ -341,7 +341,7 @@ pub trait VisitorMut<H>
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
-  fn visit_bot(&mut self, _ty: JType) {}
+  fn visit_bot(&mut self) {}
 }
 
 pub fn walk_modules_mut<H, V: ?Sized>(visitor: &mut V, modules: &mut Vec<Module<H>>) where
@@ -410,7 +410,7 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
     &mut Number(value) => visitor.visit_number(value),
     &mut StringLiteral(ref value) => visitor.visit_string_lit(value.clone()),
     &mut Var(ref mut var) => visitor.visit_var(var),
-    &mut Bottom(ref ty) => visitor.visit_bot(ty.clone())
+    &mut Bottom => visitor.visit_bot()
   }
 }
 

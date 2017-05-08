@@ -95,19 +95,18 @@ grammar! bonsai {
     / java_method
     / java_constructor
 
-  module_field = .. java_visibility? (REF->())? bonsai_binding SEMI_COLON > make_module_field
+  module_field = .. java_visibility? (.. REF)? bonsai_binding SEMI_COLON > make_module_field
 
-  expr_or_bot = expr > some_expr
-              / BOT > make_bottom_expr
+  expr_or_bot = expr
+              / .. BOT > make_bottom_expr
 
-  fn some_expr(expr: Expr) -> Option<Expr> { Some(expr) }
-  fn make_bottom_expr() -> Option<Expr> { None }
+  fn make_bottom_expr(span: Span) -> Expr { Expr::new(span, ExprKind::Bottom) }
 
   fn make_module_field(span: Span, visibility: Option<JVisibility>,
-    is_ref: Option<()>, binding: Binding) -> Item
+    is_ref: Option<Span>, binding: Binding) -> Item
   {
     Item::Field(ModuleField::bonsai_field(
-      span, visibility, binding, is_ref.is_some()))
+      span, visibility, binding, is_ref))
   }
 
   fn make_process_item(span: Span, visibility: Option<JVisibility>, name: Ident,
@@ -247,12 +246,8 @@ grammar! bonsai {
   java_binding = .. java_ty identifier (EQ expr)? > make_java_binding
 
   fn make_bonsai_binding(span: Span, kind: Kind,
-    ty: JType, name: Ident, expr: Option<Option<Expr>>) -> Binding
+    ty: JType, name: Ident, expr: Option<Expr>) -> Binding
   {
-    let expr = match expr {
-      None | Some(None) => Some(Expr::new(DUMMY_SP, ExprKind::Bottom(ty.clone()))),
-      Some(expr) => expr,
-    };
     Binding::new(span, name, kind, ty, expr)
   }
 

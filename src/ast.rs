@@ -88,11 +88,10 @@ pub struct Module<Host> {
 }
 
 impl<Host> Module<Host> {
-  pub fn ref_fields(&self) -> Vec<Binding> {
+  pub fn ref_fields(&self) -> Vec<ModuleField> {
     self.fields.iter()
-      .filter(|a| a.is_ref)
+      .filter(|a| a.is_ref.is_some())
       .cloned()
-      .map(|a| a.binding)
       .collect()
   }
 
@@ -135,7 +134,7 @@ impl Module<JClass> {
 pub struct ModuleField {
   pub visibility: JVisibility,
   pub binding: Binding,
-  pub is_ref: bool,
+  pub is_ref: Option<Span>,
   pub is_static: bool,
   pub is_final: bool,
   pub span: Span
@@ -143,7 +142,7 @@ pub struct ModuleField {
 
 impl ModuleField {
   fn new(span: Span, visibility: Option<JVisibility>,
-    binding: Binding, is_ref: bool, is_static: bool, is_final: bool) -> Self
+    binding: Binding, is_ref: Option<Span>, is_static: bool, is_final: bool) -> Self
   {
     ModuleField {
       visibility: visibility.unwrap_or(JVisibility::Private),
@@ -156,7 +155,7 @@ impl ModuleField {
   }
 
   pub fn bonsai_field(span: Span, visibility: Option<JVisibility>,
-    binding: Binding, is_ref: bool) -> Self
+    binding: Binding, is_ref: Option<Span>) -> Self
   {
     ModuleField::new(span, visibility, binding, is_ref, false, true)
   }
@@ -164,7 +163,7 @@ impl ModuleField {
   pub fn java_field(span: Span, visibility: Option<JVisibility>,
     binding: Binding, is_static: bool, is_final: bool) -> Self
   {
-    ModuleField::new(span, visibility, binding, false, is_static, is_final)
+    ModuleField::new(span, visibility, binding, None, is_static, is_final)
   }
 }
 
@@ -599,7 +598,7 @@ pub enum ExprKind {
   Number(u64),
   StringLiteral(String),
   Var(Variable),
-  Bottom(JType)
+  Bottom
 }
 
 impl ExprKind {

@@ -105,7 +105,7 @@ impl<'a> Visitor<JClass> for MatchingRef<'a>
         .find_mod_by_name(&mod_b_name)
         .expect("[BUG] All bonsai module must exist (analysis in undeclared.rs).");
       let ref_fields = mod_b.ref_fields();
-      for field_b in ref_fields {
+      for field_b in ref_fields.into_iter().map(|f| f.binding) {
         let field_a = self.find_field_by_name(&mod_a, field_b.name.clone());
         let field_a = field_a.expect(&format!(
           "The module attribute {} could not be found in {} but is marked with `ref` in {}.",

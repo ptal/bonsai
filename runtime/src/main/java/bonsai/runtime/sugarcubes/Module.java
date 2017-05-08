@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// `Module` is used to control the lifetime of a module by initializing and destroying its fields.
+/// It is used immediately after the declaration of the module local var: `LocalVar(new ModuleVar(...), new Module(...))`
+/// If the module variable is a field, then it is handled either:
+///  (1) By the recursive `__init` calls of the local variable containing the instantiated module.
+///  (2) If it is the first module (invoked by the user), then the duplication of the public processes invoke `__init`.
+
 package bonsai.runtime.sugarcubes;
 
 import java.util.function.*;
