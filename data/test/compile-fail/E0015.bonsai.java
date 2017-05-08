@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0011, 21, 2)]
+#[error(E0015, 25, 25)]
 
 package test;
 
-public class IllegalRefInit
+public class MismatchRefType
 {
-  ref single_space T a = new T();
+  ref single_space T a;
   single_space N b;
-  ref single_space T ok;
+  ref single_space U ok;
 
-  public IllegalRefInit(T a, T ok) {
+  public MismatchRefType(U a, U ok) {
     this.a = a;
     this.ok = ok;
   }

@@ -761,7 +761,24 @@ pub struct JConstructor {
 }
 
 pub type JavaBlock = String;
-pub type JParameters = String;
+pub type JParameters = Vec<JParameter>;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct JParameter {
+  pub name: Ident,
+  pub ty: JType,
+  pub span: Span
+}
+
+impl JParameter {
+  pub fn new(span: Span, ty: JType, name: Ident) -> Self {
+    JParameter {
+      name: name,
+      ty: ty,
+      span: span
+    }
+  }
+}
 
 #[derive(Clone, Debug, Eq)]
 pub struct JType {

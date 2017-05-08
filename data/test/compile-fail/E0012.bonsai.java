@@ -12,18 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0011, 21, 2)]
+#[error(E0012, 30, 2)]
 
 package test;
 
-public class IllegalRefInit
+public class MultipleConstructor
 {
-  ref single_space T a = new T();
+  ref single_space T a;
   single_space N b;
   ref single_space T ok;
 
-  public IllegalRefInit(T a, T ok) {
+  public MultipleConstructor(T a, T ok, int i) {
+    this(a, ok);
+    this.b = new N(i);
+  }
+
+  public MultipleConstructor(T a, T ok) {
     this.a = a;
     this.ok = ok;
+  }
+
+  public MultipleConstructor(T a, T ok, N b) {
+    this.a = a;
+    this.ok = ok;
+    this.b = b;
   }
 }

@@ -19,5 +19,9 @@ public class Module2
   public ref single_space T a;
   public single_space T b;
 
+  public Module2(T a) {
+    this.a = a;
+  }
+
   proc test() { nothing; }
 }

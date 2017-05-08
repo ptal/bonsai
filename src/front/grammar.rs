@@ -161,14 +161,20 @@ grammar! bonsai {
   }
 
   java_param_list
-    = &LPAREN (!")" .)* ")" blanks > make_java_param_list
+    = LPAREN jparameter (COMMA jparameter)* RPAREN > make_java_param_list
+    / LPAREN RPAREN > empty_param_list
 
-  fn make_java_param_list(mut raw_list: Vec<char>,
-    blanks: Vec<char>) -> JParameters
+  jparameter = .. java_ty identifier > make_jparameter
+
+  fn make_java_param_list(first: JParameter, rest: Vec<JParameter>) -> JParameters
   {
-    raw_list.push(')');
-    raw_list.extend(blanks.into_iter());
-    to_string(raw_list)
+    extend_front(first, rest)
+  }
+
+  fn empty_param_list() -> JParameters { vec![] }
+
+  fn make_jparameter(span: Span, java_ty: JType, name: Ident) -> JParameter {
+    JParameter::new(span, java_ty, name)
   }
 
   list_ident
