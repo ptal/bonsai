@@ -27,7 +27,8 @@ pub fn approximate_permission<'a>(context: Context<'a>) -> Partial<Context<'a>> 
 
 struct ApproximatePermission<'a> {
   context: Context<'a>,
-  perm_context: Permission
+  perm_context: Permission,
+  context_span: Span
 }
 
 impl<'a> ApproximatePermission<'a> {
@@ -35,21 +36,69 @@ impl<'a> ApproximatePermission<'a> {
     ApproximatePermission {
       context: context,
       perm_context: Permission::ReadWrite,
+      context_span: DUMMY_SP
     }
+  }
+
+  fn session(&'a self) -> &'a Session {
+    self.context.session
   }
 
   fn compute(mut self) -> Partial<Context<'a>> {
     let mut bcrate_clone = self.context.clone_ast();
     self.visit_crate(&mut bcrate_clone);
     self.context.replace_ast(bcrate_clone);
-    Partial::Value(self.context)
+    if self.session().has_errors() {
+      Partial::Fake(self.context)
+    } else {
+      Partial::Value(self.context)
+    }
+  }
+
+  fn pre_on_variable(&self, var: &Variable) {
+    if var.past > 0 {
+      let uid = var.last_uid();
+      match self.context.var_by_uid(uid).kind {
+        Kind::Product => self.err_forbid_pre_on(var, "module"),
+        Kind::Host => self.err_forbid_pre_on(var, "host"),
+        Kind::Spacetime(Spacetime::SingleTime) => self.err_forbid_pre_on(var, "single_time"),
+        _ => {
+          if self.perm_context != Permission::Read {
+            self.err_forbid_write_on_pre(var);
+          }
+        }
+      }
+    }
+  }
+
+  fn err_forbid_write_on_pre(&self, var: &Variable) {
+    self.session().struct_span_err_with_code(var.span,
+      &format!("forbidden write on `pre` variable."),
+      "E0016")
+    .span_label(var.span, &format!("write here"))
+    .help(&"`pre` variables can only be read. External function call's parameters are considered as read/write variables.")
+    .emit();
+  }
+
+  fn err_forbid_pre_on(&self, var: &Variable, kind: &str) {
+    self.session().struct_span_err_with_code(var.span,
+      &format!("forbidden `pre` on {} variable.", kind),
+      "E0017")
+    .help(&"Only `single_space` and `world_line` variables can be used under the `pre` operator.")
+    .emit();
   }
 }
 
 impl<'a> VisitorMut<JClass> for ApproximatePermission<'a>
 {
   fn visit_var(&mut self, var: &mut Variable) {
+    self.pre_on_variable(var);
     var.permission = self.perm_context;
+  }
+
+  fn visit_stmt(&mut self, child: &mut Stmt) {
+    self.context_span = child.span;
+    walk_stmt_mut(self, child)
   }
 
   fn visit_tell(&mut self, var: &mut Variable, expr: &mut Expr) {

@@ -50,7 +50,7 @@ rm ~/.m2/repository/bonsai
 
 # Example
 
-The following command will compile and execute the NQueens problem as described in the file [NQueens.bonsai.java](examples/bonsai/NQueens/src/main/java/bonsai/example/NQueens.bonsai.java):
+The following command will compile and execute the NQueens problem as described in the file [NQueens.bonsai.java](examples/bonsai/NQueens/src/main/java/bonsai/examples/NQueens.bonsai.java):
 
 ```sh
 cd examples/bonsai/NQueens

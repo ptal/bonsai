@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// `RefInitialization` checks:
-///  (a) Each module containing referenced fields (keyword `ref`) must has a single constructor initializing these variables. It must simply appears in the constructor argument list with the same type and same name. An assert checking that the argument and the field are the same is added in the generation stage (TODO).
+///  (a) Each module containing referenced fields (keyword `ref`) must have a single constructor initializing these variables. It must simply appears in the constructor argument list with the same type and same name. An assert checking that the argument and the field are the same is added in the generation stage.
 ///  (b) Ref fields must not be initialized with right handed expression when declared.
 
 use context::*;
