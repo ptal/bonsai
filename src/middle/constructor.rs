@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// `RefInitialization` checks:
-///  (a) Each module containing referenced fields (keyword `ref`) must have a single constructor initializing these variables. It must simply appears in the constructor argument list with the same type and same name. An assert checking that the argument and the field are the same is added in the generation stage.
-///  (b) Ref fields must not be initialized with right handed expression when declared.
+/// `Constructor` performs:
+///  (a) Check that each module containing referenced fields (keyword `ref`) must have a single constructor initializing these variables. It must simply appears in the constructor argument list with the same type and same name. An assert checking that the argument and the field are the same is added in the generation stage.
+///  (b) Register the module in the context with its associated constructor `ref` parameters list.
 
 use context::*;
 
-pub fn ref_initialization<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let ref_initialization = RefInitialization::new(context);
-  ref_initialization.analyse()
+pub fn constructor<'a>(context: Context<'a>) -> Partial<Context<'a>> {
+  let constructor = Constructor::new(context);
+  constructor.analyse()
 }
 
-struct RefInitialization<'a> {
+struct Constructor<'a> {
   context: Context<'a>,
 }
 
-impl<'a> RefInitialization<'a> {
+impl<'a> Constructor<'a> {
   pub fn new(context: Context<'a>) -> Self {
-    RefInitialization {
+    Constructor {
       context: context,
     }
   }
@@ -48,11 +48,19 @@ impl<'a> RefInitialization<'a> {
     }
   }
 
-  fn ref_fields(&self, module: &JModule) {
-    for ref_field in module.ref_fields() {
-      if ref_field.binding.expr.is_some() {
-        self.err_initialized_ref_field(ref_field);
-      }
+  fn register_module(&mut self, module: &JModule) {
+    self.context.alloc_module(module.mod_name());
+    let mod_info = self.context.module_by_name_mut(module.mod_name());
+    // Retrieve the position of each ref field in the constructor.
+    let java_constructors = module.host.java_constructors.clone();
+    if java_constructors.len() == 1 {
+      mod_info.cons_len = java_constructors[0].parameters.len();
+      mod_info.constructor = java_constructors[0]
+        .parameters.iter()
+        .enumerate()
+        .filter_map(|(i, p)| module.ref_fields().into_iter().find(|f| f.binding.name == p.name).map(|f| (i, f)))
+        .map(|(i, f)| (i, f.binding.uid))
+        .collect();
     }
   }
 
@@ -87,16 +95,6 @@ impl<'a> RefInitialization<'a> {
     }
   }
 
-  fn err_initialized_ref_field(&self, ref_field: ModuleField) {
-    let binding = ref_field.binding;
-    self.session().struct_span_err_with_code(ref_field.span,
-      &format!("illegal initialization of `ref` field `{}`.", binding.name),
-      "E0011")
-    .span_label(ref_field.is_ref.unwrap(), &format!("illegal specifier"))
-    .span_help(binding.expr.unwrap().span, &"Remove the initialization expression.")
-    .emit();
-  }
-
   /// Design rational: It simplifies the verification of module. Otherwise, we would need to look if the contructor calls other constructors (`this(...)` call inside a constructor) with the same `ref` parameters.
   fn err_multiple_constructor(&self, module: &JModule) {
     let constructors = module.host.java_constructors.clone();
@@ -118,7 +116,7 @@ impl<'a> RefInitialization<'a> {
 
   fn err_missing_ref_param(&self, ref_field: &ModuleField, constructor: &JConstructor) {
     self.session().struct_span_err_with_code(constructor.span,
-      &format!("missing `ref` parameter `{}` in the constructor.", ref_field.binding.name),
+      &format!("missing parameter in the constructor for initializing the field `{}`.", ref_field.binding.name),
       "E0014")
     .span_label(ref_field.binding.name.span, &"declared here")
     .help(&self.constructor_help_msg())
@@ -142,10 +140,10 @@ impl<'a> RefInitialization<'a> {
   }
 }
 
-impl<'a> Visitor<JClass> for RefInitialization<'a>
+impl<'a> Visitor<JClass> for Constructor<'a>
 {
   fn visit_module(&mut self, module: JModule) {
-    self.ref_fields(&module);
+    self.register_module(&module);
     self.constructor(&module);
   }
 }

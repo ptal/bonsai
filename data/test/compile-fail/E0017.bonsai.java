@@ -24,7 +24,7 @@ public class PreOnlyOnStream
 {
   JavaHost h = new JavaHost();
   module Module m;
-  single_space transient T ok;
+  transient single_space T ok;
 
   public PreOnlyOnStream(T a) {
     this.a = a;

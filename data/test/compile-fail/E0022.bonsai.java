@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0005, 22, 28)]
-#[error(E0005, 23, 28)]
+#[error(E0022, 26, 37)]
+#[error(E0022, 27, 37)]
 
 package test;
 
-public class IllegalInitialization
+public class ModuleRefInitializer
 {
-  single_space T t1 = new T(a);
-  single_space T t2 = new T(t1);
+  public single_space T a;
 
-  proc test() { nothing; }
+  proc test() {
+    module Module2 ok1 = new Module2(a);
+    module Module2 ko1 = new Module2(new T());
+    module Module2 ko2 = new Module2(J.make());
+  }
 }

@@ -23,6 +23,7 @@ pub struct Context<'a> {
   pub session: &'a Session,
   pub ast: JCrate,
   pub vars: Vec<VarInfo>,
+  pub modules: Vec<ModuleInfo>
 }
 
 #[derive(Clone, Debug)]
@@ -30,24 +31,78 @@ pub struct VarInfo {
   pub name: Ident,
   pub kind: Kind,
   pub ty: JType,
+  pub field: Option<FieldInfo>,
   // For each variable, compute the maximum number of `pre` that can possibly happen. This is useful to compute the size of the stream. For example: `pre pre x` gives `[x: 2]`.
   pub stream_bound: usize,
 }
 
 impl VarInfo {
-  pub fn new(name: Ident, kind: Kind, ty: JType) -> Self {
+  fn new(name: Ident, kind: Kind, ty: JType, field: Option<FieldInfo>) -> Self {
     VarInfo {
       name: name,
       kind: kind,
       ty: ty,
+      field: field,
       stream_bound: 0
+    }
+  }
+
+  pub fn local(name: Ident, kind: Kind, ty: JType) -> Self {
+    VarInfo::new(name, kind, ty, None)
+  }
+
+  pub fn field(name: Ident, kind: Kind, ty: JType,
+    visibility: JVisibility, is_ref: Option<Span>) -> Self
+  {
+    VarInfo::new(name, kind, ty, Some(FieldInfo::new(visibility, is_ref)))
+  }
+
+  pub fn mod_name(&self) -> Ident {
+    self.ty.name.clone()
+  }
+
+  pub fn is_ref(&self) -> bool {
+    match &self.field {
+      &Some(ref field) => field.is_ref.is_some(),
+      &None => false
     }
   }
 }
 
-impl VarInfo {
-  pub fn mod_name(&self) -> Ident {
-    self.ty.name.clone()
+#[derive(Clone, Debug)]
+pub struct FieldInfo {
+  pub visibility: JVisibility,
+  pub is_ref: Option<Span>,
+}
+
+impl FieldInfo {
+  pub fn new(visibility: JVisibility, is_ref: Option<Span>) -> Self {
+    FieldInfo {
+      visibility: visibility,
+      is_ref: is_ref,
+    }
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct ModuleInfo {
+  pub name: Ident,
+  /// Contains the position and UID of the `ref` variables of this module.
+  pub constructor: Vec<(usize, usize)>,
+  pub cons_len: usize,
+}
+
+impl ModuleInfo {
+  pub fn new(name: Ident) -> Self {
+    ModuleInfo {
+      name: name,
+      constructor: vec![],
+      cons_len: 0
+    }
+  }
+
+  pub fn has_refs(&self) -> bool {
+    !self.constructor.is_empty()
   }
 }
 
@@ -56,7 +111,8 @@ impl<'a> Context<'a> {
     Context {
       session: session,
       ast: ast,
-      vars: vec![VarInfo::new(Ident::gen("<error-var>"), Kind::example(), JType::example())]
+      vars: vec![VarInfo::local(Ident::gen("<error-var>"), Kind::example(), JType::example())],
+      modules: vec![]
     }
   }
 
@@ -72,11 +128,22 @@ impl<'a> Context<'a> {
     self.ast = ast;
   }
 
-  pub fn alloc_var(&mut self, binding: &mut Binding) -> usize {
+  fn alloc_var(&mut self, binding: &mut Binding, var_info: VarInfo) -> usize {
     let idx = self.vars.len();
-    self.vars.push(VarInfo::new(binding.name.clone(), binding.kind, binding.ty.clone()));
+    self.vars.push(var_info);
     binding.uid = idx;
     idx
+  }
+
+  pub fn alloc_local(&mut self, binding: &mut Binding) -> usize {
+    let info = VarInfo::local(binding.name.clone(), binding.kind, binding.ty.clone());
+    self.alloc_var(binding, info)
+  }
+
+  pub fn alloc_field(&mut self, field: &mut ModuleField) -> usize {
+    let info = VarInfo::field(field.binding.name.clone(),
+      field.binding.kind, field.binding.ty.clone(), field.visibility, field.is_ref);
+    self.alloc_var(&mut field.binding, info)
   }
 
   pub fn var_by_uid(&self, uid: usize) -> VarInfo {
@@ -88,6 +155,24 @@ impl<'a> Context<'a> {
     assert!(self.vars.len() > uid, "var_by_uid_mut: Variable not declared.");
     &mut self.vars[uid]
   }
+
+  pub fn alloc_module(&mut self, name: Ident) {
+    self.modules.push(ModuleInfo::new(name));
+  }
+
+  pub fn module_by_name_mut<'b>(&'b mut self, name: Ident) -> &'b mut ModuleInfo {
+    self.modules.iter_mut()
+      .find(|m| m.name == name)
+      .expect("module_by_name_mut: Module not declared.")
+  }
+
+  pub fn module_by_name(&self, name: Ident) -> ModuleInfo {
+    self.modules.iter()
+      .find(|m| m.name == name)
+      .cloned()
+      .expect("module_by_name_mut: Module not declared.")
+  }
+
 }
 
 impl<'a> Deref for Context<'a> {

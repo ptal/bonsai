@@ -26,7 +26,6 @@ struct Undeclared<'a> {
   context: Context<'a>,
   in_scope_vars: Vec<(Ident, usize)>,
   in_scope_processes: Vec<Ident>,
-  visiting_fields: bool,
 }
 
 impl<'a> Undeclared<'a> {
@@ -35,7 +34,6 @@ impl<'a> Undeclared<'a> {
       context: context,
       in_scope_vars: Vec::new(),
       in_scope_processes: Vec::new(),
-      visiting_fields: false,
     }
   }
 
@@ -66,8 +64,17 @@ impl<'a> Undeclared<'a> {
     }
   }
 
-  fn enter_scope(&mut self, binding: &mut Binding) {
-    let uid = self.context.alloc_var(binding);
+  fn enter_local_scope(&mut self, binding: &mut Binding) {
+    let uid = self.context.alloc_local(binding);
+    self.enter_scope(binding, uid);
+  }
+
+  fn enter_field_scope(&mut self, field: &mut ModuleField) {
+    let uid = self.context.alloc_field(field);
+    self.enter_scope(&field.binding, uid);
+  }
+
+  fn enter_scope(&mut self, binding: &Binding, uid: usize) {
     self.in_scope_vars.push((binding.name.clone(), uid));
   }
 
@@ -82,15 +89,6 @@ impl<'a> Undeclared<'a> {
   }
 
   fn undeclared_var(&mut self, var: &mut Variable) {
-    if self.visiting_fields {
-      self.err_var_in_field(var);
-    }
-    else {
-      self.undeclared_local(var);
-    }
-  }
-
-  fn undeclared_local(&mut self, var: &mut Variable) {
     match self.lookup(var.path.first()) {
       Some(uid) => {
         var.path.uids[0] = uid;
@@ -115,14 +113,6 @@ impl<'a> Undeclared<'a> {
         self.err_unknown_module(&ty_name);
       }
     }
-  }
-
-  fn err_var_in_field(&mut self, var: &mut Variable) {
-    self.session().struct_span_err_with_code(var.span,
-      &format!("forbidden occurrence of variable `{}` when declaring a field.", var.path.clone()),
-      "E0005")
-    .span_label(var.span, &format!("illegal occurrence"))
-    .emit();
   }
 
   fn err_undeclared_var(&mut self, var: &mut Variable) {
@@ -154,12 +144,10 @@ impl<'a> Undeclared<'a> {
 impl<'a> VisitorMut<JClass> for Undeclared<'a>
 {
   fn visit_module(&mut self, module: &mut JModule) {
-    self.visiting_fields = true;
     for field in &mut module.fields {
-      self.enter_scope(&mut field.binding);
+      self.enter_field_scope(field);
       self.visit_field(field);
     }
-    self.visiting_fields = false;
     self.enter_scope_processes(&module.processes);
     walk_processes_mut(self, &mut module.processes);
     self.exit_scope_processes(module.processes.len());
@@ -180,7 +168,7 @@ impl<'a> VisitorMut<JClass> for Undeclared<'a>
   }
 
   fn visit_let(&mut self, let_stmt: &mut LetStmt) {
-    self.enter_scope(&mut let_stmt.binding);
+    self.enter_local_scope(&mut let_stmt.binding);
     self.visit_binding(&mut let_stmt.binding);
     self.visit_stmt(&mut *(let_stmt.body));
     self.exit_scope();

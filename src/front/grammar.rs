@@ -434,9 +434,9 @@ grammar! bonsai {
     / MODULE > kind_product
 
   spacetime
-    = WORLD_LINE TRANSIENT? > world_line
+    = TRANSIENT? WORLD_LINE > world_line
     / SINGLE_TIME > single_time
-    / SINGLE_SPACE TRANSIENT? > single_space
+    / TRANSIENT? SINGLE_SPACE > single_space
 
   fn world_line(is_transient: Option<()>) -> Spacetime { Spacetime::WorldLine(is_transient.is_some()) }
   fn single_time() -> Spacetime { Spacetime::SingleTime }

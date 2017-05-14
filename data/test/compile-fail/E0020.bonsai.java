@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0005, 24, 28)]
-#[error(E0005, 24, 34)]
+#[error(E0020, 22, 2)]
 
 package test;
 
-public class IllegalInitialization
+public class IllegalRefKind
 {
-  single_space T a;
-  module Module2 t1;
-  single_space T t2 = new T(t1.a, t1.b);
+  // ref JavaHost h = new JavaHost();  // error handled during parsing.
+  ref module Module m;
+  ref transient single_space T ok;
 
-  proc test() { nothing; }
+  public IllegalRefKind(JavaHost h, Module m, T ok) {
+    this.h = h;
+    this.m = m;
+    this.a = a;
+  }
 }

@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0006, 23, 28)]
-#[error(E0006, 32, 23)]
+#[error(E0018, 26, 4)]
+#[error(E0018, 27, 4)]
 
 package test;
 
-public class UndeclaredVariable
+public class IllegalLocalModuleInitializer
 {
-  single_space T t1 = new T();
-  single_space T t2 = new T(t3);
-  single_space T t3 = new T();
+  public single_space T a;
 
   proc test() {
-    single_space T t4 = new T();
-    System.out.println(t4);
-  }
-
-  proc test2() {
-    System.out.println(t4);
+    module Module ok3 = new Module();
+    module Module2 ko3 = Module2.create();
+    module Module2 ko4 = bot;
   }
 }

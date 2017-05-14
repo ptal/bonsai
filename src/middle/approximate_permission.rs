@@ -82,8 +82,9 @@ impl<'a> ApproximatePermission<'a> {
 
   fn err_forbid_pre_on(&self, var: &Variable, kind: &str) {
     self.session().struct_span_err_with_code(var.span,
-      &format!("forbidden `pre` on {} variable.", kind),
+      &format!("illegal kind of the variable `{}`.", var.last()),
       "E0017")
+    .span_label(var.last().span, &format!("this variables has the kind `{}`", kind))
     .help(&"Only `single_space` and `world_line` variables can be used under the `pre` operator.")
     .emit();
   }

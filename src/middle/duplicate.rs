@@ -90,7 +90,7 @@ impl<'a> Duplicate<'a> {
     let binding = field.binding.clone();
     let name = binding.name.clone();
     let err = Self::duplicate(&self.dup_mod_fields, self.session(),
-      name.clone(), "E0002", "spacetime field");
+      name.clone(), "E0002", "field");
     if !err { self.dup_mod_fields.insert(name.unwrap(), field.span); }
   }
 

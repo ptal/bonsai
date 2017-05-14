@@ -424,6 +424,10 @@ impl VarPath {
     self.fragments[0].clone()
   }
 
+  pub fn last(&self) -> Ident {
+    self.fragments.last().unwrap().clone()
+  }
+
   pub fn last_uid(&self) -> usize {
     *self.uids.last().unwrap()
   }
@@ -495,6 +499,10 @@ impl Variable {
     Self::new(span, path, 0)
   }
 
+  pub fn last(&self) -> Ident {
+    self.path.last()
+  }
+
   pub fn last_uid(&self) -> usize {
     self.path.last_uid()
   }
@@ -546,6 +554,16 @@ impl Kind {
   }
 }
 
+impl Display for Kind {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    match self {
+      &Kind::Spacetime(sp) => sp.fmt(fmt),
+      &Kind::Product => fmt.write_str("module"),
+      &Kind::Host => fmt.write_str("Java")
+    }
+  }
+}
+
 /// The spacetime of a variable describes how it evolves in each instant. For `WorldLine` and `SingleSpace` we can additional set a boolean to `true` if the variable is transient (i.e. its value is re-initialized to bottom between each instant). The `Product` variant is used for records where variables have fields with various spacetime.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Spacetime {
@@ -567,6 +585,22 @@ impl Spacetime {
   #[allow(dead_code)]
   pub fn example() -> Self {
     Spacetime::SingleSpace(false)
+  }
+}
+
+impl Display for Spacetime {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    match self {
+      &Spacetime::WorldLine(transient) => {
+        if transient { fmt.write_str("transient")?; }
+        fmt.write_str("world_line")
+      }
+      &Spacetime::SingleSpace(transient) => {
+        if transient { fmt.write_str("transient")?; }
+        fmt.write_str("single_space")
+      }
+      &Spacetime::SingleTime => fmt.write_str("single_time")
+    }
   }
 }
 
@@ -833,7 +867,7 @@ impl Display for JType
   }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum JVisibility {
   Public,
   Protected,

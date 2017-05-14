@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0006, 23, 28)]
-#[error(E0006, 32, 23)]
+#[error(E0005, 24, 34)]
+#[error(E0005, 24, 42)]
 
 package test;
 
-public class UndeclaredVariable
+public class FieldInitializationWithRef
 {
-  single_space T t1 = new T();
-  single_space T t2 = new T(t3);
-  single_space T t3 = new T();
+  ref single_space T a;
+  module Module t1 = new T();
+  single_space T t2 = new T(t1.a, t1.b.a, a);
 
-  proc test() {
-    single_space T t4 = new T();
-    System.out.println(t4);
-  }
+  public FieldInitializationWithRef(T a) {}
 
-  proc test2() {
-    System.out.println(t4);
-  }
+  proc test() { nothing; }
 }

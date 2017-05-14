@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0006, 23, 28)]
-#[error(E0006, 32, 23)]
+#[error(E0024, 26, 25)]
+#[error(E0024, 27, 25)]
 
 package test;
 
-public class UndeclaredVariable
+public class ModuleParameterMismatch
 {
-  single_space T t1 = new T();
-  single_space T t2 = new T(t3);
-  single_space T t3 = new T();
+  public single_space T a;
+  public single_space T b;
 
   proc test() {
-    single_space T t4 = new T();
-    System.out.println(t4);
-  }
-
-  proc test2() {
-    System.out.println(t4);
+    module Module2 ko1 = new Module2(a, b);
+    module Module2 ko2 = new Module2();
   }
 }
