@@ -235,6 +235,16 @@ impl<'a> Initialization<'a> {
     format!("Module variables must be initialized with the `new` operator \
              (module field can be left uninitialized).")
   }
+
+  fn err_host_local_var(&self, binding: &Binding) {
+    self.session().struct_span_err_with_code(binding.span,
+      &format!("missing spacetime specifier for the variable `{}`.", binding.name),
+      "E0025")
+    .help(&"Local variable must be either module or spacetime variable. \
+            \"Pure\" Java variables can only occurs as fields of the module.\
+            Adding a `single_space` specifier should give you the expected behavior.")
+    .emit();
+  }
 }
 
 impl<'a> Visitor<JClass> for Initialization<'a>
@@ -262,6 +272,9 @@ impl<'a> Visitor<JClass> for Initialization<'a>
       else {
         self.module_local_var(&binding);
       }
+    }
+    else if binding.is_host() && !self.visiting_fields {
+      self.err_host_local_var(&binding);
     }
     walk_binding(self, binding);
   }

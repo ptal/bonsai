@@ -23,7 +23,7 @@ use partial::*;
 use session::*;
 use front;
 use middle;
-// use back;
+use back;
 use context::Context;
 use ast::{JModule, JCrate};
 
@@ -68,14 +68,13 @@ fn run_middle<'a>(context: Context<'a>) -> Partial<Context<'a>> {
   middle::analyse_bonsai(context)
 }
 
-fn run_back(mut context: Context) {
-  // for module in context.ast.modules.clone() {
-  //   if !module.file.is_lib() {
-  //     context.init_module(module.clone());
-  //     let file = module.file.clone();
-  //     back::generate_module(&context, module)
-  //       .map(|output| file.write_output(output))
-  //       .expect(ABORT_MSG);
-  //   }
-  // }
+fn run_back(context: Context) {
+  for module in context.ast.modules.clone() {
+    if !module.file.is_lib() {
+      let file = module.file.clone();
+      back::compile_module(&context, module)
+        .map(|output| file.write_output(output))
+        .expect(ABORT_MSG);
+    }
+  }
 }

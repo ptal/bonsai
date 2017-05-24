@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+#[error(E0025, 26, 4)]
+#[error(E0025, 29, 6)]
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-extern crate syntex_pos;
-extern crate syntex_syntax;
-extern crate syntex_errors;
+package test;
 
-pub mod session;
-pub mod ast;
-pub mod visitor;
-pub mod context;
-pub mod driver;
-pub mod front;
-pub mod middle;
-pub mod back;
+public class ForbiddenHostLocalVariable
+{
+  public T ok;
+  public single_space T b;
+
+  proc test() {
+    T ko = new T();
+    single_space T ok2 = new T();
+    when ok2 |= ok2 {
+      T ko2 = ok2;
+    }
+  }
+}

@@ -39,4 +39,5 @@ E0021: r##"Field of kind `module` where the module has `ref` fields must not be 
 E0022: r##"`ref` argument when calling a module constructor must be a variable."##,
 E0023: r##"`ref` argument must match the type and kind of the called parameter's constructor."##,
 E0024: r##"constructor parameter list and instantiation list differ in size."##,
+E0025: r##"missing spacetime specifier for local host variable."##,
 }

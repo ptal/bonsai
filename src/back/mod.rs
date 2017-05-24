@@ -13,6 +13,6 @@
 // limitations under the License.
 
 mod code_formatter;
-mod generator;
+mod compiler;
 
-pub use back::generator::generate_module;
+pub use back::compiler::module::compile_module;

@@ -64,7 +64,7 @@ impl CodeFormatter {
     self.newline();
   }
 
-  pub fn push_java_method(&mut self, code_block: String) {
+  pub fn push_java_block(&mut self, code_block: String) {
     let mut lines_iter = code_block.lines();
     self.push_line(lines_iter.next().unwrap());
     for line in lines_iter {

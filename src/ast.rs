@@ -157,7 +157,8 @@ impl ModuleField {
   pub fn bonsai_field(span: Span, visibility: Option<JVisibility>,
     binding: Binding, is_ref: Option<Span>) -> Self
   {
-    ModuleField::new(span, visibility, binding, is_ref, false, true)
+    let is_final = binding.kind != Kind::Spacetime(Spacetime::SingleTime);
+    ModuleField::new(span, visibility, binding, is_ref, false, is_final)
   }
 
   pub fn java_field(span: Span, visibility: Option<JVisibility>,
@@ -324,6 +325,10 @@ impl Binding
 
   pub fn is_module(&self) -> bool {
     self.kind == Kind::Product
+  }
+
+  pub fn is_host(&self) -> bool {
+    self.kind == Kind::Host
   }
 
   #[allow(dead_code)]
@@ -813,6 +818,15 @@ impl JParameter {
     }
   }
 }
+
+impl Display for JParameter
+{
+  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
+    formatter.write_fmt(format_args!("{} ", self.ty))?;
+    formatter.write_fmt(format_args!("{}", self.name))
+  }
+}
+
 
 #[derive(Clone, Debug, Eq)]
 pub struct JType {

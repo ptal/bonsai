@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2016 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
-
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-extern crate syntex_pos;
-extern crate syntex_syntax;
-extern crate syntex_errors;
-
-pub mod session;
-pub mod ast;
-pub mod visitor;
-pub mod context;
-pub mod driver;
-pub mod front;
-pub mod middle;
-pub mod back;
+pub mod module;
+// pub mod statement;
+// pub mod expression;
