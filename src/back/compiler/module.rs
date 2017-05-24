@@ -14,7 +14,7 @@
 
 use context::*;
 use back::code_formatter::*;
-// use back::compiler::expression::*;
+use back::compiler::expression::*;
 
 pub fn compile_module(context: &Context, module: JModule) -> Partial<String> {
   ModuleCompiler::new(context).compile(module)
@@ -155,7 +155,12 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.push(&code);
     if let Some(expr) = field.binding.expr {
       self.fmt.push(" = ");
-      // compile_expression(&self.context, &mut self.fmt, expr);
+      if expr.node == ExprKind::Bottom {
+        self.fmt.push(&format!("new {}()", field.binding.ty.name));
+      }
+      else {
+        compile_expression(&self.context, &mut self.fmt, expr);
+      }
     }
     self.fmt.terminate_line(";");
   }

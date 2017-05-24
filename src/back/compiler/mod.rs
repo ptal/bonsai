@@ -14,4 +14,4 @@
 
 pub mod module;
 // pub mod statement;
-// pub mod expression;
+pub mod expression;

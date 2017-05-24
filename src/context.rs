@@ -67,6 +67,10 @@ impl VarInfo {
       &None => false
     }
   }
+
+  pub fn is_host(&self) -> bool {
+    self.kind == Kind::Host
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -170,7 +174,7 @@ impl<'a> Context<'a> {
     self.modules.iter()
       .find(|m| m.name == name)
       .cloned()
-      .expect("module_by_name_mut: Module not declared.")
+      .expect("module_by_name: Module not declared.")
   }
 
 }

@@ -421,6 +421,10 @@ impl VarPath {
     VarPath::new(DUMMY_SP, vec![])
   }
 
+  pub fn is_empty(&self) -> bool {
+    self.len() == 0
+  }
+
   pub fn len(&self) -> usize {
     self.fragments.len()
   }
@@ -431,6 +435,10 @@ impl VarPath {
 
   pub fn last(&self) -> Ident {
     self.fragments.last().unwrap().clone()
+  }
+
+  pub fn first_uid(&self) -> usize {
+    *self.uids.first().unwrap()
   }
 
   pub fn last_uid(&self) -> usize {
@@ -502,6 +510,14 @@ impl Variable {
 
   pub fn present(span: Span, path: VarPath) -> Self {
     Self::new(span, path, 0)
+  }
+
+  pub fn first(&self) -> Ident {
+    self.path.first()
+  }
+
+  pub fn first_uid(&self) -> usize {
+    self.path.first_uid()
   }
 
   pub fn last(&self) -> Ident {
