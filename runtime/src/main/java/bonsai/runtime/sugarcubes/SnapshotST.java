@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,41 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// `SnapshotST` stores all the single time variables captured in a space statement.
+/// These variables are shared among all the branches of the space statement.
+/// Note that the branch must have access to these variables only in READ-ONLY (TODO: ensure this property in the bonsai compiler).
+
 package bonsai.runtime.sugarcubes;
 
 import java.util.*;
 import bonsai.runtime.core.*;
 
-public class Snapshot
+public class SnapshotST
 {
   private HashMap<String, Object> singleTimeVars;
-  private HashMap<String, Object> worldLineVars;
-  private int branchIndex;
 
-  public Snapshot(int branchIndex) {
+  public SnapshotST() {
     this.singleTimeVars = new HashMap();
-    this.worldLineVars = new HashMap();
-    this.branchIndex = branchIndex;
   }
 
-  public int branch() {
-    return branchIndex;
+  public void saveSingleTimeVar(String uid, Object value) {
+    singleTimeVars.put(uid, value);
   }
 
-  public void saveWorldLineVar(String name, Stream stream) {
-    worldLineVars.put(name, stream.label());
-  }
-
-  public void saveSingleTimeVar(String name, Object value) {
-    singleTimeVars.put(name, value);
-  }
-
-  public void restoreWorldLineVar(String name, Stream stream) {
-    stream.restore(worldLineVars.get(name));
-  }
-
-  public Optional<Object> getSingleTimeValue(String name) {
-    Object val = singleTimeVars.get(name);
+  public Optional<Object> getSingleTimeValue(String uid) {
+    Object val = singleTimeVars.get(uid);
     return Optional.ofNullable(val);
   }
 }

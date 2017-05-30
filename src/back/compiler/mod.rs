@@ -13,5 +13,5 @@
 // limitations under the License.
 
 pub mod module;
-// pub mod statement;
+pub mod statement;
 pub mod expression;

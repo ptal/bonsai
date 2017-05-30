@@ -36,13 +36,14 @@ public class W<T extends Restorable> extends L<T>
     }
   }
 
+  /// Shared label property: either the label equal bottom and is created from scratch (`bottom()`) or it depends on the underlying value (inductively).
   public void restore(Object label) {
     Optional l = (Optional) label;
     if (l.isPresent()){
       this.value.get().restore(l.get());
     }
     else {
-      this.value = l;
+      this.value = Optional.empty();
     }
   }
 

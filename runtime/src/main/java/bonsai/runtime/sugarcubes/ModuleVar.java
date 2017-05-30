@@ -41,6 +41,6 @@ public class ModuleVar extends Variable
     ref = initValue.apply(env);
   }
 
-  public void save(Snapshot snapshot) {}
-  public void restore(SpaceEnvironment env, Snapshot snapshot) {}
+  public void save(SnapshotWL snapshotWL) {}
+  public void restore(SpaceEnvironment env, SnapshotWL snapshotWL) {}
 }

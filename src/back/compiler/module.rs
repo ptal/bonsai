@@ -15,6 +15,7 @@
 use context::*;
 use back::code_formatter::*;
 use back::compiler::expression::*;
+use back::compiler::statement::*;
 
 pub fn compile_module(context: &Context, module: JModule) -> Partial<String> {
   ModuleCompiler::new(context).compile(module)
@@ -244,7 +245,7 @@ impl<'a> ModuleCompiler<'a>
     self.proc_uid(&process, proc_instance);
     self.fmt.push_line("return");
     self.fmt.indent();
-    // self.statement(process.body);
+    compile_statement(self.context, &mut self.fmt, process.body);
     self.fmt.unindent();
     self.fmt.terminate_line(";");
     self.fmt.close_block();

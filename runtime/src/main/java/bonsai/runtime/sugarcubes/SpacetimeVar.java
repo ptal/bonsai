@@ -53,18 +53,15 @@ public class SpacetimeVar extends Variable
     return stream.pre(time);
   }
 
-  public void save(Snapshot snapshot) {
+  public void save(SnapshotWL snapshotWL) {
     if (spacetime == Spacetime.WorldLine) {
-      snapshot.saveWorldLineVar(uid(), stream);
-    }
-    else if (spacetime == Spacetime.SingleTime) {
-      snapshot.saveSingleTimeVar(uid(), value(0));
+      snapshotWL.saveWorldLineVar(uid(), stream);
     }
   }
 
-  public void restore(SpaceEnvironment env, Snapshot snapshot) {
+  public void restore(SpaceEnvironment env, SnapshotWL snapshotWL) {
     if (spacetime == Spacetime.WorldLine) {
-      snapshot.restoreWorldLineVar(uid(), stream);
+      snapshotWL.restoreWorldLineVar(uid(), stream);
     }
     stream.next(() -> initValue.apply(env));
   }

@@ -158,12 +158,16 @@ public class Stream implements Restorable
     }
   }
 
+  /// Shared label property:
+  ///  * If the stream is unary, then it depends inductively on the inner type.
+  ///  * Otherwise, the `ref` is reset to the label value (reset must work by copy or non-mut ref) and the stream is read-only so we can use the same refs.
   public void restore(Object label) {
     if (isUnary()) {
       Cast.toRestorable(name, ref).restore(label);
     }
     else {
       Label lab = (Label) label;
+      /// TODO: Ref is reset two times! Also in `next` just after...
       resetRef(lab.ref);
       stream = lab.labels;
       size = lab.size;

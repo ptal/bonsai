@@ -12,32 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// Snapshot of the labels of the world line variables.
+/// This snapshot is shared between all the children nodes, and therefore, the `restore` method of must fulfil the `Shared label property`.
+/// This property ensures that a label can be restored an arbitrary number of time and is not modified.
+
 package bonsai.runtime.sugarcubes;
 
-import java.util.function.*;
+import java.util.*;
 import bonsai.runtime.core.*;
 
-public abstract class Variable
+public class SnapshotWL
 {
-  private String name;
-  private String uid;
+  private HashMap<String, Object> labelsWL;
 
-  public Variable(String name, String uid)
-  {
-    this.name = name;
-    this.uid = uid;
+  public SnapshotWL() {
+    this.labelsWL = new HashMap();
   }
 
-  public String name() {
-    return name;
+  public void saveWorldLineVar(String uid, Stream stream) {
+    labelsWL.put(uid, stream.label());
   }
 
-  public String uid() {
-    return uid;
+  public void restoreWorldLineVar(String uid, Stream stream) {
+    stream.restore(labelsWL.get(uid));
   }
-
-  abstract public void reset(SpaceEnvironment env);
-  abstract public Object value(int time);
-  abstract public void save(SnapshotWL snapshotWL);
-  abstract public void restore(SpaceEnvironment env, SnapshotWL snapshotWL);
 }

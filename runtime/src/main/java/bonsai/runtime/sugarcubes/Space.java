@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// `Space` represents the spacetime statement `space b1 || ... || bn end`.
+/// The fields `branches` is the code of the branches `{b1,...,bn}` and `singleTimeClosure` contains the variables annotated with `single_time` captured in any of these branches.
+
 package bonsai.runtime.sugarcubes;
 
 import java.util.*;
@@ -21,13 +24,13 @@ import inria.meije.rc.sugarcubes.implementation.*;
 
 public class Space extends Atom
 {
+  private ArrayList<String> singleTimeClosure;
   private ArrayList<SpaceBranch> branches;
-  private ArrayList<Integer> branchesIndexes;
 
-  public Space(ArrayList<SpaceBranch> branches) {
+  public Space(ArrayList<String> singleTimeClosure, ArrayList<SpaceBranch> branches) {
     super();
+    this.singleTimeClosure = singleTimeClosure;
     this.branches = branches;
-    branchesIndexes = new ArrayList();
   }
 
   public String actualToString() {
@@ -42,24 +45,33 @@ public class Space extends Atom
     for (SpaceBranch b : branches) {
       branchesCopy.add((SpaceBranch) b.copy());
     }
-    return new Space(branchesCopy);
+    return new Space(
+      (ArrayList<String>) singleTimeClosure.clone(),
+      branchesCopy);
   }
 
   public Space prepareFor(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
     for (SpaceBranch branch : branches) {
-      Integer branchIndex = env.registerSpaceBranch(branch);
-      branchesIndexes.add(branchIndex);
       branch.setParent(this);
     }
-    // We reverse the indexes so we explore from left to right the tree.
-    Collections.reverse(branchesIndexes);
     return this;
   }
 
   public boolean action(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
-    env.activateSpace(branchesIndexes);
+    env.pushSpace(this);
     return false;
+  }
+
+  public void futures(SpaceEnvironment env, SnapshotWL snapshotWL) {
+    SnapshotST snapshotST = new SnapshotST();
+    for (String varUID: singleTimeClosure) {
+      Object value = env.var(varUID, 0, Permission.READ);
+      snapshotST.saveSingleTimeVar(varUID, value);
+    }
+    for (int i = branches.size()-1; i >= 0; i--) {
+      env.pushFuture(new Future(branches.get(i), snapshotST, snapshotWL));
+    }
   }
 }

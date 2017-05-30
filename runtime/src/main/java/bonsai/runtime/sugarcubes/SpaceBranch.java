@@ -32,7 +32,6 @@ public class SpaceBranch extends UnaryInstruction
     return new SpaceBranch(body.copy());
   }
 
-  // Do not copy the branch here because it is kept in SpaceEnvironment.
   public SpaceBranch prepareFor(Environment env) {
     body = body.prepareFor(env);
     body.setParent(this);
@@ -41,9 +40,7 @@ public class SpaceBranch extends UnaryInstruction
 
   public byte activate(Environment e) {
     SpaceEnvironment env = (SpaceEnvironment) e;
-    env.enterSpaceBranch();
     byte res = body.activate(env);
-    env.exitSpaceBranch();
     return res;
   }
 }

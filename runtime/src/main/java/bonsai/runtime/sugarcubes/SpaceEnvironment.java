@@ -21,12 +21,10 @@ import inria.meije.rc.sugarcubes.*;
 
 public class SpaceEnvironment extends Clock {
   private HashMap<String, Variable> vars;
-  private ArrayDeque<Snapshot> futures;
-  private ArrayList<SpaceBranch> branches;
-  private ArrayList<Integer> activatedBranches;
+  private ArrayDeque<Future> futures;
+  private ArrayList<Space> children;
   // When we enter a branch of `space`, we depend on the single time variables of the current instantiated snapshot and not the one of the current environment.
-  private Snapshot currentSnapshot;
-  private SpaceBranch currentBranch;
+  private SnapshotST currentSnapshotST;
   private boolean inSnapshot;
 
   // This is updated by the statement `stop` and `pause up`.
@@ -41,11 +39,8 @@ public class SpaceEnvironment extends Clock {
     super(clockID, anInternalIdentifierGenerator, body);
     // vars = new HashMap(); // FIXME, cf. declareVar
     futures = new ArrayDeque();
-    // branches = new ArrayList(); // FIXME, cf. registerSpaceBranch
-    activatedBranches = new ArrayList();
-    currentSnapshot = null;
-    // FIXME, the current branch should be incorporated into the current running program. For example, one of the problem is that it does not call activateOnEOI. Not so sure... With the new commit / step protocol, things might be different, think about this as a node/edge graph.
-    currentBranch = null;
+    children = new ArrayList();
+    currentSnapshotST = null;
     inSnapshot = false;
     resetFlags();
   }
@@ -94,60 +89,36 @@ public class SpaceEnvironment extends Clock {
   }
 
   public void saveFutures() {
-    for (Integer branchIdx: activatedBranches) {
-      Snapshot future = new Snapshot(branchIdx);
-      for (Variable var : vars().values()) {
-        var.save(future);
-      }
-      futures.push(future);
+    SnapshotWL snapshotWL = new SnapshotWL();
+    for (Variable var : vars().values()) {
+      var.save(snapshotWL);
     }
-    activatedBranches.clear();
+    for (int i = children.size() - 1; i >= 0; i--) {
+      children.get(i).futures(this, snapshotWL);
+    }
+    children.clear();
+  }
+
+  public void pushFuture(Future future) {
+    this.futures.add(future);
   }
 
   // Precondition: !futures.isEmpty()
   public void instantiateFuture() {
-    currentSnapshot = futures.pop();
+    Future future = futures.pop();
     for(Variable var : vars().values()) {
-      var.restore(this, currentSnapshot);
+      var.restore(this, future.snapshotWL);
     }
-    int b = currentSnapshot.branch();
-    currentBranch = branches.get(b);
-    currentBranch.prepareFor(this);
-    currentBranch.activate(this);
+    currentSnapshotST = future.snapshotST;
+    inSnapshot = true;
+    future.branch.prepareFor(this);
+    future.branch.activate(this);
+    inSnapshot = false;
     futureInstantiated = true;
   }
 
-  // For shadowing the single time variables when executing a branch.
-  public void enterSpaceBranch() {
-    if (currentSnapshot == null) {
-      throw new RuntimeException(
-        "Cannot enter a space branch without a snapshot previously installed.");
-    }
-    inSnapshot = true;
-  }
-
-  public void exitSpaceBranch() {
-    inSnapshot = false;
-  }
-
-  public Integer registerSpaceBranch(SpaceBranch branch) {
-    // FIXME: branches can be null because `SpaceEnvironment` is used in prepareFor of instructions but prepareFor is called in the constructor of Clock.
-    if (branches == null) {
-      branches = new ArrayList();
-    }
-    branches.add(branch);
-    return branches.size() - 1;
-  }
-
-  // At the end of the current instant, the branches at `branchesIndexes` will be turned into `Snapshot` for future activation.
-  public void activateSpace(ArrayList<Integer> branchesIndexes) {
-    for (Integer idx : branchesIndexes) {
-      if (idx >= branches.size()) {
-        throw new RuntimeException(
-          "activateSpace: Try to activate an undeclared or not existing space.");
-      }
-      activatedBranches.add(idx);
-    }
+  public void pushSpace(Space space) {
+    children.add(space);
   }
 
   public void enterScope(Variable var) {
@@ -200,7 +171,7 @@ public class SpaceEnvironment extends Clock {
 
   public Object var(String uid, int time, Permission permission) {
     if (inSnapshot) {
-      Optional<Object> value = currentSnapshot.getSingleTimeValue(uid);
+      Optional<Object> value = currentSnapshotST.getSingleTimeValue(uid);
       if (value.isPresent()) {
         return value.get();
       }
@@ -221,7 +192,7 @@ public class SpaceEnvironment extends Clock {
   }
 
   private HashMap<String, Variable> vars() {
-    // FIXME: similar problem than with `registerSpaceBranch`.
+    // FIXME: `vars` can be null because `SpaceEnvironment` is used in `Instruction.prepareFor()` but this same instruction is called from the constructor of Clock.
     if (vars == null) {
       vars = new HashMap();
     }

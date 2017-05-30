@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,30 +14,18 @@
 
 package bonsai.runtime.sugarcubes;
 
-import java.util.function.*;
+import java.util.*;
 import bonsai.runtime.core.*;
 
-public abstract class Variable
+public class Future
 {
-  private String name;
-  private String uid;
+  public SpaceBranch branch;
+  public SnapshotST snapshotST;
+  public SnapshotWL snapshotWL;
 
-  public Variable(String name, String uid)
-  {
-    this.name = name;
-    this.uid = uid;
+  public Future(SpaceBranch branch, SnapshotST snapshotST, SnapshotWL snapshotWL) {
+    this.branch = branch;
+    this.snapshotST = snapshotST;
+    this.snapshotWL = snapshotWL;
   }
-
-  public String name() {
-    return name;
-  }
-
-  public String uid() {
-    return uid;
-  }
-
-  abstract public void reset(SpaceEnvironment env);
-  abstract public Object value(int time);
-  abstract public void save(SnapshotWL snapshotWL);
-  abstract public void restore(SpaceEnvironment env, SnapshotWL snapshotWL);
 }

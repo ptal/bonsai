@@ -30,6 +30,7 @@ public class LMax extends LatticeVar implements Restorable, Copy<LMax>, Resettab
     return copy();
   }
 
+  /// Shared label property: `Integer` label are automatically copied.
   public void restore(Object label) {
     this.value = (Integer) label;
   }
