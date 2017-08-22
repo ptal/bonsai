@@ -16,10 +16,13 @@ use context::*;
 use back::code_formatter::*;
 use std::collections::HashMap;
 
+/// Useful to compile expression without using the environment (for example when initializing a field).
+/// Precondition: All the free variables occuring in `expr` are supposed to be in scope.
 pub fn compile_expression(context: &Context, fmt: &mut CodeFormatter, expr: Expr) {
   ExpressionCompiler::new(context, fmt).compile(expr)
 }
 
+/// Wrap the expression inside a closure `(env) -> [[expr]]` to be executed later with the environment.
 pub fn compile_closure(context: &Context, fmt: &mut CodeFormatter, expr: Expr, return_expr: bool) {
   ExpressionCompiler::new(context, fmt).closure(expr, return_expr)
 }
@@ -49,6 +52,14 @@ impl<'a> ExpressionCompiler<'a>
       Var(var) => self.variable(var),
       Bottom => panic!("[BUG] `bot` should only appears on RHS of variable declaration (parsing stage).")
     }
+  }
+
+  fn var_uid(&mut self, uid: usize) -> String {
+    let var = self.context.var_by_uid(uid);
+    let fn_name =
+      if var.is_field() { "__uid" }
+      else { "__proc_uid" };
+    format!("{}(\"{}\")", fn_name, var.name)
   }
 
   /// A closure is generated each time we call a Java expression or need the value of a variable.

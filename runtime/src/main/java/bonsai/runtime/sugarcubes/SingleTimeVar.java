@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,22 +17,25 @@ package bonsai.runtime.sugarcubes;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 
-public class Variable
+public class SingleTimeVar extends Variable
 {
-  private String name;
-  private String uid;
+  private Object ref;
+  private Function<SpaceEnvironment, Object> initValue;
 
-  public Variable(String name, String uid)
+  private SingleTimeVar(Object ref, String name, String uid,
+    Function<SpaceEnvironment, Object> initValue)
   {
-    this.name = name;
-    this.uid = uid;
+    super(name, uid);
+    this.ref = ref;
+    this.initValue = initValue;
   }
 
-  public String name() {
-    return name;
+  public Object value() {
+    return ref;
   }
 
-  public String uid() {
-    return uid;
+  public void next() {
+    /// WRONG!
+    ref = initValue.apply(env);
   }
 }

@@ -20,10 +20,18 @@ import bonsai.runtime.core.*;
 public class Future
 {
   public SpaceBranch branch;
-  public SnapshotST snapshotST;
-  public SnapshotWL snapshotWL;
+  /// `snapshotST` stores all the single time variables captured in a space statement.
+  /// These variables are shared among all the branches of the space statement.
+  /// Note that the branch must have access to these variables only in READ-ONLY (TODO: ensure this property in the bonsai compiler).
+  public HashMap<String, SingleTimeVar> snapshotST;
+  /// Snapshot of the labels of the world line variables.
+  /// This snapshot is shared between all the children nodes, and therefore, the `restore` method of must fulfil the `Shared label property`.
+  /// This property ensures that a label can be restored an arbitrary number of time and is not modified.
+  public HashMap<String, Object> snapshotWL;
 
-  public Future(SpaceBranch branch, SnapshotST snapshotST, SnapshotWL snapshotWL) {
+  public Future(SpaceBranch branch, HashMap<String, SingleTimeVar> snapshotST,
+   SnapshotWL snapshotWL)
+  {
     this.branch = branch;
     this.snapshotST = snapshotST;
     this.snapshotWL = snapshotWL;

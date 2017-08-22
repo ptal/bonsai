@@ -214,6 +214,7 @@ impl<'a> ModuleCompiler<'a>
 
   fn proc_uid(&mut self, process: &Process, proc_instance: String) {
     self.fmt.push_line(&format!("{}++;", proc_instance));
+    // Avoid the capture of the static variable `__proc_{}_instance` in the closure `__proc_uid`: we need its current value.
     self.fmt.push_line(&format!("int __proc_instance = {};", proc_instance));
     self.fmt.push_line("java.util.function.Function<String, String> __proc_uid = ");
     self.fmt.push_line(&format!(

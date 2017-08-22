@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2017 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,29 +17,23 @@ package bonsai.runtime.sugarcubes;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 
-public class SpacetimeVar extends Variable
+public class StreamVar extends Variable
 {
-  private Spacetime spacetime;
-  private Stream stream;
-  private Function<SpaceEnvironment, Object> initValue;
+  protected Stream stream;
+  protected Function<SpaceEnvironment, Object> initValue;
 
-  public SpacetimeVar(Object ref, String name, String uid, Spacetime spacetime,
+  public StreamVar(Object ref, String name, String uid,
     Boolean isTransient, int streamSize,
     Function<SpaceEnvironment, Object> initValue)
   {
-    this(name, uid, spacetime, initValue,
+    this(name, uid, initValue,
       new Stream(ref, name, streamSize, isTransient));
   }
 
-  private SpacetimeVar(String name, String uid, Spacetime spacetime,
+  private StreamVar(String name, String uid,
     Function<SpaceEnvironment, Object> initValue, Stream stream)
   {
     super(name, uid);
-    if (stream.capacity() != 0 && spacetime == Spacetime.SingleTime) {
-      throw new RuntimeException(
-        "Single time variable cannot have a stream of past values. This is a bug.");
-    }
-    this.spacetime = spacetime;
     this.stream = stream;
     this.initValue = initValue;
   }
@@ -51,22 +45,5 @@ public class SpacetimeVar extends Variable
 
   public Object value(int time) {
     return stream.pre(time);
-  }
-
-  public void save(SnapshotWL snapshotWL) {
-    if (spacetime == Spacetime.WorldLine) {
-      snapshotWL.saveWorldLineVar(uid(), stream);
-    }
-  }
-
-  public void restore(SpaceEnvironment env, SnapshotWL snapshotWL) {
-    if (spacetime == Spacetime.WorldLine) {
-      snapshotWL.restoreWorldLineVar(uid(), stream);
-    }
-    stream.next(() -> initValue.apply(env));
-  }
-
-  public Spacetime spacetime() {
-    return spacetime;
   }
 }

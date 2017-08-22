@@ -64,14 +64,11 @@ public class Space extends Atom
     return false;
   }
 
-  public void futures(SpaceEnvironment env, SnapshotWL snapshotWL) {
-    SnapshotST snapshotST = new SnapshotST();
-    for (String varUID: singleTimeClosure) {
-      Object value = env.var(varUID, 0, Permission.READ);
-      snapshotST.saveSingleTimeVar(varUID, value);
-    }
-    for (int i = branches.size()-1; i >= 0; i--) {
-      env.pushFuture(new Future(branches.get(i), snapshotST, snapshotWL));
-    }
+  public ArrayList<String> singleTimeClosure() {
+    return singleTimeClosure;
+  }
+
+  public ArrayList<SpaceBranch> branches() {
+    return branches;
   }
 }

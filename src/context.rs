@@ -61,6 +61,10 @@ impl VarInfo {
     self.ty.name.clone()
   }
 
+  pub fn is_field(&self) -> bool {
+    self.field.is_some()
+  }
+
   pub fn is_ref(&self) -> bool {
     match &self.field {
       &Some(ref field) => field.is_ref.is_some(),

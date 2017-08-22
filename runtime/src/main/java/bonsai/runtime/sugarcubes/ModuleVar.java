@@ -30,17 +30,11 @@ public class ModuleVar extends Variable
     this.initValue = initValue;
   }
 
-  public Object value(int time) {
-    if (time != 0) {
-      throw new RuntimeException("Module variables cannot be a stream (variable `" + uid() + "`)");
-    }
+  public Object value() {
     return ref;
   }
 
   public void reset(SpaceEnvironment env) {
     ref = initValue.apply(env);
   }
-
-  public void save(SnapshotWL snapshotWL) {}
-  public void restore(SpaceEnvironment env, SnapshotWL snapshotWL) {}
 }
