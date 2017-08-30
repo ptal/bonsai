@@ -31,8 +31,8 @@ pub struct Unit<'a>
   display: &'a mut Display,
   result: Partial<Context>,
   expect: ExpectedResult,
-  expected_diagnostics: Vec<CompilerDiagnostic>,
-  obtained_diagnostics: Vec<CompilerDiagnostic>,
+  expected_diagnostics: Vec<CompilerTest>,
+  obtained_diagnostics: Vec<CompilerTest>,
   test_path: PathBuf
 }
 
@@ -40,8 +40,8 @@ impl<'a> Unit<'a>
 {
   pub fn new(display: &'a mut Display,
     result: Partial<Context>, expect: ExpectedResult,
-    expected_diagnostics: Vec<CompilerDiagnostic>,
-    obtained_diagnostics: Vec<CompilerDiagnostic>,
+    expected_diagnostics: Vec<CompilerTest>,
+    obtained_diagnostics: Vec<CompilerTest>,
     test_path: PathBuf) -> Self
   {
     Unit {

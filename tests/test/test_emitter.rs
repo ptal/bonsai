@@ -23,13 +23,13 @@ use std::cell::RefCell;
 
 pub struct TestEmitter
 {
-  obtained_diagnostics: Rc<RefCell<Vec<CompilerDiagnostic>>>,
+  obtained_diagnostics: Rc<RefCell<Vec<CompilerTest>>>,
   codemap: Rc<CodeMap>,
 }
 
 impl TestEmitter
 {
-  pub fn new(obtained_diagnostics: Rc<RefCell<Vec<CompilerDiagnostic>>>,
+  pub fn new(obtained_diagnostics: Rc<RefCell<Vec<CompilerTest>>>,
    codemap: Rc<CodeMap>) -> Self
   {
     TestEmitter {
@@ -45,7 +45,7 @@ impl Emitter for TestEmitter
     let primary_span: Span = db.span.primary_span()
       .expect("Diagnostic lacks a primary span.");
     let loc = self.codemap.lookup_char_pos(primary_span.lo);
-    let diagnostic = CompilerDiagnostic::new(
+    let diagnostic = CompilerTest::new(
       format!("{}", db.level),
       db.code.clone().unwrap_or(format!("NoCode")),
       loc.line,

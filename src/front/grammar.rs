@@ -25,22 +25,30 @@ grammar! bonsai {
 
   program = .. pre_header header java_class > make_java_program
 
-  diagnostic_attr = HASH LBRACKET string_identifier
-    LPAREN string_identifier COMMA number COMMA number RPAREN RBRACKET > make_diagnostic
+  test_annotation = HASH LBRACKET (compiler_test_attr / execution_test_attr)
 
-  fn make_diagnostic(level: String, code: String,
-   line: u64, column: u64) -> CompilerDiagnostic
+  compiler_test_attr = string_identifier LPAREN string_identifier COMMA number COMMA number RPAREN RBRACKET > make_compiler_test
+
+  execution_test_attr = "run" LPAREN expr COMMA string_literal RPAREN > make_execution_test
+
+  fn make_compiler_test(level: String, code: String,
+   line: u64, column: u64) -> TestAnnotation
   {
-    CompilerDiagnostic::new(level, code, line as usize, column as usize)
+    TestAnnotation::Compiler(CompilerTest::new(level, code, line as usize, column as usize))
   }
 
-  fn make_java_program(span: Span, pre_header: String, expected_diagnostics: Vec<CompilerDiagnostic>,
+  fn make_execution_test(expr: Expr, regex: String) -> TestAnnotation
+  {
+    TestAnnotation::Execution(ExecutionTest::new(expr, regex))
+  }
+
+  fn make_java_program(span: Span, pre_header: String, tests: Vec<TestAnnotation>,
    package: FQN, imports: Vec<JImport>,
    class_name: Ident, interfaces: Vec<JType>, items: Vec<Item>) -> Program
   {
     Program {
       header: pre_header,
-      expected_diagnostics: expected_diagnostics,
+      tests: tests,
       package: package,
       imports: imports,
       class_name: class_name,
@@ -50,9 +58,9 @@ grammar! bonsai {
     }
   }
 
-  pre_header = (!(diagnostic_attr* PACKAGE) .)* > to_string
+  pre_header = (!(test_annotation* PACKAGE) .)* > to_string
 
-  header = diagnostic_attr* java_package java_import*
+  header = test_annotation* java_package java_import*
 
   java_import
     = .. IMPORT fully_qualified_name SEMI_COLON > make_single_type_import
@@ -313,6 +321,7 @@ grammar! bonsai {
     StmtKind::Universe(Box::new(body))
   }
 
+  // No argument yet. Should not be a problem though. Just takes some time to perform the usual check (arity, ...).
   proc_call = (variable DOT)? identifier LPAREN RPAREN
 
   java_ty

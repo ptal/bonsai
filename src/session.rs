@@ -21,7 +21,8 @@ use syntex_errors::emitter::{ColorConfig, Emitter};
 use syntex_syntax::codemap::{FileMap, CodeMap};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use ast::CompilerDiagnostic;
+use ast::CompilerTest;
+use ast::ExecutionTest;
 use partial::*;
 
 pub use syntex_errors::Handler as SpanDiagnostic;
@@ -32,7 +33,8 @@ pub struct Session {
   pub config: Config,
   pub codemap: Rc<CodeMap>,
   pub span_diagnostic: SpanDiagnostic,
-  pub expected_diagnostics: Vec<CompilerDiagnostic>,
+  pub compiler_tests: Vec<CompilerTest>,
+  pub execution_tests: Vec<ExecutionTest>,
 }
 
 impl Session
@@ -44,7 +46,8 @@ impl Session
       config: config,
       codemap: codemap,
       span_diagnostic: span_diagnostic,
-      expected_diagnostics: vec![],
+      compiler_tests: vec![],
+      execution_tests: vec![]
     }
   }
 
@@ -72,8 +75,12 @@ impl Session
     self
   }
 
-  pub fn push_expected_diagnostic(&mut self, diagnostic: CompilerDiagnostic) {
-    self.expected_diagnostics.push(diagnostic);
+  pub fn push_compiler_test(&mut self, test: CompilerTest) {
+    self.compiler_tests.push(test);
+  }
+
+  pub fn push_execution_test(&mut self, test: ExecutionTest) {
+    self.execution_tests.push(test);
   }
 
   pub fn config<'a>(&'a self) -> &'a Config {

@@ -20,19 +20,26 @@ use std::hash::{Hash, Hasher};
 pub use syntex_pos::Span;
 pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
 pub use syntex_errors::Level;
+pub use regex::Regex;
+
+#[derive(Clone, Debug)]
+pub enum TestAnnotation {
+  Compiler(CompilerTest),
+  Execution(ExecutionTest)
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct CompilerDiagnostic {
+pub struct CompilerTest {
   pub level: Level,
   pub code: String,
   pub line: usize,
   pub column: usize
 }
 
-impl CompilerDiagnostic {
+impl CompilerTest {
   pub fn new(level: String, code: String, line: usize, column: usize) -> Self {
-    let level = CompilerDiagnostic::from_string_level(level);
-    CompilerDiagnostic {
+    let level = CompilerTest::from_string_level(level);
+    CompilerTest {
       level: level,
       code: code,
       line: line,
@@ -52,11 +59,28 @@ impl CompilerDiagnostic {
   }
 }
 
-impl Display for CompilerDiagnostic
+impl Display for CompilerTest
 {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
     fmt.write_fmt(format_args!("{}:{}:{}:{}", self.level,
       self.code, self.line, self.column))
+  }
+}
+
+/// Given a test specification `#[run(expr, regex)]`, execute `expr` and try to match its output with `regex`.
+#[derive(Clone, Debug)]
+pub struct ExecutionTest {
+  pub input_expr: Expr,
+  pub output_regex: Regex
+}
+
+impl ExecutionTest {
+  pub fn new(expr: Expr, regex: String) -> Self {
+    let compiled_regex = Regex::new(&regex).unwrap();
+    ExecutionTest {
+      input_expr: expr,
+      output_regex: compiled_regex
+    }
   }
 }
 
@@ -171,7 +195,7 @@ impl ModuleField {
 #[derive(Clone, Debug)]
 pub struct Program {
   pub header: String,
-  pub expected_diagnostics: Vec<CompilerDiagnostic>,
+  pub tests: Vec<TestAnnotation>,
   pub package: FQN,
   pub imports: Vec<JImport>,
   pub class_name: Ident,

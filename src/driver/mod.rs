@@ -24,7 +24,7 @@ use front;
 use middle;
 // use back;
 use context::Context;
-use ast::{JModule, JCrate};
+use ast::{JModule, JCrate, TestAnnotation};
 
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
@@ -52,8 +52,11 @@ fn run_front_module(env: Env<JCrate>, file: ModuleFile) -> Env<JCrate> {
   env.and_then(|mut session, mut jcrate| {
     let content = session.load_file(file.input_path());
     let ast = front::parse_bonsai(content).expect(ABORT_MSG);
-    for diagnostic in ast.expected_diagnostics.clone() {
-      session.push_expected_diagnostic(diagnostic);
+    for test in ast.tests.clone() {
+      match test {
+        TestAnnotation::Compiler(test) => session.push_compiler_test(test),
+        TestAnnotation::Execution(test) => session.push_execution_test(test)
+      }
     }
     jcrate.modules.push(JModule::new(file, ast));
     Env::value(session, jcrate)

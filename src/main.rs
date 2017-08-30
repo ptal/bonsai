@@ -21,6 +21,7 @@ extern crate partial;
 extern crate syntex_pos;
 extern crate syntex_syntax;
 extern crate syntex_errors;
+extern crate regex;
 
 mod session;
 mod ast;

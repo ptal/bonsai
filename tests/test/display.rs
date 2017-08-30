@@ -81,8 +81,8 @@ impl Display
   }
 
   pub fn diagnostics_failure(&mut self, path: PathBuf, test_name: String,
-    obtained_diagnostics: &Vec<CompilerDiagnostic>,
-    expected_diagnostics: &Vec<CompilerDiagnostic>)
+    obtained_diagnostics: &Vec<CompilerTest>,
+    expected_diagnostics: &Vec<CompilerTest>)
   {
     self.failure(path, test_name);
     self.obtained(obtained_diagnostics);
@@ -96,23 +96,23 @@ impl Display
   }
 
   pub fn should_succeed(&mut self, path: PathBuf, test_name: String,
-    obtained_diagnostics: &Vec<CompilerDiagnostic>)
+    obtained_diagnostics: &Vec<CompilerTest>)
   {
     self.failure(path, test_name);
     self.error(format!("Compilation should have succeeded but failed."));
     self.write_diagnostics(color::RED, "  [ obtained ] ", obtained_diagnostics);
   }
 
-  fn obtained(&mut self, diagnostics: &Vec<CompilerDiagnostic>) {
+  fn obtained(&mut self, diagnostics: &Vec<CompilerTest>) {
     self.write_diagnostics(color::CYAN, "  [ obtained ] ", diagnostics);
   }
 
-  fn expected(&mut self, diagnostics: &Vec<CompilerDiagnostic>) {
+  fn expected(&mut self, diagnostics: &Vec<CompilerTest>) {
     self.write_diagnostics(color::CYAN, "  [ expected ] ", diagnostics);
   }
 
   fn write_diagnostics(&mut self, color: color::Color, header: &str,
-   diagnostics: &Vec<CompilerDiagnostic>)
+   diagnostics: &Vec<CompilerTest>)
   {
     if diagnostics.len() == 0 {
       self.full_success(color, header);

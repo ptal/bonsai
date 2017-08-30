@@ -29,7 +29,7 @@
 ///     (a) `ref` variables can only be retrieved from the environment, however it is not accessible when initializing the field.
 ///     (b) However `ref` variables can be retrieved in the constructor.
 ///   Future works:
-///     * The well-formed initialization of (field) modules is left to the user. Indeed, we do not check what the code in the Java constructor.
+///     * The well-formed initialization of (field) modules is left to the user. Indeed, we do not check what is the code in the Java constructor.
 
 use context::*;
 use session::*;

@@ -93,7 +93,7 @@ impl Engine
     let session = session.reset_diagnostic();
     let obtained_diagnostics = Rc::try_unwrap(obtained_diagnostics)
       .expect("Could not extract `obtained_diagnostics`.").into_inner();
-    let unit = Unit::new(&mut self.display, context, expect, session.expected_diagnostics,
+    let unit = Unit::new(&mut self.display, context, expect, session.compiler_tests,
       obtained_diagnostics, filepath);
     unit.diagnostic();
   }
