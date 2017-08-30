@@ -13,14 +13,10 @@
 // limitations under the License.
 
 pub use ast::*;
-pub use session::*;
 pub use visitor::*;
 pub use partial::*;
-use driver::config::Config;
-use std::ops::Deref;
 
-pub struct Context<'a> {
-  pub session: &'a Session,
+pub struct Context {
   pub ast: JCrate,
   pub vars: Vec<VarInfo>,
   pub modules: Vec<ModuleInfo>
@@ -114,18 +110,13 @@ impl ModuleInfo {
   }
 }
 
-impl<'a> Context<'a> {
-  pub fn new(session: &'a Session, ast: JCrate) -> Self {
+impl Context {
+  pub fn new(ast: JCrate) -> Self {
     Context {
-      session: session,
       ast: ast,
       vars: vec![VarInfo::local(Ident::gen("<error-var>"), Kind::example(), JType::example())],
       modules: vec![]
     }
-  }
-
-  pub fn config(&self) -> &'a Config {
-    self.session.config()
   }
 
   pub fn clone_ast(&self) -> JCrate {
@@ -179,14 +170,5 @@ impl<'a> Context<'a> {
       .find(|m| m.name == name)
       .cloned()
       .expect("module_by_name: Module not declared.")
-  }
-
-}
-
-impl<'a> Deref for Context<'a> {
-  type Target = Session;
-
-  fn deref(&self) -> &Session {
-    self.session
   }
 }

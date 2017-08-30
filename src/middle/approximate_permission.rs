@@ -19,39 +19,42 @@
 /// In an entailment condition `e |= e'`, every variables appearing in `e` or `e'` are supposed to be only read.
 
 use context::*;
+use session::*;
 
-pub fn approximate_permission<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let permission = ApproximatePermission::new(context);
+pub fn approximate_permission(session: Session, context: Context) -> Env<Context> {
+  let permission = ApproximatePermission::new(session, context);
   permission.compute()
 }
 
-struct ApproximatePermission<'a> {
-  context: Context<'a>,
+struct ApproximatePermission {
+  session: Session,
+  context: Context,
   perm_context: Permission,
   context_span: Span
 }
 
-impl<'a> ApproximatePermission<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl ApproximatePermission {
+  pub fn new(session: Session, context: Context) -> Self {
     ApproximatePermission {
+      session: session,
       context: context,
       perm_context: Permission::ReadWrite,
       context_span: DUMMY_SP
     }
   }
 
-  fn session(&'a self) -> &'a Session {
-    self.context.session
+  fn session<'a>(&'a self) -> &'a Session {
+    &self.session
   }
 
-  fn compute(mut self) -> Partial<Context<'a>> {
+  fn compute(mut self) -> Env<Context> {
     let mut bcrate_clone = self.context.clone_ast();
     self.visit_crate(&mut bcrate_clone);
     self.context.replace_ast(bcrate_clone);
-    if self.session().has_errors() {
-      Partial::Fake(self.context)
+    if self.session.has_errors() {
+      Env::fake(self.session, self.context)
     } else {
-      Partial::Value(self.context)
+      Env::value(self.session, self.context)
     }
   }
 
@@ -90,7 +93,7 @@ impl<'a> ApproximatePermission<'a> {
   }
 }
 
-impl<'a> VisitorMut<JClass> for ApproximatePermission<'a>
+impl VisitorMut<JClass> for ApproximatePermission
 {
   fn visit_var(&mut self, var: &mut Variable) {
     self.pre_on_variable(var);

@@ -19,62 +19,64 @@ mod file_filter;
 pub use self::config::*;
 use self::file_filter::*;
 use self::module_file::*;
-use partial::*;
 use session::*;
 use front;
 use middle;
-use back;
+// use back;
 use context::Context;
 use ast::{JModule, JCrate};
 
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
 pub fn run() {
-  let mut session = Session::new(Config::new());
-  let context = front_mid_run(&mut session)
+  let session = Session::new(Config::new());
+  front_mid_run(session)
+    .and_next(run_back)
     .expect(ABORT_MSG);
-  assert_eq!(context.session.has_errors(), false);
-  run_back(context);
 }
 
-pub fn front_mid_run<'a>(session: &'a mut Session) -> Partial<Context<'a>> {
-  run_front(session)
-    .and_then(move |jcrate| run_middle(Context::new(session, jcrate)))
+pub fn front_mid_run<'a>(session: Session) -> Env<Context> {
+  let env = run_front(session)
+    .map(|jcrate| Context::new(jcrate))
+    .ensure(ABORT_MSG);
+  run_middle(env)
 }
 
-fn run_front(session: &mut Session) -> Partial<JCrate> {
-  let file_filter = FileFilter::new(session.config());
-  let mut jcrate = JCrate::new();
-  for file in file_filter {
-    run_front_module(session, file)
-      .map(|module| jcrate.modules.push(module))
-      .expect(ABORT_MSG);
-  }
-  Partial::Value(jcrate)
+fn run_front(session: Session) -> Env<JCrate> {
+  FileFilter::new(session.config())
+    .into_iter()
+    .fold(Env::value(session, JCrate::new()), run_front_module)
 }
 
-fn run_front_module(session: &mut Session, file: ModuleFile) -> Partial<JModule> {
-  Partial::Value(session.load_file(file.input_path()))
-    .and_then(front::parse_bonsai)
-    .map(|ast| {
-      for diagnostic in ast.expected_diagnostics.clone() {
-        session.push_expected_diagnostic(diagnostic);
-      }
-      ast })
-    .map(|ast| JModule::new(file, ast))
-}
-
-fn run_middle<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  middle::analyse_bonsai(context)
-}
-
-fn run_back(context: Context) {
-  for module in context.ast.modules.clone() {
-    if !module.file.is_lib() {
-      let file = module.file.clone();
-      back::compile_module(&context, module)
-        .map(|output| file.write_output(output))
-        .expect(ABORT_MSG);
+fn run_front_module(env: Env<JCrate>, file: ModuleFile) -> Env<JCrate> {
+  env.and_then(|mut session, mut jcrate| {
+    let content = session.load_file(file.input_path());
+    let ast = front::parse_bonsai(content).expect(ABORT_MSG);
+    for diagnostic in ast.expected_diagnostics.clone() {
+      session.push_expected_diagnostic(diagnostic);
     }
-  }
+    jcrate.modules.push(JModule::new(file, ast));
+    Env::value(session, jcrate)
+  })
+}
+
+fn run_middle<'a>(env: Env<Context>) -> Env<Context> {
+  middle::analyse_bonsai(env)
+}
+
+fn run_back(session: Session, context: Context) -> Env<Context> {
+  assert_eq!(session.has_errors(), false);
+  Env::value(session, context)
+  // context.ast.modules.clone()
+  //   .into_iter()
+  //   .filter(|module| module.file.is_lib())
+  //   .fold(Env::value(session, context), |env, module| {
+  //     let file = module.file.clone();
+  //     back::compile_module(env, module)
+  //       .map(|(context, output)| {
+  //         file.write_output(output);
+  //         context
+  //       })
+  //       .ensure(ABORT_MSG)
+  //   })
 }

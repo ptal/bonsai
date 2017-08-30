@@ -21,6 +21,7 @@ mod approximate_permission;
 mod constructor;
 
 use context::*;
+use session::*;
 use middle::duplicate::*;
 use middle::undeclared::*;
 use middle::resolve::*;
@@ -29,8 +30,8 @@ use middle::stream_bound::*;
 use middle::approximate_permission::*;
 use middle::constructor::*;
 
-pub fn analyse_bonsai<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  Partial::Value(context)
+pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
+  env
     .and_then(duplicate)
     .and_then(undeclared)
     .and_then(resolve)

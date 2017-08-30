@@ -18,23 +18,26 @@
 ///  (3) Spacetime fields in modules.
 
 use context::*;
+use session::*;
 use std::collections::HashMap;
 
-pub fn duplicate<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let duplicate = Duplicate::new(context);
+pub fn duplicate(session: Session, context: Context) -> Env<Context> {
+  let duplicate = Duplicate::new(session, context);
   duplicate.analyse()
 }
 
-struct Duplicate<'a> {
-  context: Context<'a>,
+struct Duplicate {
+  session: Session,
+  context: Context,
   dup_local_vars: HashMap<String, Span>,
   dup_mod_fields: HashMap<String, Span>,
   dup_procs: HashMap<String, Span>,
 }
 
-impl<'a> Duplicate<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl Duplicate {
+  pub fn new(session: Session, context: Context) -> Self {
     Duplicate {
+      session: session,
       context: context,
       dup_local_vars: HashMap::new(),
       dup_mod_fields: HashMap::new(),
@@ -42,17 +45,17 @@ impl<'a> Duplicate<'a> {
     }
   }
 
-  fn session(&'a self) -> &'a Session {
-    self.context.session
+  fn session<'a>(&'a self) -> &'a Session {
+    &self.session
   }
 
-  fn analyse(mut self) -> Partial<Context<'a>> {
+  fn analyse(mut self) -> Env<Context> {
     let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    if self.session().has_errors() {
-      Partial::Fake(self.context)
+    if self.session.has_errors() {
+      Env::fake(self.session, self.context)
     } else {
-      Partial::Value(self.context)
+      Env::value(self.session, self.context)
     }
   }
 
@@ -110,7 +113,7 @@ impl<'a> Duplicate<'a> {
   }
 }
 
-impl<'a> Visitor<JClass> for Duplicate<'a>
+impl Visitor<JClass> for Duplicate
 {
   fn visit_module(&mut self, module: JModule) {
     self.reset_dup_procs();

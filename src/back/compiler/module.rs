@@ -22,7 +22,7 @@ pub fn compile_module(context: &Context, module: JModule) -> Partial<String> {
 }
 
 struct ModuleCompiler<'a> {
-  context: &'a Context<'a>,
+  context: &'a Context,
   fmt: CodeFormatter
 }
 

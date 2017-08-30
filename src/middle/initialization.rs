@@ -32,38 +32,41 @@
 ///     * The well-formed initialization of (field) modules is left to the user. Indeed, we do not check what the code in the Java constructor.
 
 use context::*;
+use session::*;
 
-pub fn initialization<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let initialization = Initialization::new(context);
+pub fn initialization(session: Session, context: Context) -> Env<Context> {
+  let initialization = Initialization::new(session, context);
   initialization.analyse()
 }
 
-struct Initialization<'a> {
-  context: Context<'a>,
+struct Initialization {
+  session: Session,
+  context: Context,
   current_mod: usize,
   visiting_fields: bool
 }
 
-impl<'a> Initialization<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl Initialization {
+  pub fn new(session: Session, context: Context) -> Self {
     Initialization {
+      session: session,
       context: context,
       current_mod: 0,
       visiting_fields: false,
     }
   }
 
-  fn session(&'a self) -> &'a Session {
-    self.context.session
+  fn session<'a>(&'a self) -> &'a Session {
+    &self.session
   }
 
-  fn analyse(mut self) -> Partial<Context<'a>> {
+  fn analyse(mut self) -> Env<Context> {
     let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    if self.session().has_errors() {
-      Partial::Fake(self.context)
+    if self.session.has_errors() {
+      Env::fake(self.session, self.context)
     } else {
-      Partial::Value(self.context)
+      Env::value(self.session, self.context)
     }
   }
 
@@ -247,7 +250,7 @@ impl<'a> Initialization<'a> {
   }
 }
 
-impl<'a> Visitor<JClass> for Initialization<'a>
+impl Visitor<JClass> for Initialization
 {
   fn visit_crate(&mut self, bcrate: JCrate) {
     for (i, module) in bcrate.modules.into_iter().enumerate() {

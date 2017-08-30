@@ -16,39 +16,42 @@
 /// In addition, it computes a unique identifier (UID) for variables local to modules. It does not assign a UID to variable of the form `m.a` or `m.a.b` because the UID for each module's variables is not yet accessible—since being computed. This next step is done in `resolve.rs`.
 
 use context::*;
+use session::*;
 
-pub fn undeclared<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let undeclared = Undeclared::new(context);
+pub fn undeclared(session: Session, context: Context) -> Env<Context> {
+  let undeclared = Undeclared::new(session, context);
   undeclared.analyse()
 }
 
-struct Undeclared<'a> {
-  context: Context<'a>,
+struct Undeclared {
+  session: Session,
+  context: Context,
   in_scope_vars: Vec<(Ident, usize)>,
   in_scope_processes: Vec<Ident>,
 }
 
-impl<'a> Undeclared<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl Undeclared {
+  pub fn new(session: Session, context: Context) -> Self {
     Undeclared {
+      session: session,
       context: context,
       in_scope_vars: Vec::new(),
       in_scope_processes: Vec::new(),
     }
   }
 
-  fn session(&'a self) -> &'a Session {
-    self.context.session
+  fn session<'a>(&'a self) -> &'a Session {
+    &self.session
   }
 
-  fn analyse(mut self) -> Partial<Context<'a>> {
+  fn analyse(mut self) -> Env<Context> {
     let mut bcrate_clone = self.context.clone_ast();
     self.visit_crate(&mut bcrate_clone);
     self.context.replace_ast(bcrate_clone);
-    if self.session().has_errors() {
-      Partial::Fake(self.context)
+    if self.session.has_errors() {
+      Env::fake(self.session, self.context)
     } else {
-      Partial::Value(self.context)
+      Env::value(self.session, self.context)
     }
   }
 
@@ -141,7 +144,7 @@ impl<'a> Undeclared<'a> {
   }
 }
 
-impl<'a> VisitorMut<JClass> for Undeclared<'a>
+impl<'a> VisitorMut<JClass> for Undeclared
 {
   fn visit_module(&mut self, module: &mut JModule) {
     for field in &mut module.fields {

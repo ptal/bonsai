@@ -21,6 +21,7 @@ use std::cell::RefCell;
 
 use std::path::{PathBuf, Path};
 use std::fs::read_dir;
+use partial::*;
 
 use test::*;
 use test::ExpectedResult::*;
@@ -52,20 +53,24 @@ impl Engine
     let test_path = self.test_path.clone();
     self.display.title("    Bonsai compiler tests suite");
     self.test_directory(format!("Compile and Pass tests."),
-      test_path.join(Path::new("compile-pass")), CompileSuccess);
+      test_path.join(Path::new("compile-pass")), CompileSuccess, false);
     self.test_directory(format!("Compile and Fail tests"),
-      test_path.join(Path::new("compile-fail")), CompileFail);
+      test_path.join(Path::new("compile-fail")), CompileFail, false);
+    self.test_directory(format!("Compile and Run tests"),
+      test_path.join(Path::new("run-pass")), CompileSuccess, true);
     self.display.stats();
     self.display.panic_if_failure();
   }
 
-  fn test_directory(&mut self, start_msg: String, directory: PathBuf, expect: ExpectedResult) {
+  fn test_directory(&mut self, start_msg: String, directory: PathBuf,
+    expect: ExpectedResult, run: bool)
+  {
     self.display.info(start_msg);
     match read_dir(&directory) {
       Ok(dir_entries) => {
         for entry in dir_entries.map(Result::unwrap).map(|entry| entry.path()) {
           if entry.is_file() {
-            self.test_file(entry, expect);
+            self.compile_and_run(entry, expect, run);
           } else {
             self.display.warn(format!("Entry ignored because it's not a file."));
             self.display.path(entry);
@@ -78,20 +83,21 @@ impl Engine
     }
   }
 
-  fn test_file(&mut self, filepath: PathBuf, expect: ExpectedResult) {
+  fn compile_and_run(&mut self, filepath: PathBuf, expect: ExpectedResult, run: bool) {
     let obtained_diagnostics = Rc::new(RefCell::new(vec![]));
     let codemap = Rc::new(CodeMap::new());
-    let (result, expected_diagnostics) = {
-      let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
-      let mut session = Session::testing_mode(filepath.clone(),
-        vec![self.test_lib.clone()], codemap.clone(), emitter);
-      let result = front_mid_run(&mut session).map(|c| c.clone_ast());
-      (result, session.expected_diagnostics)
-    };
+    let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
+    let session = Session::testing_mode(filepath.clone(),
+      vec![self.test_lib.clone()], codemap.clone(), emitter);
+    let (session, context) = front_mid_run(session).decompose();
+    let session = session.reset_diagnostic();
     let obtained_diagnostics = Rc::try_unwrap(obtained_diagnostics)
       .expect("Could not extract `obtained_diagnostics`.").into_inner();
-    let test = TestUnit::new(&mut self.display, result, expect, expected_diagnostics,
+    let unit = Unit::new(&mut self.display, context, expect, session.expected_diagnostics,
       obtained_diagnostics, filepath);
-    test.diagnostic();
+    unit.diagnostic();
+  }
+
+  fn run_file(&mut self, filepath: PathBuf) {
   }
 }

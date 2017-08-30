@@ -17,34 +17,37 @@
 ///  (b) Register the module in the context with its associated constructor `ref` parameters list.
 
 use context::*;
+use session::*;
 
-pub fn constructor<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let constructor = Constructor::new(context);
+pub fn constructor(session: Session, context: Context) -> Env<Context> {
+  let constructor = Constructor::new(session, context);
   constructor.analyse()
 }
 
-struct Constructor<'a> {
-  context: Context<'a>,
+struct Constructor {
+  session: Session,
+  context: Context,
 }
 
-impl<'a> Constructor<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl Constructor {
+  pub fn new(session: Session, context: Context) -> Self {
     Constructor {
+      session: session,
       context: context,
     }
   }
 
-  fn session(&'a self) -> &'a Session {
-    self.context.session
+  fn session<'a>(&'a self) -> &'a Session {
+    &self.session
   }
 
-  fn analyse(mut self) -> Partial<Context<'a>> {
+  fn analyse(mut self) -> Env<Context> {
     let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    if self.session().has_errors() {
-      Partial::Fake(self.context)
+    if self.session.has_errors() {
+      Env::fake(self.session, self.context)
     } else {
-      Partial::Value(self.context)
+      Env::value(self.session, self.context)
     }
   }
 
@@ -140,7 +143,7 @@ impl<'a> Constructor<'a> {
   }
 }
 
-impl<'a> Visitor<JClass> for Constructor<'a>
+impl Visitor<JClass> for Constructor
 {
   fn visit_module(&mut self, module: JModule) {
     self.register_module(&module);

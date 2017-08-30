@@ -22,8 +22,11 @@ use syntex_syntax::codemap::{FileMap, CodeMap};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use ast::CompilerDiagnostic;
+use partial::*;
 
 pub use syntex_errors::Handler as SpanDiagnostic;
+
+pub type Env<T> = Environment<Session, T>;
 
 pub struct Session {
   pub config: Config,
@@ -59,6 +62,14 @@ impl Session
       true, false, emitter);
     Session::init(Config::testing_mode(file_to_test, libs),
       codemap, span_diagnostic)
+  }
+
+  // `reset_diagnostic` is necessary when testing because `SpanDiagnostic` might encapsulate some references to a shared object.
+  // By replacing it, we decrease the reference count.
+  pub fn reset_diagnostic(mut self) -> Self {
+    self.span_diagnostic = SpanDiagnostic::with_tty_emitter(
+      ColorConfig::Always, true, false, Some(self.codemap.clone()));
+    self
   }
 
   pub fn push_expected_diagnostic(&mut self, diagnostic: CompilerDiagnostic) {

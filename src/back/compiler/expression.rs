@@ -28,7 +28,7 @@ pub fn compile_closure(context: &Context, fmt: &mut CodeFormatter, expr: Expr, r
 }
 
 struct ExpressionCompiler<'a> {
-  context: &'a Context<'a>,
+  context: &'a Context,
   fmt: &'a mut CodeFormatter
 }
 

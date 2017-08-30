@@ -19,37 +19,40 @@
 /// (3) Compute the UID of path variables.
 
 use context::*;
+use session::*;
 
-pub fn resolve<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let resolve = Resolve::new(context);
+pub fn resolve(session: Session, context: Context) -> Env<Context> {
+  let resolve = Resolve::new(session, context);
   resolve.analyse()
 }
 
-struct Resolve<'a> {
-  context: Context<'a>,
+struct Resolve {
+  session: Session,
+  context: Context,
   current_mod: usize
 }
 
-impl<'a> Resolve<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl Resolve {
+  pub fn new(session: Session, context: Context) -> Self {
     Resolve {
+      session: session,
       context: context,
       current_mod: 0
     }
   }
 
-  fn session(&'a self) -> &'a Session {
-    self.context.session
+  fn session<'a>(&'a self) -> &'a Session {
+    &self.session
   }
 
-  fn analyse(mut self) -> Partial<Context<'a>> {
+  fn analyse(mut self) -> Env<Context> {
     let mut bcrate_clone = self.context.clone_ast();
     self.visit_crate(&mut bcrate_clone);
     self.context.replace_ast(bcrate_clone);
-    if self.session().has_errors() {
-      Partial::Nothing
+    if self.session.has_errors() {
+      Env::nothing(self.session)
     } else {
-      Partial::Value(self.context)
+      Env::value(self.session, self.context)
     }
   }
 
@@ -128,7 +131,7 @@ impl<'a> Resolve<'a> {
   }
 }
 
-impl<'a> VisitorMut<JClass> for Resolve<'a>
+impl VisitorMut<JClass> for Resolve
 {
   fn visit_crate(&mut self, bcrate: &mut JCrate) {
     for (i, module) in bcrate.modules.iter_mut().enumerate() {

@@ -15,28 +15,31 @@
 /// For each binding, we compute its maximum stream bound. It is the maximum number of `pre` occuring before the variable.
 
 use context::*;
+use session::*;
 use std::cmp::max;
 
-pub fn stream_bound<'a>(context: Context<'a>) -> Partial<Context<'a>> {
-  let stream_bound = StreamBound::new(context);
+pub fn stream_bound(session: Session, context: Context) -> Env<Context> {
+  let stream_bound = StreamBound::new(session, context);
   stream_bound.compute()
 }
 
-struct StreamBound<'a> {
-  context: Context<'a>
+struct StreamBound {
+  session: Session,
+  context: Context
 }
 
-impl<'a> StreamBound<'a> {
-  pub fn new(context: Context<'a>) -> Self {
+impl StreamBound {
+  pub fn new(session: Session, context: Context) -> Self {
     StreamBound {
+      session: session,
       context: context
     }
   }
 
-  fn compute(mut self) -> Partial<Context<'a>> {
+  fn compute(mut self) -> Env<Context> {
     let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
-    Partial::Value(self.context)
+    Env::value(self.session, self.context)
   }
 
   fn bound_of<'b>(&'b mut self, uid: usize) -> &'b mut usize {
@@ -44,7 +47,7 @@ impl<'a> StreamBound<'a> {
   }
 }
 
-impl<'a> Visitor<JClass> for StreamBound<'a>
+impl Visitor<JClass> for StreamBound
 {
   fn visit_var(&mut self, var: Variable) {
     let bound = self.bound_of(var.last_uid());

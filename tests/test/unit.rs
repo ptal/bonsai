@@ -17,6 +17,7 @@ extern crate libbonsai;
 use test::*;
 
 use libbonsai::ast::*;
+use libbonsai::context::*;
 
 use partial::*;
 
@@ -25,25 +26,25 @@ use std::path::{PathBuf};
 use ExpectedResult::*;
 use ExpectedResult;
 
-pub struct TestUnit<'a>
+pub struct Unit<'a>
 {
   display: &'a mut Display,
-  result: Partial<JCrate>,
+  result: Partial<Context>,
   expect: ExpectedResult,
   expected_diagnostics: Vec<CompilerDiagnostic>,
   obtained_diagnostics: Vec<CompilerDiagnostic>,
   test_path: PathBuf
 }
 
-impl<'a> TestUnit<'a>
+impl<'a> Unit<'a>
 {
   pub fn new(display: &'a mut Display,
-    result: Partial<JCrate>, expect: ExpectedResult,
+    result: Partial<Context>, expect: ExpectedResult,
     expected_diagnostics: Vec<CompilerDiagnostic>,
     obtained_diagnostics: Vec<CompilerDiagnostic>,
     test_path: PathBuf) -> Self
   {
-    TestUnit {
+    Unit {
       display: display,
       result: result,
       expect: expect,
@@ -61,13 +62,13 @@ impl<'a> TestUnit<'a>
   }
 
   fn compilation_status(&mut self, file_name: String) -> bool {
-    match (self.result.clone(), self.expect) {
-      (Partial::Value(_), CompileFail) => {
+    match (&self.result, self.expect) {
+      (&Partial::Value(_), CompileFail) => {
         self.display.should_fail(self.test_path.clone(), file_name);
         false
       }
-      (Partial::Fake(_), CompileSuccess)
-    | (Partial::Nothing, CompileSuccess) => {
+      (&Partial::Fake(_), CompileSuccess)
+    | (&Partial::Nothing, CompileSuccess) => {
         self.display.should_succeed(self.test_path.clone(), file_name, &self.obtained_diagnostics);
         false
       }
