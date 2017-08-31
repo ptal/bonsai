@@ -13,29 +13,32 @@
 // limitations under the License.
 
 use context::*;
+use session::*;
 use back::code_formatter::*;
 use std::collections::HashMap;
 
 /// Useful to compile expression without using the environment (for example when initializing a field).
 /// Precondition: All the free variables occuring in `expr` are supposed to be in scope.
-pub fn compile_expression(context: &Context, fmt: &mut CodeFormatter, expr: Expr) {
-  ExpressionCompiler::new(context, fmt).compile(expr)
+pub fn compile_expression(session: &Session, context: &Context, fmt: &mut CodeFormatter, expr: Expr) {
+  ExpressionCompiler::new(session, context, fmt).compile(expr)
 }
 
 /// Wrap the expression inside a closure `(env) -> [[expr]]` to be executed later with the environment.
-pub fn compile_closure(context: &Context, fmt: &mut CodeFormatter, expr: Expr, return_expr: bool) {
-  ExpressionCompiler::new(context, fmt).closure(expr, return_expr)
+pub fn compile_closure(session: &Session, context: &Context, fmt: &mut CodeFormatter, expr: Expr, return_expr: bool) {
+  ExpressionCompiler::new(session, context, fmt).closure(expr, return_expr)
 }
 
 struct ExpressionCompiler<'a> {
+  session: &'a Session,
   context: &'a Context,
   fmt: &'a mut CodeFormatter
 }
 
 impl<'a> ExpressionCompiler<'a>
 {
-  fn new(context: &'a Context, fmt: &'a mut CodeFormatter) -> Self {
+  fn new(session: &'a Session, context: &'a Context, fmt: &'a mut CodeFormatter) -> Self {
     ExpressionCompiler {
+      session: session,
       context: context,
       fmt: fmt
     }

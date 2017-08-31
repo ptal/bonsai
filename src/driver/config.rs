@@ -96,7 +96,7 @@ impl Config
       output: file_to_test,
       libs: libs,
       main_method: None,
-      debug: true,
+      debug: false,
       testing_mode: true
     }
   }

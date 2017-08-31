@@ -22,7 +22,7 @@ use self::module_file::*;
 use session::*;
 use front;
 use middle;
-// use back;
+use back;
 use context::Context;
 use ast::{JModule, JCrate, TestAnnotation};
 
@@ -67,19 +67,18 @@ fn run_middle<'a>(env: Env<Context>) -> Env<Context> {
   middle::analyse_bonsai(env)
 }
 
-fn run_back(session: Session, context: Context) -> Env<Context> {
+pub fn run_back(session: Session, context: Context) -> Env<Context> {
   assert_eq!(session.has_errors(), false);
-  Env::value(session, context)
-  // context.ast.modules.clone()
-  //   .into_iter()
-  //   .filter(|module| module.file.is_lib())
-  //   .fold(Env::value(session, context), |env, module| {
-  //     let file = module.file.clone();
-  //     back::compile_module(env, module)
-  //       .map(|(context, output)| {
-  //         file.write_output(output);
-  //         context
-  //       })
-  //       .ensure(ABORT_MSG)
-  //   })
+  context.ast.modules.clone()
+    .into_iter()
+    .filter(|module| module.file.is_lib())
+    .fold(Env::value(session, context), |env, module| {
+      let file = module.file.clone();
+      back::compile_module(env, module)
+        .map(|(context, output)| {
+          file.write_output(output);
+          context
+        })
+        .ensure(ABORT_MSG)
+    })
 }

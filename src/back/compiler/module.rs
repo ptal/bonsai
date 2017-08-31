@@ -13,23 +13,29 @@
 // limitations under the License.
 
 use context::*;
+use session::*;
 use back::code_formatter::*;
 use back::compiler::expression::*;
 use back::compiler::statement::*;
 
-pub fn compile_module(context: &Context, module: JModule) -> Partial<String> {
-  ModuleCompiler::new(context).compile(module)
+pub fn compile_module(env: Env<Context>, module: JModule) -> Env<(Context, String)> {
+  env.and_next(|session, context| {
+    let code = ModuleCompiler::new(&session, &context).compile(module);
+    Env::new(session, code.map(|code| (context, code)))
+  })
 }
 
 struct ModuleCompiler<'a> {
+  session: &'a Session,
   context: &'a Context,
   fmt: CodeFormatter
 }
 
 impl<'a> ModuleCompiler<'a>
 {
-  fn new(context: &'a Context) -> Self {
+  fn new(session: &'a Session, context: &'a Context) -> Self {
     ModuleCompiler {
+      session: session,
       context: context,
       fmt: CodeFormatter::new()
     }
@@ -70,9 +76,9 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn runtime_boilerplate(&mut self, module: &JModule) {
-    self.runtime_object_uid(&module);
-    self.runtime_init_method(&module);
-    self.runtime_destroy_method(&module);
+    self.runtime_object_uid(module);
+    self.runtime_init_method(module);
+    self.runtime_destroy_method(module);
   }
 
   fn class_decl(&mut self, jclass: &JClass) {
@@ -95,11 +101,11 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn main_method(&mut self, class_name: Ident) {
-    if let Some(main) = self.context.config().main_method.clone() {
+    if let Some(main) = self.session.config().main_method.clone() {
       if main.class == *class_name {
         self.fmt.push_line("public static void main(String[] args)");
         self.fmt.open_block();
-        let machine_method = if self.context.config().debug { "createDebug" } else { "create" };
+        let machine_method = if self.session.config().debug { "createDebug" } else { "create" };
         self.fmt.push_block(format!("\
           {} current = new {}();\n\
           Program program = current.{}();\n\
@@ -160,7 +166,7 @@ impl<'a> ModuleCompiler<'a>
         self.fmt.push(&format!("new {}()", field.binding.ty.name));
       }
       else {
-        compile_expression(&self.context, &mut self.fmt, expr);
+        compile_expression(self.session, self.context, &mut self.fmt, expr);
       }
     }
     self.fmt.terminate_line(";");
@@ -246,7 +252,7 @@ impl<'a> ModuleCompiler<'a>
     self.proc_uid(&process, proc_instance);
     self.fmt.push_line("return");
     self.fmt.indent();
-    compile_statement(self.context, &mut self.fmt, process.body);
+    compile_statement(self.session, self.context, &mut self.fmt, process.body);
     self.fmt.unindent();
     self.fmt.terminate_line(";");
     self.fmt.close_block();

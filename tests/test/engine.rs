@@ -14,6 +14,7 @@
 
 use libbonsai::session::*;
 use libbonsai::driver::*;
+use libbonsai::context::*;
 
 use syntex_syntax::codemap::{CodeMap};
 use std::rc::Rc;
@@ -21,7 +22,6 @@ use std::cell::RefCell;
 
 use std::path::{PathBuf, Path};
 use std::fs::read_dir;
-use partial::*;
 
 use test::*;
 use test::ExpectedResult::*;
@@ -63,14 +63,14 @@ impl Engine
   }
 
   fn test_directory(&mut self, start_msg: String, directory: PathBuf,
-    expect: ExpectedResult, run: bool)
+    expect: ExpectedResult, execute: bool)
   {
     self.display.info(start_msg);
     match read_dir(&directory) {
       Ok(dir_entries) => {
         for entry in dir_entries.map(Result::unwrap).map(|entry| entry.path()) {
           if entry.is_file() {
-            self.compile_and_run(entry, expect, run);
+            self.compile_and_run(entry, expect, execute);
           } else {
             self.display.warn(format!("Entry ignored because it's not a file."));
             self.display.path(entry);
@@ -83,7 +83,7 @@ impl Engine
     }
   }
 
-  fn compile_and_run(&mut self, filepath: PathBuf, expect: ExpectedResult, run: bool) {
+  fn compile_and_run(&mut self, filepath: PathBuf, expect: ExpectedResult, execute: bool) {
     let obtained_diagnostics = Rc::new(RefCell::new(vec![]));
     let codemap = Rc::new(CodeMap::new());
     let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
@@ -93,11 +93,19 @@ impl Engine
     let session = session.reset_diagnostic();
     let obtained_diagnostics = Rc::try_unwrap(obtained_diagnostics)
       .expect("Could not extract `obtained_diagnostics`.").into_inner();
-    let unit = Unit::new(&mut self.display, context, expect, session.compiler_tests,
-      obtained_diagnostics, filepath);
-    unit.diagnostic();
+    let context = {
+      let compile_test = CompileTest::new(&mut self.display, context, expect, session.compiler_tests.clone(),
+        obtained_diagnostics, filepath);
+      compile_test.diagnostic()
+    };
+    if let Some(context) = context {
+      if execute {
+        self.run_file(session, context);
+      }
+    }
   }
 
-  fn run_file(&mut self, filepath: PathBuf) {
+  fn run_file(&mut self, session: Session, context: Context) {
+    run_back(session, context).expect("[Test] Could not generate the Bonsai code.");
   }
 }

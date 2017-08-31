@@ -13,13 +13,13 @@
 // limitations under the License.
 
 pub mod display;
-pub mod unit;
+pub mod compile_test;
 pub mod expected_result;
 pub mod test_emitter;
 pub mod engine;
 
 pub use self::display::*;
-pub use self::unit::*;
+pub use self::compile_test::*;
 pub use self::expected_result::*;
 pub use self::test_emitter::*;
 pub use self::engine::*;
