@@ -25,9 +25,9 @@ grammar! bonsai {
 
   program = .. pre_header header java_class > make_java_program
 
-  test_annotation = HASH LBRACKET (compiler_test_attr / execution_test_attr)
+  test_annotation = HASH LBRACKET (execution_test_attr / compiler_test_attr) RBRACKET
 
-  compiler_test_attr = string_identifier LPAREN string_identifier COMMA number COMMA number RPAREN RBRACKET > make_compiler_test
+  compiler_test_attr = string_identifier LPAREN string_identifier COMMA number COMMA number RPAREN > make_compiler_test
 
   execution_test_attr = "run" LPAREN expr COMMA string_literal RPAREN > make_execution_test
 
@@ -362,8 +362,8 @@ grammar! bonsai {
 
   expr = .. expr_kind > make_expr
   expr_kind
-    = new_instance_expr > make_new_instance
-    / method_call_chain > make_call_chain
+    = method_call_chain > make_call_chain
+    / new_instance_expr > make_new_instance
     / variable > make_var_expr
     / boolean > make_boolean_expr
     / number > make_number_expr
@@ -373,15 +373,19 @@ grammar! bonsai {
     Expr::new(span, node)
   }
 
-  fn make_new_instance(class_ty: JType, args: Vec<Expr>) -> ExprKind {
-    ExprKind::NewInstance(class_ty, args)
+  fn make_new_instance(new_instance: NewObjectInstance) -> ExprKind {
+    ExprKind::NewInstance(new_instance)
   }
   fn make_call_chain(calls: MethodCallChain) -> ExprKind { ExprKind::CallChain(calls) }
   fn make_boolean_expr(b: bool) -> ExprKind { ExprKind::Boolean(b) }
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
 
-  new_instance_expr = NEW java_ty LPAREN list_expr RPAREN
+  new_instance_expr = .. NEW java_ty LPAREN list_expr RPAREN > make_new_object_instance
+
+  fn make_new_object_instance(span: Span, class_ty: JType, args: Vec<Expr>) -> NewObjectInstance {
+    NewObjectInstance::new(span, class_ty, args)
+  }
 
   fn make_var_expr(variable: Variable) -> ExprKind { ExprKind::Var(variable) }
 
@@ -397,11 +401,13 @@ grammar! bonsai {
     Variable::new(span, path, past.len())
   }
 
-  method_call_chain = .. method_call (DOT method_chain_fragment)* > make_method_call_chain
+  method_call_chain = .. (new_instance_expr DOT)? method_call (DOT method_chain_fragment)* > make_method_call_chain
 
   method_call
-    = .. var_path DOT identifier LPAREN list_expr RPAREN > make_method_call
+    = .. var_path method_call_trail > make_method_call
     / fn_call > make_this_call
+
+  method_call_trail = DOT identifier LPAREN list_expr RPAREN
 
   method_chain_fragment = fn_call > make_chain_fragment
 
@@ -419,8 +425,10 @@ grammar! bonsai {
     MethodCall::call_fragment(span, method, args)
   }
 
-  fn make_method_call_chain(span: Span, target: MethodCall, chain: Vec<MethodCall>) -> MethodCallChain {
-    MethodCallChain::new(span, extend_front(target, chain))
+  fn make_method_call_chain(span: Span, new_instance_target: Option<NewObjectInstance>,
+   target: MethodCall, chain: Vec<MethodCall>) -> MethodCallChain
+  {
+    MethodCallChain::new(span, new_instance_target, extend_front(target, chain))
   }
 
   entailment = .. variable is_strict expr > make_entailment_rel

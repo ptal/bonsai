@@ -671,7 +671,7 @@ impl Expr {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
-  NewInstance(JType, Vec<Expr>),
+  NewInstance(NewObjectInstance),
   CallChain(MethodCallChain),
   Boolean(bool),
   Number(u64),
@@ -688,16 +688,40 @@ impl ExprKind {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NewObjectInstance {
+  pub span: Span,
+  pub ty: JType,
+  pub args: Vec<Expr>
+}
+
+impl NewObjectInstance {
+  pub fn new(span: Span, ty: JType, args: Vec<Expr>) -> Self {
+    NewObjectInstance {span, ty, args}
+  }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MethodCallChain {
+  pub target: Option<NewObjectInstance>,
   pub calls: Vec<MethodCall>,
   pub span: Span
 }
 
 impl MethodCallChain {
-  pub fn new(span: Span, calls: Vec<MethodCall>) -> Self {
+  pub fn new(span: Span, target: Option<NewObjectInstance>, mut calls: Vec<MethodCall>) -> Self {
+    if target.is_some() {
+      Self::remove_this(&mut calls);
+    }
     MethodCallChain {
+      target: target,
       calls: calls,
       span: span
+    }
+  }
+
+  fn remove_this(calls: &mut Vec<MethodCall>) {
+    if calls[0].is_this_target {
+      calls[0].target = VarPath::empty();
     }
   }
 }
@@ -705,15 +729,17 @@ impl MethodCallChain {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MethodCall {
   pub target: VarPath,
+  pub is_this_target: bool,
   pub method: Ident,
   pub args: Vec<Expr>,
   pub span: Span
 }
 
 impl MethodCall {
-  fn new(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> Self {
+  fn new(span: Span, target: VarPath, is_this_target: bool, method: Ident, args: Vec<Expr>) -> Self {
     MethodCall {
       target: target,
+      is_this_target: is_this_target,
       method: method,
       args: args,
       span: span,
@@ -721,16 +747,16 @@ impl MethodCall {
   }
 
   pub fn call_on_var(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall::new(span, target, method, args)
+    MethodCall::new(span, target, false, method, args)
   }
 
   pub fn call_on_this(span: Span, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall::new(span, VarPath::gen("this"), method, args)
+    MethodCall::new(span, VarPath::gen("this"), true, method, args)
   }
 
   /// The target of the method is part of the `MethodCallChain` structure.
   pub fn call_fragment(span: Span, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall::new(span, VarPath::empty(), method, args)
+    MethodCall::new(span, VarPath::empty(), false, method, args)
   }
 }
 

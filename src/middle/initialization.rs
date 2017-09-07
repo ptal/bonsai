@@ -105,8 +105,8 @@ impl Initialization {
   fn module_refs_initializer(&self, binding: &Binding, expr: Expr) {
     if self.is_module_ref(binding) {
       match expr.node {
-        ExprKind::NewInstance(ty, args) => {
-          self.module_initialization_list(binding, ty, args);
+        ExprKind::NewInstance(new_instance) => {
+          self.module_initialization_list(binding, new_instance.ty, new_instance.args);
         }
         _ => self.err_module_illegal_initializer(binding)
       }

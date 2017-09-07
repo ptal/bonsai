@@ -71,7 +71,7 @@ pub fn run_back(session: Session, context: Context) -> Env<Context> {
   assert_eq!(session.has_errors(), false);
   context.ast.modules.clone()
     .into_iter()
-    .filter(|module| module.file.is_lib())
+    .filter(|module| !module.file.is_lib())
     .fold(Env::value(session, context), |env, module| {
       let file = module.file.clone();
       back::compile_module(env, module)

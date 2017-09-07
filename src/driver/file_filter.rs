@@ -43,7 +43,7 @@ impl FileFilter
     }
     // When testing, the input in `config` is a file, not a directory.
     if config.testing_mode {
-      let file =  ModuleFile::new(config, config.input.clone(), true)
+      let file =  ModuleFile::new(config, config.input.clone(), false)
       .expect(&format!("Testing file {:?} is not a `.bonsai.java` file.", config.input));
       package.add_mod_file(file);
     }

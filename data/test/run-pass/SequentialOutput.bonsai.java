@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod display;
-pub mod compile_test;
-pub mod expected_result;
-pub mod test_emitter;
-pub mod engine;
-pub mod maven;
+#[run(new SequentialOutput().test(), "123")]
 
-pub use self::display::*;
-pub use self::compile_test::*;
-pub use self::expected_result::*;
-pub use self::test_emitter::*;
-pub use self::engine::*;
-pub use self::maven::*;
+package test;
+
+public class SequentialOutput
+{
+  proc test() {
+    System.out.print("1");
+    System.out.print("2");
+    System.out.print("3");
+  }
+}

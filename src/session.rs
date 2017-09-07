@@ -58,12 +58,12 @@ impl Session
     Session::init(config, codemap, span_diagnostic)
   }
 
-  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<PathBuf>,
+  pub fn testing_mode(file_to_test: PathBuf, output_dir: PathBuf, libs: Vec<PathBuf>,
     codemap: Rc<CodeMap>, emitter: Box<Emitter>) -> Self
   {
     let span_diagnostic = SpanDiagnostic::with_emitter(
       true, false, emitter);
-    Session::init(Config::testing_mode(file_to_test, libs),
+    Session::init(Config::testing_mode(file_to_test, output_dir, libs),
       codemap, span_diagnostic)
   }
 

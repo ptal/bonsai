@@ -70,10 +70,16 @@ impl ModuleFile
 
   fn build_output_path(config: &Config, mut file_path: PathBuf, mod_name: String) -> PathBuf {
     file_path.pop();
-    config.output.join(file_path
-      .join(mod_name)
-      .with_extension("java")
-      .strip_prefix(&config.input).unwrap())
+    let file_name = PathBuf::from(&mod_name).with_extension("java");
+    // In testing mode, we do not deal with nested repository (`strip_prefix` does not work because `file_path` is a file and not a directory.)
+    let file_path =
+      if config.testing_mode {
+        file_name
+      }
+      else {
+        PathBuf::from(file_path.join(file_name).strip_prefix(&config.input).unwrap())
+      };
+    config.output.join(file_path)
   }
 
   pub fn mod_name(&self) -> String {

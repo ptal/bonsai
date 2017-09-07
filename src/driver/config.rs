@@ -16,6 +16,7 @@
 
 use std::path::PathBuf;
 use clap::{App, Error, ErrorKind};
+use ast::{Expr, ExecutionTest};
 
 pub struct Config
 {
@@ -28,15 +29,15 @@ pub struct Config
 }
 
 #[derive(Clone)]
-pub struct MainMethod
+pub enum MainMethod
 {
-  pub class: String,
-  pub method: String
+  CommandArg { class: String, method: String },
+  TestMode(Expr)
 }
 
 impl MainMethod
 {
-  pub fn from(class_method: &str) -> Self {
+  pub fn command_arg(class_method: &str) -> Self {
     let class_method_split: Vec<&str> = class_method.split('.').collect();
     if class_method_split.len() != 2 {
       Error::with_description(&format!(
@@ -44,10 +45,15 @@ impl MainMethod
           class_method, EXEC_NAME),
         ErrorKind::InvalidValue).exit();
     }
-    MainMethod {
+
+    MainMethod::CommandArg {
       class: String::from(class_method_split[0]),
       method: String::from(class_method_split[1])
     }
+  }
+
+  pub fn test_mode(expr: Expr) -> Self {
+    MainMethod::TestMode(expr)
   }
 }
 
@@ -61,11 +67,11 @@ impl Config
       .author("Pierre Talbot <ptalbot@hyc.io>")
       .about("Compiler of the Bonsai programming language.")
       .args_from_usage(
-        "-o, --output=[directory] 'Write compiled bonsai files to [directory]. The directory structure of the input project is preserved.'
-        --main=[classname.method] 'Generate a method main in [classname] with [method] for immediate testing. Example: `--main=NQueens.solve`'
-        --debug                   'Generate code with debug facility.'
-        --lib=[directory]...      'Paths to bonsai libraries used inside this project. The code is not compiled to Java so you still have to import the .jar of these libraries in your project.'
-        <input>                   'Root of the bonsai project to compile. All files terminating with the `.bonsai` extension are compiled.'")
+        "-o, --output=[directory]      'Write compiled bonsai files to [directory]. The directory structure of the input project is preserved.'
+        --main=[classname.method]      'Generate a method `main` in [classname] for immediate testing. Example: `--main=NQueens.solve`.'
+        --debug                        'Generate code with debug facility.'
+        --lib=[directory]...           'Paths to bonsai libraries used inside this project. The code is not compiled to Java so you still have to import the .jar of these libraries in your project.'
+        <input>                        'Root of the bonsai project to compile. All files terminating with the `.bonsai` extension are compiled.'")
       .get_matches();
 
     let libs: Vec<_> = matches.values_of("lib")
@@ -81,7 +87,7 @@ impl Config
       input: input,
       output: output,
       libs: libs,
-      main_method: matches.value_of("main").map(MainMethod::from),
+      main_method: matches.value_of("main").map(MainMethod::command_arg),
       debug: matches.is_present("debug"),
       testing_mode: false
     };
@@ -90,15 +96,21 @@ impl Config
   }
 
   #[allow(dead_code)]
-  pub fn testing_mode(file_to_test: PathBuf, libs: Vec<PathBuf>) -> Config {
+  pub fn testing_mode(file_to_test: PathBuf, output_dir: PathBuf, libs: Vec<PathBuf>) -> Config {
+    Config::check_is_dir(&output_dir, "output (test)", false);
     Config {
       input: file_to_test.clone(),
-      output: file_to_test,
+      output: output_dir,
       libs: libs,
       main_method: None,
       debug: false,
       testing_mode: true
     }
+  }
+
+  #[allow(dead_code)]
+  pub fn configure_execution_test(&mut self, test: &ExecutionTest) {
+    self.main_method = Some(MainMethod::TestMode(test.input_expr.clone()));
   }
 
   fn default_output(input: &PathBuf) -> PathBuf {

@@ -47,7 +47,7 @@ impl<'a> ExpressionCompiler<'a>
   fn compile(&mut self, expr: Expr) {
     use ast::ExprKind::*;
     match expr.node {
-      NewInstance(ty, args) => self.java_new(ty, args),
+      NewInstance(new_instance) => self.java_new(new_instance.ty, new_instance.args),
       CallChain(chain) => self.method_call_chain(chain),
       Boolean(b) => self.boolean(b),
       Number(n) => self.number(n),
@@ -97,8 +97,8 @@ impl<'a> ExpressionCompiler<'a>
   fn collect_variable(&self, variables: &mut HashMap<usize, (Ident, usize)>, expr: Expr) {
     use ast::ExprKind::*;
     match expr.node {
-      NewInstance(_, args) => {
-        for arg in args {
+      NewInstance(new_instance) => {
+        for arg in new_instance.args {
           self.collect_variable(variables, arg);
         }
       }
@@ -139,6 +139,10 @@ impl<'a> ExpressionCompiler<'a>
   }
 
   fn method_call_chain(&mut self, chain: MethodCallChain) {
+    if let Some(target) = chain.target {
+      self.java_new(target.ty, target.args);
+      self.fmt.push(".");
+    }
     let chain_len = chain.calls.len();
     for (i, call) in chain.calls.into_iter().enumerate() {
       if !call.target.is_empty() {

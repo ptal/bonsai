@@ -14,6 +14,7 @@
 
 use context::*;
 use session::*;
+use driver::config::MainMethod;
 use back::code_formatter::*;
 use back::compiler::expression::*;
 use back::compiler::statement::*;
@@ -101,19 +102,27 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn main_method(&mut self, class_name: Ident) {
-    if let Some(main) = self.session.config().main_method.clone() {
-      if main.class == *class_name {
-        self.fmt.push_line("public static void main(String[] args)");
-        self.fmt.open_block();
-        let machine_method = if self.session.config().debug { "createDebug" } else { "create" };
-        self.fmt.push_block(format!("\
-          {} current = new {}();\n\
-          Program program = current.{}();\n\
-          SpaceMachine machine = SpaceMachine.{}(program);\n\
-          machine.execute();", class_name.clone(), class_name, main.method, machine_method));
-        self.fmt.close_block();
-        self.fmt.newline();
+    let main_expr = match self.session.config().main_method.clone() {
+      Some(MainMethod::CommandArg { ref class, ref method }) if *class == *class_name => {
+        Some(format!("new {}().{}()", class, method))
       }
+      Some(MainMethod::TestMode(expr)) => {
+        let mut fmt = CodeFormatter::new();
+        compile_expression(self.session, self.context, &mut fmt, expr);
+        Some(fmt.unwrap())
+      },
+      _ => None
+    };
+    if let Some(main_expr) = main_expr {
+      self.fmt.push_line("public static void main(String[] args)");
+      self.fmt.open_block();
+      let machine_method = if self.session.config().debug { "createDebug" } else { "create" };
+      self.fmt.push_block(format!("\
+        Program program = {};\n\
+        SpaceMachine machine = SpaceMachine.{}(program);\n\
+        machine.execute();", main_expr, machine_method));
+      self.fmt.close_block();
+      self.fmt.newline();
     }
   }
 

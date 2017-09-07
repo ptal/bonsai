@@ -31,7 +31,8 @@ pub struct Engine
 {
   test_path: PathBuf,
   test_lib: PathBuf,
-  display: Display
+  display: Display,
+  maven: Maven
 }
 
 impl Engine
@@ -41,10 +42,12 @@ impl Engine
     if !test_path.is_dir() {
       panic!(format!("`{}` is not a valid test directory.", test_path.display()));
     }
+    let maven = Maven::new(test_path.clone());
     Engine{
       test_path: test_path,
       test_lib: test_lib,
-      display: Display::new()
+      display: Display::new(),
+      maven: maven
     }
   }
 
@@ -87,8 +90,11 @@ impl Engine
     let obtained_diagnostics = Rc::new(RefCell::new(vec![]));
     let codemap = Rc::new(CodeMap::new());
     let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));
-    let session = Session::testing_mode(filepath.clone(),
-      vec![self.test_lib.clone()], codemap.clone(), emitter);
+    let session = Session::testing_mode(
+      filepath.clone(),
+      self.maven.source_path(),
+      vec![self.test_lib.clone()],
+      codemap.clone(), emitter);
     let (session, context) = front_mid_run(session).decompose();
     let session = session.reset_diagnostic();
     let obtained_diagnostics = Rc::try_unwrap(obtained_diagnostics)
@@ -105,7 +111,15 @@ impl Engine
     }
   }
 
-  fn run_file(&mut self, session: Session, context: Context) {
-    run_back(session, context).expect("[Test] Could not generate the Bonsai code.");
+  fn run_file(&mut self, mut session: Session, mut context: Context) {
+    self.maven.delete_source_files();
+    for test in session.execution_tests.clone() {
+      session.config.configure_execution_test(&test);
+      let env = run_back(session, context).ensure("[Test] Could not generate the Bonsai code.");
+      let (s, c) = env.decompose();
+      session = s;
+      context = c.unwrap();
+      // self.maven.delete_source_files();
+    }
   }
 }

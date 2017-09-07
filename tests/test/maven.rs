@@ -12,16 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod display;
-pub mod compile_test;
-pub mod expected_result;
-pub mod test_emitter;
-pub mod engine;
-pub mod maven;
+/// `Maven` is used to retrieve paths or generate files relevant to the Maven building system.
 
-pub use self::display::*;
-pub use self::compile_test::*;
-pub use self::expected_result::*;
-pub use self::test_emitter::*;
-pub use self::engine::*;
-pub use self::maven::*;
+use std::path::{PathBuf};
+use std::fs;
+
+pub struct Maven {
+  sandbox: PathBuf
+}
+
+impl Maven {
+  pub fn new(root: PathBuf) -> Self {
+    Maven {
+      sandbox: root.join("sandbox/")
+    }
+  }
+
+  pub fn source_path(&self) -> PathBuf {
+    let sandbox = self.sandbox.clone();
+    sandbox.join("src/main/java/test/")
+  }
+
+  pub fn delete_source_files(&self) {
+    let source_path = self.source_path();
+    if source_path.exists() {
+      fs::remove_dir_all(self.source_path()).unwrap();
+    }
+  }
+}

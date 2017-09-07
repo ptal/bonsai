@@ -117,6 +117,9 @@ pub trait Visitor<H>
   }
 
   fn visit_method_call_chain(&mut self, chain: MethodCallChain) {
+    if let Some(target) = chain.target {
+      self.visit_new_instance(target.ty, target.args);
+    }
     walk_call_chain(self, chain.calls)
   }
 
@@ -191,7 +194,7 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
   V: Visitor<H>
 {
   match expr.node {
-    NewInstance(ty, args) => visitor.visit_new_instance(ty, args),
+    NewInstance(new_instance) => visitor.visit_new_instance(new_instance.ty, new_instance.args),
     CallChain(chain) => visitor.visit_method_call_chain(chain),
     Boolean(value) => visitor.visit_boolean(value),
     Number(value) => visitor.visit_number(value),
@@ -325,6 +328,9 @@ pub trait VisitorMut<H>
   }
 
   fn visit_method_call_chain(&mut self, chain: &mut MethodCallChain) {
+    if let Some(ref mut target) = chain.target {
+      self.visit_new_instance(target.ty.clone(), &mut target.args)
+    }
     walk_call_chain_mut(self, &mut chain.calls)
   }
 
@@ -404,7 +410,7 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
   V: VisitorMut<H>
 {
   match &mut expr.node {
-    &mut NewInstance(ref ty, ref mut args) => visitor.visit_new_instance(ty.clone(), args),
+    &mut NewInstance(ref mut new_instance) => visitor.visit_new_instance(new_instance.ty.clone(), &mut new_instance.args),
     &mut CallChain(ref mut chain) => visitor.visit_method_call_chain(chain),
     &mut Boolean(value) => visitor.visit_boolean(value),
     &mut Number(value) => visitor.visit_number(value),
