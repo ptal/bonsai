@@ -18,6 +18,7 @@ pub mod expected_result;
 pub mod test_emitter;
 pub mod engine;
 pub mod maven;
+pub mod execute_test;
 
 pub use self::display::*;
 pub use self::compile_test::*;
@@ -25,3 +26,4 @@ pub use self::expected_result::*;
 pub use self::test_emitter::*;
 pub use self::engine::*;
 pub use self::maven::*;
+pub use self::execute_test::*;

@@ -18,7 +18,7 @@ extern crate term;
 use libbonsai::ast::*;
 
 use std::path::{PathBuf};
-use std::io;
+use std::process::{Output};
 
 use term::*;
 
@@ -39,6 +39,12 @@ impl Display
       num_failure: 0,
       num_system_failure: 0
     }
+  }
+
+  fn write_line(&mut self, color: color::Color, header: &str, msg: String) {
+    self.write_header(color, header);
+    self.write_msg(&msg);
+    self.write_msg("\n");
   }
 
   pub fn title(&mut self, msg: &str) {
@@ -141,21 +147,15 @@ impl Display
     self.write_line(color::YELLOW, "  [ warning ] ", msg);
   }
 
-  pub fn fs_error(&mut self, msg: &str, path: PathBuf, io_err: &io::Error) {
+  pub fn io_error(&mut self, msg: &str, path: PathBuf, err: String) {
     self.system_failure(format!("{}", msg));
     self.path(path);
-    self.error(format!("{}", io_err));
+    self.error(err);
   }
 
   pub fn system_failure(&mut self, msg: String) {
     self.num_system_failure += 1;
     self.write_line(color::RED, "[ system error ] ", msg);
-  }
-
-  fn write_line(&mut self, color: color::Color, header: &str, msg: String) {
-    self.write_header(color, header);
-    self.write_msg(&msg);
-    self.write_msg("\n");
   }
 
   fn write_header(&mut self, color: color::Color, header: &str) {
@@ -166,5 +166,36 @@ impl Display
 
   fn write_msg(&mut self, msg: &str) {
     (write!(self.terminal, "{}", msg)).unwrap();
+  }
+
+  fn write_maven_output(&mut self, color: color::Color, header: &str, output: Vec<u8>) {
+    if output.len() == 0 {
+      self.write_line(color, header, format!("Maven did not write on this output stream."));
+    }
+    else {
+      self.write_line(color, header, format!("Maven produced the following output:"));
+      match String::from_utf8(output.clone()) {
+        Result::Ok(output) => self.write_msg(&output),
+        Result::Err(_) => self.write_msg(&format!("{:?}", output))
+      }
+    }
+  }
+
+  pub fn maven_failure(&mut self, phase: &str, path: PathBuf,
+    test_name: String, output: Output)
+  {
+    self.failure(path, test_name);
+    self.error(format!("Maven {} should have succeeded but failed.", phase));
+    self.write_maven_output(color::CYAN, "  [ stdout ] ", output.stdout);
+    self.write_maven_output(color::CYAN, "  [ stderr ] ", output.stderr);
+  }
+
+  pub fn execution_failure(&mut self, path: PathBuf, test_name: String,
+    expected: String, obtained: String)
+  {
+    self.failure(path, test_name);
+    self.error(format!("The output does not match the expected regex."));
+    self.write_line(color::CYAN, "  [ expected ] ", expected);
+    self.write_line(color::CYAN, "  [ obtained ] ", obtained);
   }
 }

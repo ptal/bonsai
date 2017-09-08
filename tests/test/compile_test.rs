@@ -31,7 +31,8 @@ pub struct CompileTest<'a>
   expect: ExpectedResult,
   expected_diagnostics: Vec<CompilerTest>,
   obtained_diagnostics: Vec<CompilerTest>,
-  test_path: PathBuf
+  test_path: PathBuf,
+  intermediate_step: bool, // do not print success message because the compilation is just a step of the test.
 }
 
 impl<'a> CompileTest<'a>
@@ -40,15 +41,12 @@ impl<'a> CompileTest<'a>
     result: Partial<Context>, expect: ExpectedResult,
     expected_diagnostics: Vec<CompilerTest>,
     obtained_diagnostics: Vec<CompilerTest>,
-    test_path: PathBuf) -> Self
+    test_path: PathBuf,
+    intermediate_step: bool) -> Self
   {
     CompileTest {
-      display: display,
-      result: result,
-      expect: expect,
-      expected_diagnostics: expected_diagnostics,
-      obtained_diagnostics: obtained_diagnostics,
-      test_path: test_path
+      display, result, expect, expected_diagnostics,
+      obtained_diagnostics, test_path, intermediate_step
     }
   }
 
@@ -94,7 +92,9 @@ impl<'a> CompileTest<'a>
       None
     }
     else {
-      self.display.success(file_name);
+      if !self.intermediate_step {
+        self.display.success(file_name);
+      }
       self.context_to_option()
     }
   }

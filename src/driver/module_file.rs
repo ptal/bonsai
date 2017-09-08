@@ -28,6 +28,17 @@ pub struct ModuleFile
 impl ModuleFile
 {
   pub fn new(config: &Config, file_path: PathBuf, lib: bool) -> Option<Self> {
+    if let Some(mod_name) = Self::extract_mod_name(file_path.clone()) {
+      let mod_file = match lib {
+        false => Self::core_file(config, file_path, mod_name),
+        true => Self::lib_file(file_path, mod_name),
+      };
+      return Some(mod_file);
+    }
+    None
+  }
+
+  pub fn extract_mod_name(file_path: PathBuf) -> Option<String> {
     if let Some(ext) = file_path.clone().extension() {
       if ext == "java" {
         let p = file_path.clone();
@@ -35,12 +46,7 @@ impl ModuleFile
         if let Some(bonsai_ext) = bonsai_file.extension() {
           if bonsai_ext == "bonsai" {
             let mod_name = String::from(bonsai_file.file_stem().unwrap().to_str().unwrap());
-            let mod_file =
-              match lib {
-                false => Self::core_file(config, file_path, mod_name),
-                true => Self::lib_file(file_path, mod_name),
-              };
-            return Some(mod_file);
+            return Some(mod_name);
           }
         }
       }

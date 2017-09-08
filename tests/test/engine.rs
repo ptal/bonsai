@@ -15,6 +15,7 @@
 use libbonsai::session::*;
 use libbonsai::driver::*;
 use libbonsai::context::*;
+use libbonsai::driver::module_file::ModuleFile;
 
 use syntex_syntax::codemap::{CodeMap};
 use std::rc::Rc;
@@ -81,7 +82,7 @@ impl Engine
         }
       }
       Err(ref io_err) => {
-        self.display.fs_error("Can't read directory.", directory, io_err);
+        self.display.io_error("Can't read directory.", directory, format!("{}", io_err));
       }
     }
   }
@@ -101,25 +102,36 @@ impl Engine
       .expect("Could not extract `obtained_diagnostics`.").into_inner();
     let context = {
       let compile_test = CompileTest::new(&mut self.display, context, expect, session.compiler_tests.clone(),
-        obtained_diagnostics, filepath);
+        obtained_diagnostics, filepath.clone(), execute);
       compile_test.diagnostic()
     };
     if let Some(context) = context {
       if execute {
-        self.run_file(session, context);
+        self.run_file(session, context, filepath);
       }
     }
   }
 
-  fn run_file(&mut self, mut session: Session, mut context: Context) {
+  /// Given the analysed module (after front and middle phases), we execute the following phases for each test case:
+  ///   (1) Compile it (back phase)
+  ///   (2) Execute it in a sandbox ("data/test/sandbox")
+  ///   (3) Compare the output result with the expected regex result.
+  fn run_file(&mut self, mut session: Session, mut context: Context, filepath: PathBuf) {
     self.maven.delete_source_files();
     for test in session.execution_tests.clone() {
+      self.maven.delete_source_files();
       session.config.configure_execution_test(&test);
       let env = run_back(session, context).ensure("[Test] Could not generate the Bonsai code.");
       let (s, c) = env.decompose();
       session = s;
       context = c.unwrap();
-      // self.maven.delete_source_files();
+      let mod_name = ModuleFile::extract_mod_name(filepath.clone()).expect("bonsai file name (run_file)");
+      let compile_result = self.maven.compile_sandbox();
+      let execute_result = self.maven.execute_sandbox(mod_name);
+      let execution_test = ExecuteTest::new(&mut self.display, compile_result,
+        execute_result, test.output_regex, filepath.clone());
+      execution_test.diagnostic();
+      self.maven.delete_source_files();
     }
   }
 }
