@@ -17,7 +17,7 @@ name = "bonsai"
 doc = false
 
 [dependencies]
-oak = "^0.5.4"
+oak = "^0.5.7"
 oak_runtime = "^0.5.5"
 partial = "0.2.3"
 clap = "^2"
@@ -25,3 +25,6 @@ syntex_pos = "0.58.1"
 syntex_errors = "0.58.1"
 syntex_syntax = "0.58.1"
 regex = "0.2"
+
+[dev-dependencies]
+term = "^0.5.1"

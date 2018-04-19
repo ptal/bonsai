@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate libbonsai;
-extern crate term;
-
 use libbonsai::ast::*;
 
 use std::path::{PathBuf};
 use std::process::{Output};
 
-use term::*;
+use term;
+use term::color;
 
 pub struct Display
 {
-  terminal: Box<StdoutTerminal>,
+  terminal: Box<term::StdoutTerminal>,
   num_success: u32,
   num_failure: u32,
   num_system_failure: u32

@@ -13,7 +13,9 @@
 // limitations under the License.
 
 /// `Constructor` performs:
-///  (a) Check that each module containing referenced fields (keyword `ref`) must have a single constructor initializing these variables. It must simply appears in the constructor argument list with the same type and same name. An assert checking that the argument and the field are the same is added in the generation stage.
+///  (a) Check that each module containing referenced fields (keyword `ref`) must have a single constructor initializing these variables.
+///      It must simply appears in the constructor argument list with the same type and same name.
+///      An assert checking that the argument and the field are the same is added in the generation stage.
 ///  (b) Register the module in the context with its associated constructor `ref` parameters list.
 
 use context::*;
