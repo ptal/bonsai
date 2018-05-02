@@ -32,6 +32,7 @@ public interface Lattice
   // For example, if the lattice is a totally ordered set, `entail` never returns `Kleene.UNKNOWN`.
   // The following relation must hold:
   //   * a.entail(b) == TRUE => b.entail(a) != UNKNOWN
+  //   * a.entail(b) == FALSE => b.entail(a) == TRUE
   //   * a.entail(b) == UNKNOWN => b.entail(a) == UNKNOWN
   Kleene entail(Object o);
 
@@ -62,7 +63,7 @@ public interface Lattice
     else {
       Lattice o = (Lattice) other;
       return
-        Kleene.and(this.entail(o), Kleene.fromBool(equals_default(this,o)));
+        Kleene.and(this.entail(o), Kleene.fromBool(!equals_default(this,o)));
     }
   }
 }

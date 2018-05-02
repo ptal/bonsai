@@ -21,40 +21,31 @@ import org.junit.*;
 
 public class ESTest
 {
-  ES etrue;
-  ES efalse;
-  ES eunknown;
+  ES t;
+  ES f;
+  ES u;
 
   @Before
   public void initES() {
-    etrue = new ES(Kleene.TRUE);
-    efalse = new ES(Kleene.FALSE);
-    eunknown = new ES(Kleene.UNKNOWN);
+    t = new ES(Kleene.TRUE);
+    f = new ES(Kleene.FALSE);
+    u = new ES(Kleene.UNKNOWN);
   }
 
   @Test
-  public void testJoin() {
-    assertThat(etrue.join(etrue), equalTo(etrue));
-    assertThat(efalse.join(etrue), equalTo(efalse));
-    assertThat(etrue.join(efalse), equalTo(efalse));
-    assertThat(efalse.join(efalse), equalTo(efalse));
-    assertThat(eunknown.join(etrue), equalTo(etrue));
-    assertThat(etrue.join(eunknown), equalTo(etrue));
-    assertThat(eunknown.join(eunknown), equalTo(eunknown));
-    assertThat(efalse.join(eunknown), equalTo(efalse));
-    assertThat(eunknown.join(efalse), equalTo(efalse));
-  }
+  public void testLattice() {
+    LatticeTest test = new LatticeTest();
 
-  @Test
-  public void testEntailment() {
-    assertThat(etrue.entail(etrue), equalTo(Kleene.TRUE));
-    assertThat(efalse.entail(etrue), equalTo(Kleene.TRUE));
-    assertThat(etrue.entail(efalse), equalTo(Kleene.FALSE));
-    assertThat(efalse.entail(efalse), equalTo(Kleene.TRUE));
-    assertThat(eunknown.entail(etrue), equalTo(Kleene.FALSE));
-    assertThat(etrue.entail(eunknown), equalTo(Kleene.TRUE));
-    assertThat(eunknown.entail(eunknown), equalTo(Kleene.TRUE));
-    assertThat(efalse.entail(eunknown), equalTo(Kleene.TRUE));
-    assertThat(eunknown.entail(efalse), equalTo(Kleene.FALSE));
+    Kleene T = Kleene.TRUE;
+    Kleene F = Kleene.FALSE;
+    Kleene U = Kleene.UNKNOWN;
+
+    test.testLattice("ES",
+      new ES[]     { t, f, t, f, u, t, u, f, u },
+      new ES[]     { t, t, f, f, t, u, u, u, f },
+      new Kleene[] { T, T, F, T, F, T, T, T, F }, // entailment
+      new ES[]     { t, f, f, f, t, t, u, f, f }, // join
+      new ES[]     { t, t, t, f, u, u, u, u, u }  // meet
+    );
   }
 }
