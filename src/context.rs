@@ -28,7 +28,9 @@ pub struct VarInfo {
   pub kind: Kind,
   pub ty: JType,
   pub field: Option<FieldInfo>,
-  // For each variable, compute the maximum number of `pre` that can possibly happen. This is useful to compute the size of the stream. For example: `pre pre x` gives `[x: 2]`.
+  /// For each variable, compute the maximum number of `pre` that can possibly happen.
+  /// This is useful to compute the size of the stream.
+  /// For example: `pre pre x` gives `[x: 2]`.
   pub stream_bound: usize,
 }
 

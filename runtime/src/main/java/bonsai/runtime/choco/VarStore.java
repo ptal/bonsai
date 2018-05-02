@@ -20,7 +20,7 @@ import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.util.ESat;
 
-public class VarStore extends Store implements Restorable, Resettable<VarStore> {
+public class VarStore implements Store, Restorable, Resettable<VarStore> {
   private Model model;
   private Integer depth;
 
@@ -94,7 +94,7 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
     }
   }
 
-  public void join(Object value) {
+  public void join_in_place(Object value) {
     assert value != null;
     if (value instanceof Entry) {
       throw new UnsupportedOperationException(
@@ -104,6 +104,11 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
       throw new RuntimeException(
         "Join is only defined between `VarStore` and an entry `VarStore.Entry`.");
     }
+  }
+
+  public VarStore join(Object value) {
+    throw new UnsupportedOperationException(
+      "Join is currently not defined for `VarStore`.");
   }
 
   public LMax countAsn() {
@@ -129,7 +134,7 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
   }
 
 
-  public EntailmentResult entail(Object value) {
+  public Kleene entail(Object value) {
     if (value instanceof VarStore) {
       VarStore vstore = (VarStore) value;
       return vstoreEntail(vstore);
@@ -149,71 +154,71 @@ public class VarStore extends Store implements Restorable, Resettable<VarStore> 
     }
   }
 
-  private EntailmentResult vstoreEntail(VarStore vstore) {
+  private Kleene vstoreEntail(VarStore vstore) {
     checkOnlyIntVar(model);
     checkOnlyIntVar(vstore.model);
     IntVar[] v1 = model.retrieveIntVars(true);
     IntVar[] v2 = vstore.model.retrieveIntVars(true);
     if (v2.length < v1.length) {
-      return EntailmentResult.FALSE;
+      return Kleene.FALSE;
     }
     else if (v1.length < v2.length) {
-      return EntailmentResult.UNKNOWN;
+      return Kleene.UNKNOWN;
     }
     else {
-      EntailmentResult res = EntailmentResult.TRUE;
+      Kleene res = Kleene.TRUE;
       for (int i = 0; i < v1.length; i++) {
-        EntailmentResult varRes = varEntail(v1[i], v2[i]);
-        if (varRes == EntailmentResult.FALSE) {
-          return EntailmentResult.FALSE;
+        Kleene varRes = varEntail(v1[i], v2[i]);
+        if (varRes == Kleene.FALSE) {
+          return Kleene.FALSE;
         }
-        else if (varRes == EntailmentResult.UNKNOWN) {
-          res = EntailmentResult.UNKNOWN;
+        else if (varRes == Kleene.UNKNOWN) {
+          res = Kleene.UNKNOWN;
         }
       }
       return res;
     }
   }
 
-  private EntailmentResult varEntail(IntVar v1, IntVar v2) {
+  private Kleene varEntail(IntVar v1, IntVar v2) {
     if (v1.isInstantiated() && v2.isInstantiated()) {
       if (v1.getValue() == v2.getValue()) {
-        return EntailmentResult.TRUE;
+        return Kleene.TRUE;
       }
       else {
-        return EntailmentResult.FALSE;
+        return Kleene.FALSE;
       }
     }
     else {
       // We could be more precise using the set inclusion between v1 and v2.
-      return EntailmentResult.UNKNOWN;
+      return Kleene.UNKNOWN;
     }
   }
 
-  private EntailmentResult cstoreEntail(ConstraintStore cstore) {
-    EntailmentResult res = EntailmentResult.TRUE;
+  private Kleene cstoreEntail(ConstraintStore cstore) {
+    Kleene res = Kleene.TRUE;
     for (Constraint c : cstore.constraints) {
-      EntailmentResult cRes = constraintEntail(c);
-      if (cRes == EntailmentResult.FALSE) {
-        return EntailmentResult.FALSE;
+      Kleene cRes = constraintEntail(c);
+      if (cRes == Kleene.FALSE) {
+        return Kleene.FALSE;
       }
-      else if (cRes == EntailmentResult.UNKNOWN) {
-        res = EntailmentResult.UNKNOWN;
+      else if (cRes == Kleene.UNKNOWN) {
+        res = Kleene.UNKNOWN;
       }
     }
     return res;
   }
 
-  private EntailmentResult constraintEntail(Constraint constraint) {
+  private Kleene constraintEntail(Constraint constraint) {
     ESat consistency = constraint.isSatisfied();
     if (consistency == ESat.TRUE) {
-      return EntailmentResult.TRUE;
+      return Kleene.TRUE;
     }
     else if (consistency == ESat.FALSE) {
-      return EntailmentResult.FALSE;
+      return Kleene.FALSE;
     }
     else {
-      return EntailmentResult.UNKNOWN;
+      return Kleene.UNKNOWN;
     }
   }
 

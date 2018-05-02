@@ -77,13 +77,13 @@ public class EntailmentConfig extends ConfigImpl implements Precursor
     if(cannotChange() || event.isGenerated(env) || firstEval){
       firstEval = false;
       SpaceEnvironment space_env = (SpaceEnvironment) env;
-      LatticeVar lhs = space_env.latticeVar(leftSide, preLeft, Permission.READ);
+      Lattice lhs = space_env.latticeVar(leftSide, preLeft, Permission.READ);
       Object rhs = rightSide.apply(space_env);
-      EntailmentResult res = lhs.entail(rhs);
-      if (res == EntailmentResult.TRUE && (!strict || !(lhs.equals(rhs)))) {
+      Kleene res = lhs.entail(rhs);
+      if (res == Kleene.TRUE && (!strict || !(lhs.equals(rhs)))) {
         return SATISFIED;
       }
-      else if (res == EntailmentResult.FALSE) {
+      else if (res == Kleene.FALSE) {
         return UNSATISFIED;
       }
     }

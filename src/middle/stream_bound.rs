@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// For each binding, we compute its maximum stream bound. It is the maximum number of `pre` occuring before the variable.
+/// For each binding, we compute its maximum stream bound.
+/// It is the maximum number of `pre` occuring before the variable.
 
 use context::*;
 use session::*;

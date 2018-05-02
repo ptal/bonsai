@@ -20,7 +20,8 @@ import inria.meije.rc.sugarcubes.implementation.*;
 import inria.meije.rc.sugarcubes.*;
 
 // The right part of `v <- e` is converted into a closure of type `Function<SpaceEnvironment, Object>` returning a value based on the current environment.
-// It must be checked statically before that `e` do not depends on variable that could be modified after this operation. This would lead to non-determinism, take for example `v <- x || x <- [0..1]`.
+// It must be checked statically before that `e` do not depends on variable that could be modified after this operation.
+// This would lead to non-determinism, take for example `v <- x || x <- [0..1]`.
 
 public class Tell extends Atom
 {
@@ -46,7 +47,7 @@ public class Tell extends Atom
 
   public boolean action(Environment e){
     SpaceEnvironment env = (SpaceEnvironment) e;
-    LatticeVar lhs = env.latticeVar(leftSide, 0, Permission.READ_WRITE);
+    Lattice lhs = env.latticeVar(leftSide, 0, Permission.READ_WRITE);
     Object rhs = rightSide.apply(env);
     lhs.join(rhs);
     return false;

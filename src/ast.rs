@@ -422,7 +422,8 @@ impl Hash for Ident {
 #[derive(Clone, Debug, Eq)]
 pub struct VarPath {
   pub fragments: Vec<Ident>,
-  /// These UIDs match the fragments of the path. These UIDs are used to retrieve global information about variables through `Context`.
+  /// These UIDs match the fragments of the path.
+  /// These UIDs are used to retrieve global information about variables through `Context`.
   pub uids: Vec<usize>,
   pub span: Span
 }

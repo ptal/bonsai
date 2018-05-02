@@ -25,10 +25,10 @@
 
 package bonsai.runtime.core;
 
+import bonsai.runtime.lattice.*;
 import java.util.Optional;
 
-public class L<T> extends LatticeVar
-  implements Resettable<L<T>>, Copy<L<T>>
+public class L<T> implements Lattice, Resettable<L<T>>, Copy<L<T>>
 {
   protected Optional<T> value;
 
@@ -62,32 +62,37 @@ public class L<T> extends LatticeVar
     }
   }
 
-  public EntailmentResult entail(Object obj) {
+  public Kleene entail(Object obj) {
     L<T> other = flatLatticeOf(obj);
     if (other.isBottom()) {
-      return EntailmentResult.TRUE;
+      return Kleene.TRUE;
     }
     T other_inner = other.value.get();
     return entail_inner(other_inner);
   }
 
-  private EntailmentResult entail_inner(T other) {
+  private Kleene entail_inner(T other) {
     if (this.isBottom()) {
-      return EntailmentResult.UNKNOWN;
+      return Kleene.UNKNOWN;
     }
     else {
       T self = value.get();
       assertSameInnerTypes(self, other);
       if (self.equals(other)) {
-        return EntailmentResult.TRUE;
+        return Kleene.TRUE;
       }
       else {
-        return EntailmentResult.FALSE;
+        return Kleene.FALSE;
       }
     }
   }
 
-  public void join(Object obj) {
+  public L<T> join(Object value) {
+    throw new UnsupportedOperationException(
+      "Join is currently not defined for `L<T>`.");
+  }
+
+  public void join_in_place(Object obj) {
     L<T> other = flatLatticeOf(obj);
     if (!other.isBottom()) {
       T other_inner = other.value.get();

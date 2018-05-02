@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// `Initialization` performs static analysis to ensure the correct initialization of variables in the following contexts:
+/// `Initialization` performs a static analysis to ensure the correct initialization of variables in the following contexts:
 ///  (a) Ref fields must not be initialized with right handed expression when declared. (E0011)
 ///  (b) Ref fields must be of the spacetime kind. (E0020)
 ///  (c) Local `module` variables:

@@ -13,7 +13,9 @@
 // limitations under the License.
 
 /// Check for undeclared variables.
-/// In addition, it computes a unique identifier (UID) for variables local to modules. It does not assign a UID to variable of the form `m.a` or `m.a.b` because the UID for each module's variables is not yet accessible—since being computed. This next step is done in `resolve.rs`.
+/// In addition, it computes a unique identifier (UID) for variables local to modules.
+/// It does not assign a UID to variable of the form `m.a` or `m.a.b` because the UID for each module's variables is not yet accessible (it is currently being computed).
+/// This next step is done in `resolve.rs`.
 
 use context::*;
 use session::*;

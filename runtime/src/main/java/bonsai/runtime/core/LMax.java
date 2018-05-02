@@ -14,7 +14,9 @@
 
 package bonsai.runtime.core;
 
-public class LMax extends LatticeVar implements Restorable, Copy<LMax>, Resettable<LMax>
+import bonsai.runtime.lattice.*;
+
+public class LMax implements Lattice, Restorable, Copy<LMax>, Resettable<LMax>
 {
   private Integer value;
 
@@ -51,22 +53,27 @@ public class LMax extends LatticeVar implements Restorable, Copy<LMax>, Resettab
     return this.value;
   }
 
-  public void join(Object o) {
+  public void join_in_place(Object o) {
     LMax v = castLMax("join", o);
     this.value = (this.value > v.value) ? this.value : v.value;
   }
 
-  public EntailmentResult entail(Object o) {
+  public LMax join(Object value) {
+    throw new UnsupportedOperationException(
+      "Join is currently not defined for `LMax`.");
+  }
+
+  public Kleene entail(Object o) {
     LMax v = castLMax("entail", o);
     if (value >= v.value) {
-      return EntailmentResult.TRUE;
+      return Kleene.TRUE;
     }
     else {
-      return EntailmentResult.UNKNOWN;
+      return Kleene.UNKNOWN;
     }
   }
 
-  public LatticeVar bottom() {
+  public Lattice bottom() {
     return new LMax();
   }
 

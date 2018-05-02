@@ -15,7 +15,8 @@
 /// The declaration of variable in Java is a statement and not an expression. We perform this transformation as follows:
 /// `single_time Type var = expr; <code-following>` into
 /// `single_time Type var = expr in <code-following>`.
-/// The code following the variable declaration is lifted inside the structure of the let statement. It replaces the `Nothing` statement by the statement following inside the AST.
+/// The code following the variable declaration is lifted inside the structure of the let statement.
+/// It replaces the `nothing` statement by the statement following inside the AST.
 
 use ast::*;
 

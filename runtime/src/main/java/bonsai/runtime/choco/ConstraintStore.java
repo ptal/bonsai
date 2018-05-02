@@ -16,11 +16,12 @@ package bonsai.runtime.choco;
 
 import java.util.*;
 import bonsai.runtime.core.*;
+import bonsai.runtime.lattice.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.solver.exception.ContradictionException;
 
-public class ConstraintStore extends LatticeVar implements Restorable, Resettable<ConstraintStore> {
+public class ConstraintStore implements Lattice, Restorable, Resettable<ConstraintStore> {
 
   public ArrayDeque<Constraint> constraints;
 
@@ -51,7 +52,7 @@ public class ConstraintStore extends LatticeVar implements Restorable, Resettabl
     }
   }
 
-  public void join(Object value) {
+  public void join_in_place(Object value) {
     assert value != null;
     Constraint c;
     if (value instanceof ReExpression) {
@@ -70,7 +71,12 @@ public class ConstraintStore extends LatticeVar implements Restorable, Resettabl
     c.post();
   }
 
-  public EntailmentResult entail(Object value) {
+  public ConstraintStore join(Object value) {
+    throw new UnsupportedOperationException(
+      "Join is currently not defined for `ConstraintStore`.");
+  }
+
+  public Kleene entail(Object value) {
     throw new UnsupportedOperationException(
       "Entailment is currently not defined for `ConstraintStore`.");
   }

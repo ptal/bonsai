@@ -15,6 +15,7 @@
 package bonsai.runtime.sugarcubes;
 
 import java.util.*;
+import java.util.function.*;
 import bonsai.runtime.core.*;
 import inria.meije.rc.sugarcubes.implementation.*;
 import inria.meije.rc.sugarcubes.*;
@@ -117,7 +118,7 @@ public class SpaceEnvironment extends Clock {
     return snapshotWL;
   }
 
-  private Hashmap<String, SingleTimeVar> snapshotST(Space child) {
+  private HashMap<String, SingleTimeVar> snapshotST(Space child) {
     HashMap<String, SingleTimeVar> snapshotST = new HashMap();
     for (String varUID: child.singleTimeClosure()) {
       snapshotST.put(varUID, varsST.get(varUID));
@@ -155,7 +156,7 @@ public class SpaceEnvironment extends Clock {
     }
   }
 
-  private <T extends Variable> void exitScope(String uid, Hashmap<String, T> vars) {
+  private <T extends Variable> void exitScope(String uid, HashMap<String, T> vars) {
     if (uid == null) {
       throw new RuntimeException("SpaceEnvironment.exitScope: null `uid` parameter.");
     }
@@ -183,7 +184,7 @@ public class SpaceEnvironment extends Clock {
     this.refsUpdaters.pop(uid);
   }
 
-  public LatticeVar latticeVar(String name, int time, Permission permission) {
+  public Lattice latticeVar(String name, int time, Permission permission) {
     Object value = var(name, time, permission);
     return Cast.toLattice(name, value);
   }

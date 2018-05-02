@@ -14,11 +14,13 @@
 
 package bonsai.runtime.core;
 
+import bonsai.runtime.lattice.*;
+
 // A store is a lattice-based variable with two additional methods: `alloc` and `index` where:
 //  * `alloc` allocates an object in the store and returns its location.
 //  * `index` retrieve an object from a location in the store.
 
-public abstract class Store extends LatticeVar {
+public interface Store extends Lattice {
   public abstract Object alloc(Object value);
   public abstract Object index(Object location);
 }

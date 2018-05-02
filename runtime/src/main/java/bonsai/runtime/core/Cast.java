@@ -14,11 +14,13 @@
 
 package bonsai.runtime.core;
 
+import bonsai.runtime.lattice.Lattice;
+
 public class Cast
 {
-  static private void checkLatticeVarInterface(String var, Object o) {
-    if (!(o instanceof LatticeVar)) {
-      unimplementedInterface(var, o, "LatticeVar");
+  static private void checkLatticeInterface(String var, Object o) {
+    if (!(o instanceof Lattice)) {
+      unimplementedInterface(var, o, "Lattice");
     }
   }
 
@@ -46,9 +48,9 @@ public class Cast
       + interfaceName + "` which is required. Object: " + o);
   }
 
-  static public LatticeVar toLattice(String var, Object o) {
-    checkLatticeVarInterface(var, o);
-    return (LatticeVar) o;
+  static public Lattice toLattice(String var, Object o) {
+    checkLatticeInterface(var, o);
+    return (Lattice) o;
   }
 
   static public Restorable toRestorable(String var, Object o) {
