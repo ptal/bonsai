@@ -58,7 +58,7 @@ public class Stream implements Restorable
   }
 
   private void resetRef(Object value) {
-    Cast.toResettable(name, ref).reset(value);
+    Cast.toLattice(name, ref).meet_in_place(value);
   }
 
   private void push(Object value) {

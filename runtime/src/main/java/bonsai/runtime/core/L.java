@@ -19,134 +19,196 @@
 //   \ \  |   /
 //     Bottom
 
-// The bottom element is represented with an empty optional and top should never happen (exception otherwise).
+// The bottom and top elements are represented with an empty optional and a additional boolean flag.
 
 // The entailment and join operation are dynamically overload so `x |= y` and `x <- y` are defined such that `y` can be of type `L<T>` or `T`.
 
 package bonsai.runtime.core;
 
 import bonsai.runtime.lattice.*;
-import java.util.Optional;
 
-public class L<T> implements Lattice, Resettable<L<T>>, Copy<L<T>>
+public class L<T> implements Lattice, Copy<L<T>>
 {
-  protected Optional<T> value;
+  enum LKind {
+    BOT, TOP, INNER
+  };
+
+  protected T value;
+  protected LKind kind;
 
   public L(T value) {
-    this.value = Optional.of(value);
+    this.value = value;
+    this.kind = LKind.INNER;
   }
 
   public L() {
-    this.value = Optional.empty();
+    this.value = null;
+    this.kind = LKind.BOT;
   }
 
   public L<T> bottom() {
     return new L();
   }
 
-  public boolean isBottom() {
-    return !value.isPresent();
+  public L<T> top() {
+    L l = new L();
+    l.kind = LKind.TOP;
+    return l;
   }
 
-  public void reset(L<T> o) {
-    this.value = o.value;
+  public L<T> inner(T value) {
+    return new L(value);
+  }
+
+  public boolean isInner() {
+    return kind == LKind.INNER;
+  }
+
+  public T unwrap() {
+    switch (kind) {
+      case BOT:
+        throw new RuntimeException("Try to unwrap the bottom element of `L<T>`.");
+      case TOP:
+        throw new RuntimeException("Try to unwrap the top element of `L<T>`.");
+      default: return value;
+    }
   }
 
   public L<T> copy() {
-    if (isBottom()) {
-      return bottom();
+    switch (kind) {
+      case BOT: return bottom();
+      case TOP: return top();
+      default: return copy_inner("copy", value);
     }
-    else {
-      Copy v = Cast.toCopy("<anon> in L.copy", value.get());
-      return new L(v.copy());
-    }
+  }
+
+  private L<T> copy_inner(String from, Object toCopy) {
+    Copy v = Cast.toCopy("The operation `L<T>." + from + "` requires the type `T` to implement `Copy`.", toCopy);
+    return inner((T) v.copy());
   }
 
   public Kleene entail(Object obj) {
-    L<T> other = flatLatticeOf(obj);
-    if (other.isBottom()) {
-      return Kleene.TRUE;
+    L<T> other = flatLatticeOf("entail", obj);
+    switch (other.kind) {
+      case BOT: return Kleene.TRUE;
+      case TOP: return Kleene.fromBool(kind == LKind.TOP);
+      default:
+        return entail_inner(other.value);
     }
-    T other_inner = other.value.get();
-    return entail_inner(other_inner);
   }
 
   private Kleene entail_inner(T other) {
-    if (this.isBottom()) {
-      return Kleene.UNKNOWN;
-    }
-    else {
-      T self = value.get();
-      assertSameInnerTypes(self, other);
-      if (self.equals(other)) {
-        return Kleene.TRUE;
+    switch (kind) {
+      case BOT: return Kleene.FALSE;
+      case TOP: return Kleene.TRUE;
+      default: {
+        assertSameInnerTypes("entail", value, other);
+        if (value.equals(other)) {
+          return Kleene.TRUE;
+        }
+        else {
+          return Kleene.UNKNOWN;
+        }
       }
-      else {
-        return Kleene.FALSE;
-      }
     }
-  }
-
-  public L<T> join(Object value) {
-    throw new UnsupportedOperationException(
-      "Join is currently not defined for `L<T>`.");
   }
 
   public void join_in_place(Object obj) {
-    L<T> other = flatLatticeOf(obj);
-    if (!other.isBottom()) {
-      T other_inner = other.value.get();
-      join_inner(other_inner);
+    L<T> v = join(obj);
+    this.value = v.value;
+    this.kind = v.kind;
+  }
+
+  public L<T> join(Object obj) {
+    L<T> other = flatLatticeOf("join", obj);
+    switch (other.kind) {
+      case BOT: return copy();
+      case TOP: return top();
+      default: return join_inner(other.value);
     }
   }
 
-  public void join_inner(T other) {
-    assert other != null;
-    if (this.isBottom()) {
-      this.value = Optional.of(other);
-    }
-    else {
-      T self = this.value.get();
-      assertSameInnerTypes(self, other);
-      if(!self.equals(other)) {
-        throw new RuntimeException(
-          "Reached TOP element in flat lattice due to `"
-          + self + "` join `" + other + "`");
+  public L<T> join_inner(T other) {
+    checkNull("join", other);
+    switch (this.kind) {
+      case BOT: return copy_inner("join", other);
+      case TOP: return top();
+      default: {
+        assertSameInnerTypes("join", value, other);
+        if(value.equals(other)) {
+          return copy_inner("join", other);
+        }
+        else {
+          return top();
+        }
       }
     }
   }
 
-  private void assertSameInnerTypes(T self, Object other) {
-    assert self != null && other != null;
+  public void meet_in_place(Object obj) {
+    L<T> v = meet(obj);
+    this.value = v.value;
+    this.kind = v.kind;
+  }
+
+  public L<T> meet(Object obj) {
+    L<T> other = flatLatticeOf("meet", obj);
+    switch (other.kind) {
+      case BOT: return bottom();
+      case TOP: return copy();
+      default: return meet_inner(other.value);
+    }
+  }
+
+  public L<T> meet_inner(T other) {
+    checkNull("meet", other);
+    switch (this.kind) {
+      case BOT: return bottom();
+      case TOP: return copy_inner("meet", other);
+      default: {
+        assertSameInnerTypes("meet", value, other);
+        if(value.equals(other)) {
+          return copy_inner("meet", other);
+        }
+        else {
+          return bottom();
+        }
+      }
+    }
+  }
+
+  private void assertSameInnerTypes(String from, T self, Object other) {
+    checkNull(from, other);
     if (!self.getClass().isInstance(other)) {
       throw new RuntimeException(
-        "Undefined entailment between `" +
+        "Undefined entailment relation between `" +
         this.getClass().getCanonicalName() +
         "` and `" +
         other.getClass().getCanonicalName() + "`");
     }
   }
 
-  private L<T> flatLatticeOf(Object obj) {
-    assert obj != null;
+  private L<T> flatLatticeOf(String from, Object obj) {
+    checkNull(from, obj);
     if (obj instanceof L) {
       return (L) obj;
     }
     else {
-      return new L(obj);
+      return inner((T) obj);
+    }
+  }
+
+  private void checkNull(String from, Object obj) {
+    if (obj == null) {
+      throw new NullPointerException("Operation `L<T>." + from + "` does not accept a `null` argument.");
     }
   }
 
   public String toString() {
-    if (isBottom()) {
-      return "bottom";
+    switch (kind) {
+      case BOT: return "bottom";
+      case TOP: return "top";
+      default: return value.toString();
     }
-    else {
-      return value.get().toString();
-    }
-  }
-
-  public T unwrap() {
-    return value.get();
   }
 }

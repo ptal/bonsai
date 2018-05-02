@@ -20,7 +20,7 @@ import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.util.ESat;
 
-public class VarStore implements Store, Restorable, Resettable<VarStore> {
+public class VarStore implements Store, Restorable {
   private Model model;
   private Integer depth;
 
@@ -35,11 +35,6 @@ public class VarStore implements Store, Restorable, Resettable<VarStore> {
   public VarStore(String problem_name) {
     model = new Model(problem_name);
     depth = 0;
-  }
-
-  public void reset(VarStore o) {
-    this.model = o.model;
-    this.depth = o.depth;
   }
 
   public IntVar[] vars() {
@@ -108,7 +103,17 @@ public class VarStore implements Store, Restorable, Resettable<VarStore> {
 
   public VarStore join(Object value) {
     throw new UnsupportedOperationException(
-      "Join is currently not defined for `VarStore`.");
+      "`join` is currently not defined for `VarStore`.");
+  }
+
+  public VarStore meet(Object value) {
+    throw new UnsupportedOperationException(
+      "`meet` is currently not defined for `VarStore`.");
+  }
+
+  public void meet_in_place(Object value) {
+    throw new UnsupportedOperationException(
+      "`meet_in_place` is currently not defined for `VarStore`.");
   }
 
   public LMax countAsn() {

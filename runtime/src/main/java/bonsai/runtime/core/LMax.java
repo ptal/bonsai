@@ -16,7 +16,7 @@ package bonsai.runtime.core;
 
 import bonsai.runtime.lattice.*;
 
-public class LMax implements Lattice, Restorable, Copy<LMax>, Resettable<LMax>
+public class LMax implements Lattice, Restorable, Copy<LMax>
 {
   private Integer value;
 
@@ -24,8 +24,40 @@ public class LMax implements Lattice, Restorable, Copy<LMax>, Resettable<LMax>
     this.value = new Integer(0);
   }
 
+  public LMax(Integer v) {
+    this.value = v;
+  }
+
   private LMax(LMax l) {
     this.value = l.value;
+  }
+
+  // Access: READWRITE(this)
+  public void inc() {
+    this.value += 1;
+  }
+
+  // Access: READ(this)
+  public Integer get() {
+    return this.value;
+  }
+
+  public LMax meet(Object o) {
+    LMax v = castLMax("meet", o);
+    return new LMax((this.value < v.value) ? this : v);
+  }
+
+  public void meet_in_place(Object o) {
+    this.value = meet(o).value;
+  }
+
+  public void join_in_place(Object o) {
+    this.value = join(o).value;
+  }
+
+  public LMax join(Object o) {
+    LMax v = castLMax("join", o);
+    return new LMax((this.value > v.value) ? this : v);
   }
 
   public Object label() {
@@ -39,28 +71,6 @@ public class LMax implements Lattice, Restorable, Copy<LMax>, Resettable<LMax>
 
   public LMax copy() {
     return new LMax(this);
-  }
-
-  public void reset(LMax i) {
-    this.value = i.value;
-  }
-
-  public void inc() {
-    this.value += 1;
-  }
-
-  public Integer get() {
-    return this.value;
-  }
-
-  public void join_in_place(Object o) {
-    LMax v = castLMax("join", o);
-    this.value = (this.value > v.value) ? this.value : v.value;
-  }
-
-  public LMax join(Object value) {
-    throw new UnsupportedOperationException(
-      "Join is currently not defined for `LMax`.");
   }
 
   public Kleene entail(Object o) {

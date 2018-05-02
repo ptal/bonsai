@@ -22,7 +22,7 @@ public enum Kleene {
   FALSE,
   UNKNOWN;
 
-  static Kleene[] table_not = { FALSE, TRUE, UNKNOWN};
+  static Kleene[] table_not = {FALSE, TRUE, UNKNOWN};
   public static Kleene not(Kleene k) {
     return table_not[k.ordinal()];
   }

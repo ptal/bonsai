@@ -21,7 +21,7 @@ import org.chocosolver.solver.expression.discrete.relational.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.solver.exception.ContradictionException;
 
-public class ConstraintStore implements Lattice, Restorable, Resettable<ConstraintStore> {
+public class ConstraintStore implements Lattice, Restorable {
 
   public ArrayDeque<Constraint> constraints;
 
@@ -73,7 +73,17 @@ public class ConstraintStore implements Lattice, Restorable, Resettable<Constrai
 
   public ConstraintStore join(Object value) {
     throw new UnsupportedOperationException(
-      "Join is currently not defined for `ConstraintStore`.");
+      "`join` is currently not defined for `ConstraintStore`.");
+  }
+
+  public void meet_in_place(Object value) {
+    throw new UnsupportedOperationException(
+      "`meet_in_place` is currently not defined for `ConstraintStore`.");
+  }
+
+  public ConstraintStore meet(Object value) {
+    throw new UnsupportedOperationException(
+      "`meet` is currently not defined for `ConstraintStore`.");
   }
 
   public Kleene entail(Object value) {

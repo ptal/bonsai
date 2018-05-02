@@ -16,20 +16,29 @@ package bonsai.runtime.lattice;
 
 import bonsai.runtime.core.Kleene;
 
-// A lattice-based variable must implement two operations over lattice: `join` for adding information and `entail` for asking if a piece of information can be deduced.
+// A lattice-based variable must implement three operations over lattice:
+// * `join` for adding a piece of information according to the order of the lattice.
+// * `meet` for removing a piece of information according to the order of the lattice.
+// * `entail` for asking if a piece of information can be deduced from the current element.
 
-public interface Lattice {
-
+public interface Lattice
+{
   Lattice join(Object o);
   void join_in_place(Object o);
+
+  Lattice meet(Object o);
+  void meet_in_place(Object o);
 
   // The result of the entailment must reflect the current entailment relation between two objects.
   // We do not take care of the fact that objects can evolve, this is taken care of in the semantics of spacetime.
   // For example, if the lattice is a totally ordered set, `entail` never returns `Kleene.UNKNOWN`.
+  // The following relation must hold:
+  //   * a.entail(b) == TRUE => b.entail(a) != UNKNOWN
+  //   * a.entail(b) == UNKNOWN => b.entail(a) == UNKNOWN
   Kleene entail(Object o);
 
-  // We do not use the Object method `equals` because we want to provide a default implementation (and keep `Lattice` an interface).
-  default boolean eq(Object other) {
+  // (a.entail(b) == TRUE /\ b.entail(a) == TRUE) => a.equals(b) == TRUE
+  static boolean equals_default(Lattice l, Object other) {
     if (other == null) {
       return false;
     }
@@ -39,11 +48,12 @@ public interface Lattice {
     else {
       Lattice o = (Lattice) other;
       return
-        this.entail(o) == Kleene.TRUE &&
-        o.entail(this) == Kleene.TRUE;
+        l.entail(o) == Kleene.TRUE &&
+        o.entail(l) == Kleene.TRUE;
     }
   }
 
+  // a.strict_entail(b) == TRUE => a.entail(b) = TRUE /\ !(a.equals(b))
   default Kleene strict_entail(Object other) {
     if (other == null) {
       return Kleene.FALSE;
@@ -54,7 +64,7 @@ public interface Lattice {
     else {
       Lattice o = (Lattice) other;
       return
-        Kleene.and(this.entail(o), Kleene.fromBool(this.eq(o)));
+        Kleene.and(this.entail(o), Kleene.fromBool(equals_default(this,o)));
     }
   }
 }

@@ -45,6 +45,21 @@ public class ES implements Lattice {
     value = join(o).value;
   }
 
+  static Kleene[][] table_meet = {
+  //   this |⁻| o  TRUE  FALSE  UNKNOWN
+    /* TRUE */    {TRUE, TRUE, UNKNOWN},
+    /* FALSE */   {TRUE, FALSE, UNKNOWN},
+    /* UNKNOWN */ {UNKNOWN, UNKNOWN, UNKNOWN}
+  };
+  public ES meet(Object o) {
+    ES e = castToES("meet", o);
+    return new ES(table_meet[value.ordinal()][e.value.ordinal()]);
+  }
+
+  public void meet_in_place(Object o) {
+    value = meet(o).value;
+  }
+
   static Kleene[][] table_entail = {
   //   this |= o   TRUE  FALSE  UNKNOWN
     /* TRUE */    {TRUE, FALSE, TRUE},
@@ -56,13 +71,9 @@ public class ES implements Lattice {
     return table_entail[value.ordinal()][e.value.ordinal()];
   }
 
-  public boolean eq(Object o) {
+  public boolean equals(Object o) {
     ES e = castToES("eq", o);
     return value == e.value;
-  }
-
-  public boolean equals(Object o) {
-    return eq(o);
   }
 
   private ES castToES(String from, Object o) {

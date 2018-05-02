@@ -27,37 +27,41 @@ public class W<T extends Restorable> extends L<T>
     super();
   }
 
-  public Object label() {
-    if (isBottom()) {
-      return bottom();
-    }
-    else {
-      return Optional.of(value.get().label());
-    }
-  }
-
-  /// Shared label property: either the label equal bottom and is created from scratch (`bottom()`) or it depends on the underlying value (inductively).
-  public void restore(Object label) {
-    Optional l = (Optional) label;
-    if (l.isPresent()){
-      this.value.get().restore(l.get());
-    }
-    else {
-      this.value = Optional.empty();
-    }
-  }
-
-  public L<T> copy() {
-    if (isBottom()) {
-      return bottom();
-    }
-    else {
-      Copy v = Cast.toCopy("<anon> in W.copy", value.get());
-      return new W((T) v.copy());
-    }
-  }
-
   public W<T> bottom() {
-    return new W<T>();
+    return new W();
+  }
+
+  public W<T> top() {
+    W w = new W();
+    w.kind = LKind.TOP;
+    return w;
+  }
+
+  public W<T> inner(T value) {
+    return new W(value);
+  }
+
+  // We encapsulate the label produced by the inner element inside a flat lattice.
+  // This is required to save the bottom and top elements.
+  public Object label() {
+    switch (kind) {
+      case BOT: return super.bottom();
+      case TOP: return super.top();
+      default:
+        return new L(value.label());
+    }
+  }
+
+  /// Shared label property: either the label equals bottom or top and is created from scratch (`bottom()`) or it depends on the underlying value (inductively).
+  public void restore(Object label) {
+    L l = (L) label;
+    switch (l.kind) {
+      case BOT: meet_in_place(bottom());
+      case TOP: join_in_place(top());
+      default: {
+        this.value.restore(l.value);
+        this.kind = LKind.INNER;
+      }
+    }
   }
 }
