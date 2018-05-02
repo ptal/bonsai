@@ -20,7 +20,8 @@ import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.util.ESat;
 
-public class VarStore implements Store, Restorable {
+public class VarStore implements Store, Restorable
+{
   private Model model;
   private Integer depth;
 
@@ -29,11 +30,11 @@ public class VarStore implements Store, Restorable {
   }
 
   public VarStore() {
-    this("Bonsai problem");
+    this("Bonsai CSP");
   }
 
-  public VarStore(String problem_name) {
-    model = new Model(problem_name);
+  public VarStore(String csp_name) {
+    model = new Model(csp_name);
     depth = 0;
   }
 
@@ -45,13 +46,13 @@ public class VarStore implements Store, Restorable {
     return model;
   }
 
-  public Object label() {
+  public Integer label() {
     return new Integer(depth);
   }
 
   // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
-    assert label != null;
+    Cast.checkNull("Label", "VarStore.restore", label);
     if (label instanceof Integer) {
       Integer newDepth = (Integer) label;
       model.getEnvironment().worldPopUntil(newDepth);
@@ -62,42 +63,41 @@ public class VarStore implements Store, Restorable {
       throw new RuntimeException(
         "Label of `VarStore` must be a `Integer` value.");
     }
-
   }
 
   public Object alloc(Object value) {
-    assert value != null;
+    Cast.checkNull("Allocation value", "VarStore.alloc", value);
     if (value instanceof IntDomain) {
       IntDomain dom = (IntDomain) value;
       return model.intVar(dom.lb, dom.ub, dom.bounded);
     }
     else {
       throw new RuntimeException(
-        "Allocation in `VarStore` is only defined for integer domain `IntDomain`.");
+        "Allocation in `VarStore.alloc` is only defined for integer domain `IntDomain`.");
     }
   }
 
   public Object index(Object location) {
-    assert location != null;
+    Cast.checkNull("Location", "VarStore.index", location);
     if (location instanceof IntVar) {
       // Note that the object in the store is actually the same as the location.
       return location;
     }
     else {
       throw new RuntimeException(
-        "Location of `VarStore` must be of type `IntVar`");
+        "Location of `VarStore.index` must be of type `IntVar`");
     }
   }
 
   public void join_in_place(Object value) {
-    assert value != null;
+    Cast.checkNull("Parameter", "VarStore.join_in_place", value);
     if (value instanceof Entry) {
       throw new UnsupportedOperationException(
-        "Join is currently not defined for `VarStore` because `IntVar` does not provide intersection.");
+        "`join` is currently not defined for `VarStore` because `IntVar` does not provide intersection.");
     }
     else if (this != value) {
       throw new RuntimeException(
-        "Join is only defined between `VarStore` and an entry `VarStore.Entry`.");
+        "`join` is only defined between `VarStore` and an entry `VarStore.Entry`.");
     }
   }
 
@@ -138,54 +138,46 @@ public class VarStore implements Store, Restorable {
     return asn;
   }
 
-
   public Kleene entail(Object value) {
     if (value instanceof VarStore) {
       VarStore vstore = (VarStore) value;
-      return vstoreEntail(vstore);
-    }
-    else if (value instanceof ConstraintStore) {
-      ConstraintStore cstore = (ConstraintStore) value;
-      return cstoreEntail(cstore);
-    }
-    else if (value instanceof Constraint) {
-      Constraint constraint = (Constraint) value;
-      return constraintEntail(constraint);
+      return entail(vstore);
     }
     else {
       throw new UnsupportedOperationException(
-        "Entailment is not defined between `VarStore` and "
-        + value.getClass().getName() + ".");
+        "Entailment is not defined between `VarStore` and `"
+        + value.getClass().getName() + "`.");
     }
   }
 
-  private Kleene vstoreEntail(VarStore vstore) {
+  private Kleene entail(VarStore vstore) {
     checkOnlyIntVar(model);
     checkOnlyIntVar(vstore.model);
     IntVar[] v1 = model.retrieveIntVars(true);
     IntVar[] v2 = vstore.model.retrieveIntVars(true);
-    if (v2.length < v1.length) {
-      return Kleene.FALSE;
-    }
-    else if (v1.length < v2.length) {
-      return Kleene.UNKNOWN;
+    if (v1.length < v2.length) {
+      return Kleene.not(vstore.entail(this));
     }
     else {
       Kleene res = Kleene.TRUE;
-      for (int i = 0; i < v1.length; i++) {
-        Kleene varRes = varEntail(v1[i], v2[i]);
-        if (varRes == Kleene.FALSE) {
-          return Kleene.FALSE;
-        }
-        else if (varRes == Kleene.UNKNOWN) {
-          res = Kleene.UNKNOWN;
+      for (int i = 0; i < v2.length; i++) {
+        switch (varEntail(v1[i], v2[i])) {
+          case FALSE: {
+            res = Kleene.FALSE;
+            return res;
+          }
+          case UNKNOWN: {
+            res = Kleene.UNKNOWN;
+            break;
+          }
+          default: break;
         }
       }
       return res;
     }
   }
 
-  private Kleene varEntail(IntVar v1, IntVar v2) {
+  private static Kleene varEntail(IntVar v1, IntVar v2) {
     if (v1.isInstantiated() && v2.isInstantiated()) {
       if (v1.getValue() == v2.getValue()) {
         return Kleene.TRUE;
@@ -200,39 +192,13 @@ public class VarStore implements Store, Restorable {
     }
   }
 
-  private Kleene cstoreEntail(ConstraintStore cstore) {
-    Kleene res = Kleene.TRUE;
-    for (Constraint c : cstore.constraints) {
-      Kleene cRes = constraintEntail(c);
-      if (cRes == Kleene.FALSE) {
-        return Kleene.FALSE;
-      }
-      else if (cRes == Kleene.UNKNOWN) {
-        res = Kleene.UNKNOWN;
-      }
-    }
-    return res;
-  }
-
-  private Kleene constraintEntail(Constraint constraint) {
-    ESat consistency = constraint.isSatisfied();
-    if (consistency == ESat.TRUE) {
-      return Kleene.TRUE;
-    }
-    else if (consistency == ESat.FALSE) {
-      return Kleene.FALSE;
-    }
-    else {
-      return Kleene.UNKNOWN;
-    }
-  }
-
   private void checkOnlyIntVar(Model model) {
     if (model.retrieveSetVars().length > 0 ||
         model.retrieveRealVars().length > 0)
     {
+      // NOTE: It would not be hard to extend the entailment to set and real variables.
       throw new RuntimeException(
-        "Entailment between two VarStore only works with integer variables.");
+        "Entailment between two `VarStore` only works with integer variables.");
     }
   }
 

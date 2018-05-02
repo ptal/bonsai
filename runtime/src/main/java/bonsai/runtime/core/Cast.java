@@ -18,6 +18,12 @@ import bonsai.runtime.lattice.Lattice;
 
 public class Cast
 {
+  static public void checkNull(String what, String where, Object value) {
+    if (value == null) {
+      throw new NullPointerException(what + " in `" + where + "` must not be null.");
+    }
+  }
+
   static private void checkLatticeInterface(String var, Object o) {
     if (!(o instanceof Lattice)) {
       unimplementedInterface(var, o, "Lattice");

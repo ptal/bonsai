@@ -19,11 +19,13 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.lattice.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
 import org.chocosolver.solver.constraints.*;
-import org.chocosolver.solver.exception.ContradictionException;
+import org.chocosolver.solver.*;
+import org.chocosolver.solver.exception.*;
+import org.chocosolver.util.ESat;
 
-public class ConstraintStore implements Lattice, Restorable {
-
-  public ArrayDeque<Constraint> constraints;
+public class ConstraintStore implements Lattice, Restorable
+{
+  private ArrayDeque<Constraint> constraints;
 
   public ConstraintStore bottom() {
     return new ConstraintStore();
@@ -33,27 +35,27 @@ public class ConstraintStore implements Lattice, Restorable {
     constraints = new ArrayDeque();
   }
 
-  public void reset(ConstraintStore o) {
-    this.constraints = o.constraints;
-  }
-
-  public Object label() {
+  public Integer label() {
     return new Integer(constraints.size());
   }
 
   // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
-    assert label != null && label.getClass().isInstance(Integer.class) :
-      "Label of `ConstraintStore` must be a `Integer` value.";
-    Integer newSize = (Integer) label;
-    while (constraints.size() != newSize) {
-      Constraint c = constraints.pop();
-      c.getPropagator(0).getModel().unpost(c);
+    Cast.checkNull("Label", "ConstraintStore.restore", label);
+    if (!(label instanceof Integer)) {
+      throw new RuntimeException("Label in `ConstraintStore.restore` must be an integer.");
+    }
+    else {
+      Integer newSize = (Integer) label;
+      while (constraints.size() != newSize) {
+        Constraint c = constraints.pop();
+        c.getPropagator(0).getModel().unpost(c);
+      }
     }
   }
 
   public void join_in_place(Object value) {
-    assert value != null;
+    Cast.checkNull("Parameter", "ConstraintStore.join_in_place", value);
     Constraint c;
     if (value instanceof ReExpression) {
       ReExpression expr = (ReExpression) value;
@@ -65,7 +67,7 @@ public class ConstraintStore implements Lattice, Restorable {
     else {
       throw new RuntimeException(
         "Join in `ConstraintStore` is not defined for `" + value.getClass().getName() +
-        "`.\nIt is defined for `Constraint` or relational expression `ReExpression`.");
+        "`.\nIt is defined for `Constraint` or the relational expression `ReExpression`.");
     }
     constraints.push(c);
     c.post();
@@ -88,6 +90,50 @@ public class ConstraintStore implements Lattice, Restorable {
 
   public Kleene entail(Object value) {
     throw new UnsupportedOperationException(
-      "Entailment is currently not defined for `ConstraintStore`.");
+      "`entail` is currently not defined for `ConstraintStore`.");
+  }
+
+  // Spacetime signature: `read this.propagate(readwrite vstore)`
+  public Kleene propagate(VarStore vstore) {
+    Solver solver = vstore.model().getSolver();
+    try {
+      solver.propagate();
+    }
+    catch (ContradictionException e) {
+      solver.getEngine().flush();
+    }
+    switch (solver.isSatisfied()) {
+      case TRUE: return Kleene.TRUE;
+      case FALSE: return Kleene.FALSE;
+      default: return Kleene.UNKNOWN;
+    }
+  }
+
+  // NOTE: We cannot add a cache to save the consistency between two calls to consistent because the variables might have been changed by another constraint store.
+  public Kleene consistent(VarStore vstore) {
+    Kleene consistency = Kleene.TRUE;
+    for (Constraint c : constraints) {
+      switch (consistent(c)) {
+        case FALSE: {
+          consistency = Kleene.FALSE;
+          return consistency;
+        }
+        case UNKNOWN: {
+          consistency = Kleene.UNKNOWN;
+          break;
+        }
+        default: break;
+      }
+    }
+    return consistency;
+  }
+
+  private Kleene consistent(Constraint constraint) {
+    ESat consistency = constraint.isSatisfied();
+    switch (consistency) {
+      case TRUE: return Kleene.TRUE;
+      case FALSE: return Kleene.FALSE;
+      default: return Kleene.UNKNOWN;
+    }
   }
 }
