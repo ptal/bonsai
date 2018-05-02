@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.core;
+package bonsai.runtime.lattices;
 
-import bonsai.runtime.lattice.*;
+import bonsai.runtime.core.*;
 
 public class LMax implements Lattice, Restorable, Copy<LMax>
 {

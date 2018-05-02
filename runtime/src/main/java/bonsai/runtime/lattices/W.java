@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.core;
+package bonsai.runtime.lattices;
 
-import java.util.Optional;
+import bonsai.runtime.core.*;
 
 public class W<T extends Restorable> extends L<T>
   implements Restorable

@@ -23,9 +23,9 @@
 
 // The entailment and join operation are dynamically overload so `x |= y` and `x <- y` are defined such that `y` can be of type `L<T>` or `T`.
 
-package bonsai.runtime.core;
+package bonsai.runtime.lattices;
 
-import bonsai.runtime.lattice.*;
+import bonsai.runtime.core.*;
 
 public class L<T> implements Lattice, Copy<L<T>>
 {

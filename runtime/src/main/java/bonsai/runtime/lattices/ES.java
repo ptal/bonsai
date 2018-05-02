@@ -14,9 +14,9 @@
 
 // This lattice gives an order to Kleene values such that `False |= True |= Unknown`.
 
-package bonsai.runtime.core;
+package bonsai.runtime.lattices;
 
-import bonsai.runtime.lattice.*;
+import bonsai.runtime.core.*;
 import static bonsai.runtime.core.Kleene.*;
 
 public class ES implements Lattice {

@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.choco;
+package bonsai.runtime.lattices.choco;
 
 import bonsai.runtime.core.*;
+import bonsai.runtime.lattices.LMax;
 import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.*;
@@ -199,6 +200,21 @@ public class VarStore implements Store, Restorable
       // NOTE: It would not be hard to extend the entailment to set and real variables.
       throw new RuntimeException(
         "Entailment between two `VarStore` only works with integer variables.");
+    }
+  }
+
+  public class IntDomain {
+    public int lb, ub;
+    public boolean bounded;
+
+    public IntDomain(int lb, int ub) {
+      this(lb, ub, false);
+    }
+
+    public IntDomain(int lb, int ub, boolean bounded) {
+      this.lb = lb;
+      this.ub = ub;
+      this.bounded = bounded;
     }
   }
 

@@ -14,8 +14,6 @@
 
 package bonsai.runtime.core;
 
-import bonsai.runtime.lattice.Lattice;
-
 public class Cast
 {
   static public void checkNull(String what, String where, Object value) {

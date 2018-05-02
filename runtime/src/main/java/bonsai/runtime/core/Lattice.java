@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.lattice;
-
-import bonsai.runtime.core.Kleene;
+package bonsai.runtime.core;
 
 // A lattice-based variable must implement three operations over lattice:
 // * `join` for adding a piece of information according to the order of the lattice.

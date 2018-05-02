@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.choco;
+package bonsai.runtime.lattices.choco;
 
 import java.util.*;
 import bonsai.runtime.core.*;
-import bonsai.runtime.lattice.*;
 import org.chocosolver.solver.expression.discrete.relational.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.solver.*;
