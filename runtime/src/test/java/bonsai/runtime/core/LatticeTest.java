@@ -95,7 +95,26 @@ public class LatticeTest
     assertThat(currentTest, b.equals(a), equalTo(expected));
   }
 
+  private void testTopBotJoin(Lattice a) {
+    Lattice b = a.top();
+    assertThat(currentTest, b, equalTo(a.join(b)));
+    assertThat(currentTest, b, equalTo(b.join(a)));
+    Lattice c = a.bottom();
+    assertThat(currentTest, a, equalTo(a.join(c)));
+    assertThat(currentTest, a, equalTo(c.join(a)));
+  }
+
+  private void testTopBotMeet(Lattice a) {
+    Lattice b = a.top();
+    assertThat(a, equalTo(a.meet(b)));
+    assertThat(a, equalTo(b.meet(a)));
+    Lattice c = a.bottom();
+    assertThat(c, equalTo(a.meet(c)));
+    assertThat(c, equalTo(c.meet(a)));
+  }
+
   private void testJoin(Lattice a, Lattice b, Lattice expected) {
+    testTopBotJoin(a);
     Lattice c = a.join(b);
     testEquality(c, expected, true);
 
@@ -126,6 +145,7 @@ public class LatticeTest
   }
 
   private void testMeet(Lattice a, Lattice b, Lattice expected) {
+    testTopBotMeet(a);
     Lattice c = a.meet(b);
     testEquality(c, expected, true);
 

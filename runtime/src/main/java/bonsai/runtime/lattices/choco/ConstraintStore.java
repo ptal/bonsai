@@ -26,12 +26,17 @@ public class ConstraintStore implements Lattice, Restorable
 {
   private ArrayDeque<Constraint> constraints;
 
+  public ConstraintStore() {
+    constraints = new ArrayDeque();
+  }
+
   public ConstraintStore bottom() {
     return new ConstraintStore();
   }
 
-  public ConstraintStore() {
-    constraints = new ArrayDeque();
+  public ConstraintStore top() {
+    throw new UnsupportedOperationException(
+      "ConstraintStore does not provide support for the TOP element.");
   }
 
   public Integer label() {

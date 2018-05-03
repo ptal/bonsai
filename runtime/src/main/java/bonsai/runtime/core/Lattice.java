@@ -21,6 +21,9 @@ package bonsai.runtime.core;
 
 public interface Lattice
 {
+  Lattice bottom();
+  Lattice top();
+
   Lattice join(Object o);
   void join_in_place(Object o);
 

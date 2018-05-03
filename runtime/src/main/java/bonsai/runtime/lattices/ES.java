@@ -30,6 +30,14 @@ public class ES implements Lattice {
     value = k;
   }
 
+  public ES bottom() {
+    return new ES(Kleene.UNKNOWN);
+  }
+
+  public ES top() {
+    return new ES(Kleene.FALSE);
+  }
+
   static Kleene[][] table_join = {
   //   this |_| o  TRUE  FALSE  UNKNOWN
     /* TRUE */    {TRUE, FALSE, TRUE},

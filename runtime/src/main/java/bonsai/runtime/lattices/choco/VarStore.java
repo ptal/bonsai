@@ -30,6 +30,11 @@ public class VarStore implements Store, Restorable
     return new VarStore();
   }
 
+  public VarStore top() {
+    throw new UnsupportedOperationException(
+      "VarStore does not provide support for the TOP element.");
+  }
+
   public VarStore() {
     this("Bonsai CSP");
   }
