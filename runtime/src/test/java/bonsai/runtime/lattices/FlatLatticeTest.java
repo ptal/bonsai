@@ -19,33 +19,37 @@ import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 import org.junit.*;
 
-public class ESTest
+public class FlatLatticeTest
 {
-  ES t;
-  ES f;
-  ES u;
+  L<Integer> bot;
+  L<Integer> top;
+  L<Integer> v0;
+  L<Integer> v1;
+  L<Integer> v2;
 
   @Before
   public void prepareData() {
-    t = new ES(Kleene.TRUE);
-    f = new ES(Kleene.FALSE);
-    u = new ES(Kleene.UNKNOWN);
+    bot = new L<Integer>().bottom();
+    top = new L<Integer>().top();
+    v0 = new L<Integer>(0);
+    v1 = new L<Integer>(1);
+    v2 = new L<Integer>(2);
   }
 
   @Test
-  public void testLattice() {
+  public void testFlatLattice() {
     LatticeTest test = new LatticeTest();
 
     Kleene T = Kleene.TRUE;
     Kleene F = Kleene.FALSE;
     Kleene U = Kleene.UNKNOWN;
 
-    test.testLattice("ES",
-      new ES[]     { t, f, t, f, u, t, u, f, u },
-      new ES[]     { t, t, f, f, t, u, u, u, f },
-      new Kleene[] { T, T, F, T, F, T, T, T, F }, // entailment
-      new ES[]     { t, f, f, f, t, t, u, f, f }, // join
-      new ES[]     { t, t, t, f, u, u, u, u, u }  // meet
+    test.testLattice("L<Integer>",
+      new L[]     { bot, bot, top, bot, top, v0, v0,  v2, top },
+      new L[]     { bot, top, top, v0,  v0,  v0, v1,  v0, v2  },
+      new Kleene[]{ T,   F,   T,   F,   T,   T,  U,   U,  T   }, // entailment
+      new L[]     { bot, top, top, v0,  top, v0, top, top,top }, // join
+      new L[]     { bot, bot, top, bot, v0,  v0, bot, bot,v2  }  // meet
     );
   }
 }

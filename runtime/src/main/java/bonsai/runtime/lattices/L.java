@@ -28,8 +28,9 @@
 package bonsai.runtime.lattices;
 
 import bonsai.runtime.core.*;
+import java.math.*;
 
-// `T` must override `equals`.
+// `T` must override `equals` unless it is an immutable type (see method isImmutable()).
 public class L<T> implements Lattice, Copy<L<T>>
 {
   enum LKind {
@@ -81,18 +82,45 @@ public class L<T> implements Lattice, Copy<L<T>>
     switch (kind) {
       case BOT: return bottom();
       case TOP: return top();
-      default: return copy_inner("copy", value);
+      default: return copyInner("copy", value);
     }
   }
 
-  private L<T> copy_inner(String from, Object toCopy) {
-    Copy v = Cast.toCopy("The operation `L<T>." + from + "` requires the type `T` to implement `Copy`.", toCopy);
-    return inner((T) v.copy());
+  private L<T> copyInner(String from, Object toCopy) {
+    if (isImmutable(toCopy)) {
+      return inner((T) toCopy);
+    }
+    else {
+      Copy v = Cast.toCopy("The operation `L<T>." + from + "` requires the type `T` to implement `Copy`.", toCopy);
+      return inner((T) v.copy());
+    }
+  }
+
+  private boolean isImmutable(Object toCopy) {
+    Class c = toCopy.getClass();
+    if (c == BigDecimal.class || c == BigInteger.class || c == Byte.class ||
+        c == Double.class || c == Float.class || c == Integer.class || c == Long.class || c == Short.class ||
+        c == String.class) {
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   public boolean equals(Object obj) {
     L<T> other = flatLatticeOf("equals", obj);
-    return kind == other.kind && value.equals(other.value);
+    if (kind == other.kind) {
+      if (kind == LKind.INNER) {
+        return value.equals(other.value);
+      }
+      else {
+        return true;
+      }
+    }
+    else {
+      return false;
+    }
   }
 
   public Kleene entail(Object obj) {
@@ -139,12 +167,12 @@ public class L<T> implements Lattice, Copy<L<T>>
   public L<T> join_inner(T other) {
     checkNull("join", other);
     switch (this.kind) {
-      case BOT: return copy_inner("join", other);
+      case BOT: return copyInner("join", other);
       case TOP: return top();
       default: {
         assertSameInnerTypes("join", value, other);
         if(value.equals(other)) {
-          return copy_inner("join", other);
+          return copyInner("join", other);
         }
         else {
           return top();
@@ -172,11 +200,11 @@ public class L<T> implements Lattice, Copy<L<T>>
     checkNull("meet", other);
     switch (this.kind) {
       case BOT: return bottom();
-      case TOP: return copy_inner("meet", other);
+      case TOP: return copyInner("meet", other);
       default: {
         assertSameInnerTypes("meet", value, other);
         if(value.equals(other)) {
-          return copy_inner("meet", other);
+          return copyInner("meet", other);
         }
         else {
           return bottom();
