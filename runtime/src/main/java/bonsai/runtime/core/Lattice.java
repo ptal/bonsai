@@ -36,6 +36,9 @@ public interface Lattice
   //   * a.entail(b) == UNKNOWN => b.entail(a) == UNKNOWN
   Kleene entail(Object o);
 
+  // NOTE: You should override the method `equals`, possibly using the following default static method `equals_default`.
+  // The only way to ensure that `equals` is implemented in sub-classes would be to make `Lattice` an abstract class.
+
   // (a.entail(b) == TRUE /\ b.entail(a) == TRUE) => a.equals(b) == TRUE
   static boolean equals_default(Lattice l, Object other) {
     if (other == null) {
@@ -52,6 +55,7 @@ public interface Lattice
     }
   }
 
+  // Written `a |< b` in spacetime.
   // a.strict_entail(b) == TRUE => a.entail(b) = TRUE /\ !(a.equals(b))
   default Kleene strict_entail(Object other) {
     if (other == null) {

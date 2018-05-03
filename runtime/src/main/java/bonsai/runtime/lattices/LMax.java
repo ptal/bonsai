@@ -16,86 +16,51 @@ package bonsai.runtime.lattices;
 
 import bonsai.runtime.core.*;
 
-public class LMax implements Lattice, Restorable, Copy<LMax>
+public class LMax extends TotalOrder<Integer>
 {
-  private Integer value;
-
   public LMax() {
-    this.value = new Integer(0);
+    super(new Integer(0));
   }
 
   public LMax(Integer v) {
-    this.value = v;
+    super(v);
   }
 
-  private LMax(LMax l) {
-    this.value = l.value;
+  private LMax(LMax m) {
+    super(new Integer(m.value));
+  }
+
+  public LMax bottom() {
+    return new LMax(Integer.MIN_VALUE);
+  }
+
+  public LMax top() {
+    return new LMax(Integer.MAX_VALUE);
   }
 
   // Access: READWRITE(this)
   public void inc() {
-    this.value += 1;
-  }
-
-  // Access: READ(this)
-  public Integer get() {
-    return this.value;
-  }
-
-  public LMax meet(Object o) {
-    LMax v = castLMax("meet", o);
-    return new LMax((this.value < v.value) ? this : v);
-  }
-
-  public void meet_in_place(Object o) {
-    this.value = meet(o).value;
-  }
-
-  public void join_in_place(Object o) {
-    this.value = join(o).value;
-  }
-
-  public LMax join(Object o) {
-    LMax v = castLMax("join", o);
-    return new LMax((this.value > v.value) ? this : v);
-  }
-
-  public Object label() {
-    return copy();
-  }
-
-  /// Shared label property: `Integer` label are automatically copied.
-  public void restore(Object label) {
-    this.value = (Integer) label;
+    if (!this.equals(top())) {
+      this.value += 1;
+    }
   }
 
   public LMax copy() {
     return new LMax(this);
   }
 
-  public Kleene entail(Object o) {
-    LMax v = castLMax("entail", o);
-    if (value >= v.value) {
-      return Kleene.TRUE;
+  protected boolean entail_inner(TotalOrder<Integer> o) {
+    Integer v = castInteger("entail_inner", o.value);
+    return value >= v;
+  }
+
+  private Integer castInteger(String from, Object o) {
+    if (o instanceof Integer) {
+      return (Integer) o;
     }
     else {
-      return Kleene.UNKNOWN;
+      throw new ClassCastException("Operation `" + from + "` between type `Integer` (in `LMax`) and type `"
+        + o.getClass().getCanonicalName() + "` is not supported.");
     }
-  }
-
-  public Lattice bottom() {
-    return new LMax();
-  }
-
-  private LMax castLMax(String from, Object o) {
-    if (o instanceof LMax) {
-      return (LMax) o;
-    }
-    else { throw new RuntimeException(
-      "Unsupported " + from + " operation on LMax"); }
-  }
-
-  public String toString() {
-    return value.toString();
   }
 }

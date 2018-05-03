@@ -18,7 +18,7 @@ public class Cast
 {
   static public void checkNull(String what, String where, Object value) {
     if (value == null) {
-      throw new NullPointerException(what + " in `" + where + "` must not be null.");
+      throw new NullPointerException("Operation `" + where + "` does not accept a `null` " + what + ".");
     }
   }
 

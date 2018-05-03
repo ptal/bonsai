@@ -40,7 +40,7 @@ public class ConstraintStore implements Lattice, Restorable
 
   // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
-    Cast.checkNull("Label", "ConstraintStore.restore", label);
+    Cast.checkNull("label", "ConstraintStore.restore", label);
     if (!(label instanceof Integer)) {
       throw new RuntimeException("Label in `ConstraintStore.restore` must be an integer.");
     }
@@ -54,7 +54,7 @@ public class ConstraintStore implements Lattice, Restorable
   }
 
   public void join_in_place(Object value) {
-    Cast.checkNull("Parameter", "ConstraintStore.join_in_place", value);
+    Cast.checkNull("argument", "ConstraintStore.join_in_place", value);
     Constraint c;
     if (value instanceof ReExpression) {
       ReExpression expr = (ReExpression) value;

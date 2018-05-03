@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// `L<T>` transforms any type `T` ranging over values `E1...EN` into a lattice of the form:
+// `L<T>` transforms any type `T` ranging over values `E1...EN` into a lattice of the form (called flat lattice):
 //       Top
 //   /  / |   \
 // E1 E2 E3 .. EN
 //   \ \  |   /
 //     Bottom
 
-// The bottom and top elements are represented with an empty optional and a additional boolean flag.
+// The bottom and top elements are represented with `LKind.BOT` and `LKind.TOP` while all the other elements have the kind `LKind.INNER`.
 
-// The entailment and join operation are dynamically overload so `x |= y` and `x <- y` are defined such that `y` can be of type `L<T>` or `T`.
+// The entailment and join operation are defined such that, in `x |= y` and `x <- y`, `y` can be of type `L<T>` or `T`.
+
+// NOTE: The methods `bottom`, `top` and `inner` are not static because they are factory methods that can be overriden in sub-classes (see for example the class `W`).
 
 package bonsai.runtime.lattices;
 
 import bonsai.runtime.core.*;
 
+// `T` must override `equals`.
 public class L<T> implements Lattice, Copy<L<T>>
 {
   enum LKind {
@@ -85,6 +88,11 @@ public class L<T> implements Lattice, Copy<L<T>>
   private L<T> copy_inner(String from, Object toCopy) {
     Copy v = Cast.toCopy("The operation `L<T>." + from + "` requires the type `T` to implement `Copy`.", toCopy);
     return inner((T) v.copy());
+  }
+
+  public boolean equals(Object obj) {
+    L<T> other = flatLatticeOf("equals", obj);
+    return kind == other.kind && value.equals(other.value);
   }
 
   public Kleene entail(Object obj) {

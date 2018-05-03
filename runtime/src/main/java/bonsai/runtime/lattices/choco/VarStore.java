@@ -53,7 +53,7 @@ public class VarStore implements Store, Restorable
 
   // precondition: Restoration strategy of `VarStore` only support depth-first search exploration.
   public void restore(Object label) {
-    Cast.checkNull("Label", "VarStore.restore", label);
+    Cast.checkNull("label", "VarStore.restore", label);
     if (label instanceof Integer) {
       Integer newDepth = (Integer) label;
       model.getEnvironment().worldPopUntil(newDepth);
@@ -67,7 +67,7 @@ public class VarStore implements Store, Restorable
   }
 
   public Object alloc(Object value) {
-    Cast.checkNull("Allocation value", "VarStore.alloc", value);
+    Cast.checkNull("parameter (allocation value)", "VarStore.alloc", value);
     if (value instanceof IntDomain) {
       IntDomain dom = (IntDomain) value;
       return model.intVar(dom.lb, dom.ub, dom.bounded);
@@ -79,7 +79,7 @@ public class VarStore implements Store, Restorable
   }
 
   public Object index(Object location) {
-    Cast.checkNull("Location", "VarStore.index", location);
+    Cast.checkNull("parameter (location)", "VarStore.index", location);
     if (location instanceof IntVar) {
       // Note that the object in the store is actually the same as the location.
       return location;
@@ -91,7 +91,7 @@ public class VarStore implements Store, Restorable
   }
 
   public void join_in_place(Object value) {
-    Cast.checkNull("Parameter", "VarStore.join_in_place", value);
+    Cast.checkNull("parameter", "VarStore.join_in_place", value);
     if (value instanceof Entry) {
       throw new UnsupportedOperationException(
         "`join` is currently not defined for `VarStore` because `IntVar` does not provide intersection.");

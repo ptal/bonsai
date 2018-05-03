@@ -77,12 +77,10 @@ public class ES implements Lattice {
   }
 
   private ES castToES(String from, Object o) {
-    if (o == null) {
-      throw new NullPointerException("Operation `" + from + "` does not accept a `null` argument.");
-    }
-    else if (!(o.getClass() == ES.class)) {
+    Cast.checkNull("argument", from, o);
+    if (!(o.getClass() == ES.class)) {
       throw new ClassCastException("Operation `" + from + "` between type `ES` and type `"
-        + o.getClass().getCanonicalName() + "` not supported.");
+        + o.getClass().getCanonicalName() + "` is not supported.");
     }
     return (ES) o;
   }
