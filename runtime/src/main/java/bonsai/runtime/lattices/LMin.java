@@ -1,0 +1,66 @@
+// Copyright 2017 Pierre Talbot (IRCAM)
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package bonsai.runtime.lattices;
+
+import bonsai.runtime.core.*;
+
+public class LMin extends TotalOrder<Integer>
+{
+  public LMin() {
+    super(new Integer(0));
+  }
+
+  public LMin(Integer v) {
+    super(v);
+  }
+
+  private LMin(LMin m) {
+    super(new Integer(m.value));
+  }
+
+  public LMin bottom() {
+    return new LMin(Integer.MAX_VALUE);
+  }
+
+  public LMin top() {
+    return new LMin(Integer.MIN_VALUE);
+  }
+
+  // Access: READWRITE(this)
+  public void dec() {
+    if (!this.equals(top())) {
+      this.value -= 1;
+    }
+  }
+
+  public LMin copy() {
+    return new LMin(this);
+  }
+
+  protected boolean entail_inner(TotalOrder<Integer> o) {
+    Integer v = castInteger("entail_inner", o.value);
+    return value <= v;
+  }
+
+  private Integer castInteger(String from, Object o) {
+    if (o instanceof Integer) {
+      return (Integer) o;
+    }
+    else {
+      throw new ClassCastException("Operation `" + from + "` between type `Integer` (in `LMin`) and type `"
+        + o.getClass().getCanonicalName() + "` is not supported.");
+    }
+  }
+}

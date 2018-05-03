@@ -166,17 +166,17 @@ public class LatticeTest
     assert b.length >= expectedMeet.length;
     int testNo = 0;
     for(int i = 0; i < expectedEntailment.length; i++) {
-      currentTest = testID + "[" + testNo + "]";
+      currentTest = testID + ".entail[" + testNo + "]";
       testEntailment(a[i], b[i], expectedEntailment[i]);
       testNo = testNo + 1;
     }
     for(int i = 0; i < expectedJoin.length; i++) {
-      currentTest = testID + "[" + testNo + "]";
+      currentTest = testID + ".join[" + testNo + "]";
       testJoin(a[i], b[i], expectedJoin[i]);
       testNo = testNo + 1;
     }
     for(int i = 0; i < expectedMeet.length; i++) {
-      currentTest = testID + "[" + testNo + "]";
+      currentTest = testID + ".meet[" + testNo + "]";
       testMeet(a[i], b[i], expectedMeet[i]);
       testNo = testNo + 1;
     }
