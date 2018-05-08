@@ -276,8 +276,8 @@ pub enum StmtKind {
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
   Let(LetStmt),
-  When(EntailmentRel, Box<Stmt>),
-  Suspend(EntailmentRel, Box<Stmt>),
+  When(Expr, Box<Stmt>),
+  Suspend(Expr, Box<Stmt>),
   Tell(Variable, Expr),
   Pause,
   PauseUp,
@@ -361,10 +361,9 @@ impl Binding
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntailmentRel {
-  pub left: Variable,
+  pub left: Expr,
   pub right: Expr,
-  pub strict: bool,
-  pub span: Span
+  pub strict: bool
 }
 
 #[derive(Clone, Debug, Eq)]
@@ -512,26 +511,28 @@ pub enum Permission {
 pub struct Variable {
   pub path: VarPath,
   pub past: usize,
-  pub permission: Permission,
+  pub permission: Option<Permission>,
   pub span: Span
 }
 
 impl Variable {
-  pub fn new(span: Span, path: VarPath, past: usize) -> Self {
+  fn new(span: Span, path: VarPath, past: usize,
+    permission: Option<Permission>) -> Self
+  {
     Variable {
       path: path,
       past: past,
-      permission: Permission::ReadWrite,
+      permission: permission,
       span: span
     }
   }
 
-  pub fn simple(span: Span, name: Ident) -> Self {
-    Self::present(span, VarPath::new(span, vec![name]))
+  pub fn stream(span: Span, path: VarPath, past: usize) -> Self {
+    Self::new(span, path, past, Some(Permission::Read))
   }
 
-  pub fn present(span: Span, path: VarPath) -> Self {
-    Self::new(span, path, 0)
+  pub fn access(span: Span, path: VarPath, permission: Option<Permission>) -> Self {
+    Self::new(span, path, 0, permission)
   }
 
   pub fn first(&self) -> Ident {
@@ -556,7 +557,7 @@ impl Variable {
 
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Self::simple(DUMMY_SP, Ident::gen("x"))
+    Self::access(DUMMY_SP, VarPath::gen("x"), Some(Permission::ReadWrite))
   }
 }
 
@@ -648,20 +649,28 @@ impl Expr {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
-  NewInstance(NewObjectInstance),
-  CallChain(MethodCallChain),
-  Trilean(Kleene),
+  // Host expressions
   Boolean(bool),
   Number(u64),
   StringLiteral(String),
+  NewInstance(NewObjectInstance),
+  CallChain(MethodCallChain),
+  // Bonsai expressions
   Var(Variable),
-  Bottom
+  Bottom,
+  Top,
+  // Trilean
+  Trilean(Kleene),
+  Or(Box<Expr>, Box<Expr>),
+  And(Box<Expr>, Box<Expr>),
+  Not(Box<Expr>),
+  Entailment(Box<EntailmentRel>)
 }
 
 impl ExprKind {
   #[allow(dead_code)]
   pub fn example() -> Self {
-    ExprKind::Var(Variable::simple(DUMMY_SP, Ident::gen("<expr>")))
+    ExprKind::Var(Variable::access(DUMMY_SP, VarPath::gen("<expr>"), Some(Permission::Read)))
   }
 }
 

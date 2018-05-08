@@ -56,13 +56,13 @@ pub trait Visitor<H>
     self.visit_stmt(*(let_stmt.body))
   }
 
-  fn visit_when(&mut self, entailment: EntailmentRel, child: Stmt) {
-    self.visit_entailment(entailment);
+  fn visit_when(&mut self, condition: Expr, child: Stmt) {
+    self.visit_expr(condition);
     self.visit_stmt(child)
   }
 
-  fn visit_suspend(&mut self, entailment: EntailmentRel, child: Stmt) {
-    self.visit_entailment(entailment);
+  fn visit_suspend(&mut self, condition: Expr, child: Stmt) {
+    self.visit_expr(condition);
     self.visit_stmt(child)
   }
 
@@ -104,7 +104,7 @@ pub trait Visitor<H>
   }
 
   fn visit_entailment(&mut self, rel: EntailmentRel) {
-    self.visit_var(rel.left);
+    self.visit_expr(rel.left);
     self.visit_expr(rel.right);
   }
 
@@ -127,12 +127,28 @@ pub trait Visitor<H>
     walk_exprs(self, call.args)
   }
 
-  fn visit_trilean(&mut self, _value: Kleene) {}
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_var(&mut self, _var: Variable) {}
   fn visit_bot(&mut self) {}
+  fn visit_top(&mut self) {}
+
+  fn visit_trilean(&mut self, _value: Kleene) {}
+
+  fn visit_trilean_or(&mut self, left: Expr, right: Expr) {
+    self.visit_expr(left);
+    self.visit_expr(right);
+  }
+
+  fn visit_trilean_and(&mut self, left: Expr, right: Expr) {
+    self.visit_expr(left);
+    self.visit_expr(right);
+  }
+
+  fn visit_trilean_not(&mut self, expr: Expr) {
+    self.visit_expr(expr);
+  }
 }
 
 pub fn walk_modules<H, V: ?Sized>(visitor: &mut V, modules: Vec<Module<H>>) where
@@ -195,14 +211,21 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
   V: Visitor<H>
 {
   match expr.node {
-    NewInstance(new_instance) => visitor.visit_new_instance(new_instance.ty, new_instance.args),
-    CallChain(chain) => visitor.visit_method_call_chain(chain),
-    Trilean(value) => visitor.visit_trilean(value),
     Boolean(value) => visitor.visit_boolean(value),
     Number(value) => visitor.visit_number(value),
     StringLiteral(value) => visitor.visit_string_lit(value),
+    NewInstance(new_instance) => visitor.visit_new_instance(new_instance.ty, new_instance.args),
+    CallChain(chain) => visitor.visit_method_call_chain(chain),
+    // Bonsai expressions
     Var(var) => visitor.visit_var(var),
-    Bottom => visitor.visit_bot()
+    Bottom => visitor.visit_bot(),
+    Top => visitor.visit_top(),
+    // Trilean
+    Trilean(value) => visitor.visit_trilean(value),
+    Or(left, right) => visitor.visit_trilean_or(*left, *right),
+    And(left, right) => visitor.visit_trilean_and(*left, *right),
+    Not(expr) => visitor.visit_trilean_not(*expr),
+    Entailment(rel) => visitor.visit_entailment(*rel)
   }
 }
 
@@ -274,13 +297,13 @@ pub trait VisitorMut<H>
     self.visit_stmt(&mut *(let_stmt.body))
   }
 
-  fn visit_when(&mut self, entailment: &mut EntailmentRel, child: &mut Stmt) {
-    self.visit_entailment(entailment);
+  fn visit_when(&mut self, condition: &mut Expr, child: &mut Stmt) {
+    self.visit_expr(condition);
     self.visit_stmt(child)
   }
 
-  fn visit_suspend(&mut self, entailment: &mut EntailmentRel, child: &mut Stmt) {
-    self.visit_entailment(entailment);
+  fn visit_suspend(&mut self, condition: &mut Expr, child: &mut Stmt) {
+    self.visit_expr(condition);
     self.visit_stmt(child)
   }
 
@@ -341,16 +364,32 @@ pub trait VisitorMut<H>
   }
 
   fn visit_entailment(&mut self, rel: &mut EntailmentRel) {
-    self.visit_var(&mut rel.left);
+    self.visit_expr(&mut rel.left);
     self.visit_expr(&mut rel.right);
   }
 
   fn visit_var(&mut self, _var: &mut Variable) {}
-  fn visit_trilean(&mut self, _value: Kleene) {}
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_bot(&mut self) {}
+  fn visit_top(&mut self) {}
+
+  fn visit_trilean(&mut self, _value: Kleene) {}
+
+  fn visit_trilean_or(&mut self, left: &mut Expr, right: &mut Expr) {
+    self.visit_expr(left);
+    self.visit_expr(right);
+  }
+
+  fn visit_trilean_and(&mut self, left: &mut Expr, right: &mut Expr) {
+    self.visit_expr(left);
+    self.visit_expr(right);
+  }
+
+  fn visit_trilean_not(&mut self, expr: &mut Expr) {
+    self.visit_expr(expr);
+  }
 }
 
 pub fn walk_modules_mut<H, V: ?Sized>(visitor: &mut V, modules: &mut Vec<Module<H>>) where
@@ -413,14 +452,21 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
   V: VisitorMut<H>
 {
   match &mut expr.node {
-    &mut NewInstance(ref mut new_instance) => visitor.visit_new_instance(new_instance.ty.clone(), &mut new_instance.args),
-    &mut CallChain(ref mut chain) => visitor.visit_method_call_chain(chain),
-    &mut Trilean(value) => visitor.visit_trilean(value),
     &mut Boolean(value) => visitor.visit_boolean(value),
     &mut Number(value) => visitor.visit_number(value),
     &mut StringLiteral(ref value) => visitor.visit_string_lit(value.clone()),
+    &mut NewInstance(ref mut new_instance) => visitor.visit_new_instance(new_instance.ty.clone(), &mut new_instance.args),
+    &mut CallChain(ref mut chain) => visitor.visit_method_call_chain(chain),
+    // Bonsai expressions
     &mut Var(ref mut var) => visitor.visit_var(var),
-    &mut Bottom => visitor.visit_bot()
+    &mut Bottom => visitor.visit_bot(),
+    &mut Top => visitor.visit_top(),
+    // Trilean
+    &mut Trilean(ref value) => visitor.visit_trilean(value.clone()),
+    &mut Or(ref mut left, ref mut right) => visitor.visit_trilean_or(&mut **left, &mut **right),
+    &mut And(ref mut left, ref mut right) => visitor.visit_trilean_and(&mut **left, &mut **right),
+    &mut Not(ref mut expr) => visitor.visit_trilean_not(&mut **expr),
+    &mut Entailment(ref mut rel) => visitor.visit_entailment(&mut **rel)
   }
 }
 

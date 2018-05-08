@@ -97,7 +97,7 @@ impl VisitorMut<JClass> for ApproximatePermission
 {
   fn visit_var(&mut self, var: &mut Variable) {
     self.pre_on_variable(var);
-    var.permission = self.perm_context;
+    var.permission = Some(self.perm_context);
   }
 
   fn visit_stmt(&mut self, child: &mut Stmt) {
@@ -117,7 +117,7 @@ impl VisitorMut<JClass> for ApproximatePermission
   fn visit_entailment(&mut self, rel: &mut EntailmentRel) {
     let old = self.perm_context;
     self.perm_context = Permission::Read;
-    self.visit_var(&mut rel.left);
+    self.visit_expr(&mut rel.left);
     self.visit_expr(&mut rel.right);
     self.perm_context = old;
   }

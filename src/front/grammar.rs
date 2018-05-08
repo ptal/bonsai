@@ -105,11 +105,6 @@ grammar! bonsai {
 
   module_field = .. java_visibility? (.. REF)? bonsai_binding SEMI_COLON > make_module_field
 
-  expr_or_bot = expr
-              / .. BOT > make_bottom_expr
-
-  fn make_bottom_expr(span: Span) -> Expr { Expr::new(span, ExprKind::Bottom) }
-
   fn make_module_field(span: Span, visibility: Option<JVisibility>,
     is_ref: Option<Span>, binding: Binding) -> Item
   {
@@ -222,8 +217,8 @@ grammar! bonsai {
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / binding SEMI_COLON > make_let_stmt
-    / WHEN entailment block > make_when
-    / SUSPEND WHEN entailment block > make_suspend
+    / WHEN expr block > make_when
+    / SUSPEND WHEN expr block > make_suspend
     / PAUSE UP SEMI_COLON > make_pause_up
     / STOP SEMI_COLON > make_stop
     / PAUSE SEMI_COLON > make_pause
@@ -256,7 +251,7 @@ grammar! bonsai {
     = bonsai_binding
     / java_binding
 
-  bonsai_binding = .. kind java_ty identifier (EQ expr_or_bot)? > make_bonsai_binding
+  bonsai_binding = .. kind java_ty identifier (EQ expr)? > make_bonsai_binding
   java_binding = .. java_ty identifier (EQ expr)? > make_java_binding
 
   fn make_bonsai_binding(span: Span, kind: Kind,
@@ -269,12 +264,12 @@ grammar! bonsai {
     Binding::new(span, name, Kind::Host, ty, expr)
   }
 
-  fn make_when(entailment: EntailmentRel, body: Stmt) -> StmtKind {
-    StmtKind::When(entailment, Box::new(body))
+  fn make_when(condition: Expr, body: Stmt) -> StmtKind {
+    StmtKind::When(condition, Box::new(body))
   }
 
-  fn make_suspend(entailment: EntailmentRel, body: Stmt) -> StmtKind {
-    StmtKind::Suspend(entailment, Box::new(body))
+  fn make_suspend(condition: Expr, body: Stmt) -> StmtKind {
+    StmtKind::Suspend(condition, Box::new(body))
   }
 
   fn make_pause() -> StmtKind {
@@ -360,15 +355,68 @@ grammar! bonsai {
     vec![]
   }
 
-  expr = .. expr_kind > make_expr
-  expr_kind
+  expr
+    = expr_2 (binary_op expr)* > fold_left_binary_op
+
+  // We use a boolean to distinguish `or` and `and` without creating an additional (temporary) structure.
+  binary_op
+    = OR > make_true
+    / AND > make_false
+
+  expr_2
+    = .. NOT expr_atom > make_trilean_not_expr
+    / .. expr_atom entailment_kind expr_atom > make_entailment_rel
+
+  expr_atom
+    = .. expr_atom_kind > make_expr
+    / LPAREN expr RPAREN
+
+  expr_atom_kind
+    = trilean > make_trilean_expr
+    / BOT > make_bottom_expr
+    / TOP > make_top_expr
+    / variable > make_var_expr
+    / host_expr
+
+  host_expr
     = method_call_chain > make_call_chain
     / new_instance_expr > make_new_instance
-    / variable > make_var_expr
     / boolean > make_boolean_expr
-    / trilean > make_trilean_expr
     / number > make_number_expr
     / string_literal > make_string_literal
+
+  entailment_kind
+    = ENTAILMENT > make_false
+    / ENTAILMENT_STRICT > make_true
+
+  fn fold_left_binary_op(head: Expr, rest: Vec<(bool, Expr)>) -> Expr {
+    rest.into_iter().fold(head,
+      |accu, (op, expr)| {
+        let lo = accu.span.lo;
+        let hi = expr.span.hi;
+        let expr_kind = match op {
+          true => ExprKind::Or(Box::new(accu), Box::new(expr)),
+          false => ExprKind::And(Box::new(accu), Box::new(expr))
+        };
+        make_expr(mk_sp(lo, hi), expr_kind)
+      })
+  }
+
+  fn make_trilean_not_expr(span: Span, expr: Expr) -> Expr {
+    make_expr(span, ExprKind::Not(Box::new(expr)))
+  }
+
+  fn make_entailment_rel(span: Span, left: Expr, strict: bool, right: Expr) -> Expr {
+    let e = EntailmentRel {
+      left: left,
+      right: right,
+      strict: strict,
+    };
+    make_expr(span, ExprKind::Entailment(Box::new(e)))
+  }
+
+  fn make_bottom_expr() -> ExprKind { ExprKind::Bottom }
+  fn make_top_expr() -> ExprKind { ExprKind::Top }
 
   fn make_expr(span: Span, node: ExprKind) -> Expr {
     Expr::new(span, node)
@@ -397,11 +445,26 @@ grammar! bonsai {
     VarPath::new(span, extend_front(first, rest))
   }
 
-  variable = .. PRE* var_path !LPAREN > make_variable
+  variable
+    = .. PRE+ var_path !LPAREN > make_stream_variable
+    / .. permission? var_path !LPAREN > make_variable
 
-  fn make_variable(span: Span, past: Vec<()>, path: VarPath) -> Variable {
-    Variable::new(span, path, past.len())
+  fn make_stream_variable(span: Span, past: Vec<()>, path: VarPath) -> Variable {
+    Variable::stream(span, path, past.len())
   }
+
+  fn make_variable(span: Span, permission: Option<Permission>, path: VarPath) -> Variable {
+    Variable::access(span, path, permission)
+  }
+
+  permission
+    = READ > make_read_permission
+    / WRITE > make_write_permission
+    / READWRITE > make_readwrite_permission
+
+  fn make_read_permission() -> Permission { Permission::Read }
+  fn make_write_permission() -> Permission { Permission::Write }
+  fn make_readwrite_permission() -> Permission { Permission::ReadWrite }
 
   method_call_chain = .. (new_instance_expr DOT)? method_call (DOT method_chain_fragment)* > make_method_call_chain
 
@@ -431,21 +494,6 @@ grammar! bonsai {
    target: MethodCall, chain: Vec<MethodCall>) -> MethodCallChain
   {
     MethodCallChain::new(span, new_instance_target, extend_front(target, chain))
-  }
-
-  entailment = .. variable is_strict expr > make_entailment_rel
-
-  is_strict
-    = ENTAILMENT > make_false
-    / GT > make_true
-
-  fn make_entailment_rel(span: Span, left: Variable, strict: bool, right: Expr) -> EntailmentRel {
-    EntailmentRel {
-      left: left,
-      right: right,
-      strict: strict,
-      span: span
-    }
   }
 
   kind
@@ -509,6 +557,8 @@ grammar! bonsai {
     = "let" / "proc" / "fn" / "par" / "space" / "end" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
+    / "read" / "write" / "readwrite"
+    / "or" / "and" / "not"
     / "run" / "True" / "False" / "Unknown" / "nothing" / "universe" / "suspend" / java_kw
   kw_tail = !ident_char spacing
 
@@ -540,6 +590,12 @@ grammar! bonsai {
   KUNKNOWN = "Unknown" kw_tail
   NOTHING = "nothing" kw_tail
   UNIVERSE = "universe" kw_tail
+  READ = "read" kw_tail
+  WRITE = "write" kw_tail
+  READWRITE = "readwrite" kw_tail
+  OR = "or" kw_tail
+  AND = "and" kw_tail
+  NOT = "not" kw_tail
 
   // Java keyword
   java_kw
@@ -568,6 +624,7 @@ grammar! bonsai {
   DOT = "." spacing
   BARBAR = "||" spacing
   ENTAILMENT = "|=" spacing
+  ENTAILMENT_STRICT = "|<" spacing
   LEFT_ARROW = "<-" spacing
   BIND_OP = "=" spacing
   ADD_OP = "+" spacing

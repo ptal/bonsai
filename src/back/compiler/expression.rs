@@ -54,7 +54,12 @@ impl<'a> ExpressionCompiler<'a>
       Number(n) => self.number(n),
       StringLiteral(lit) => self.literal(lit),
       Var(var) => self.variable(var),
-      Bottom => panic!("[BUG] `bot` should only appears on RHS of variable declaration (parsing stage).")
+      Bottom => panic!("[BUG] `bot` should only appears on RHS of variable declaration (parsing stage)."),
+      Top => unimplemented!("top is unimplemented"),
+      Or(_, _) =>  unimplemented!("trilean or is unimplemented"),
+      And(_, _) => unimplemented!("trilean and is unimplemented"),
+      Not(_) => unimplemented!("trilean not is unimplemented"),
+      Entailment(_) => unimplemented!("entailment is unimplemented")
     }
   }
 
