@@ -24,11 +24,11 @@ public class StreamVar extends Variable
   protected Function<SpaceEnvironment, Object> initValue;
 
   public StreamVar(Object ref, String name, String uid,
-    Boolean isTransient, int streamSize,
+    int streamSize,
     Function<SpaceEnvironment, Object> initValue)
   {
     this(name, uid, initValue,
-      new Stream(ref, name, streamSize, isTransient));
+      new Stream(ref, name, streamSize));
   }
 
   private StreamVar(String name, String uid,

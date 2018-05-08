@@ -27,14 +27,12 @@ public class Stream implements Restorable
   private int last;
 
   private String name;
-  private boolean isTransient;
 
-  public Stream(Object ref, String name, int streamCapacity, boolean isTransient)
+  public Stream(Object ref, String name, int streamCapacity)
   {
     this.ref = ref;
     stream = new Object[streamCapacity];
     this.name = name;
-    this.isTransient = isTransient;
     this.size = 0;
     this.last = 0;
   }
@@ -72,14 +70,9 @@ public class Stream implements Restorable
     resetRef(value);
   }
 
-  public void next(Supplier<Object> defaultValue) {
-    if (isTransient) {
-      push(defaultValue.get());
-    }
-    else {
-      if (!isUnary()) {
-        duplicateLast();
-      }
+  public void next() {
+    if (!isUnary()) {
+      duplicateLast();
     }
   }
 
@@ -104,16 +97,7 @@ public class Stream implements Restorable
   }
 
   private Object bottom() {
-    try {
-      return ref.getClass().getConstructor().newInstance();
-    }
-    catch (Exception e) {
-      throw new RuntimeException(
-        "The variable `" + name +
-        "` does not implement a valid empty constructor which is required for the bottom value." +
-        "\n Object: " + ref +
-        "\n Exception : " + e);
-    }
+    return Cast.toLattice(name, ref).bottom();
   }
 
   private int preIndex(int t) {
