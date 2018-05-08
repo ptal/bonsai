@@ -344,10 +344,6 @@ impl Binding
     }
   }
 
-  pub fn is_transient(&self) -> bool {
-    self.kind.is_transient()
-  }
-
   pub fn is_module(&self) -> bool {
     self.kind == Kind::Product
   }
@@ -587,14 +583,6 @@ pub enum Kind {
 }
 
 impl Kind {
-  pub fn is_transient(self) -> bool {
-    use self::Kind::*;
-    match self {
-      Spacetime(sp) => sp.is_transient(),
-      _ => false
-    }
-  }
-
   #[allow(dead_code)]
   pub fn example() -> Self {
     Kind::Spacetime(Spacetime::example())
@@ -611,43 +599,30 @@ impl Display for Kind {
   }
 }
 
-/// The spacetime of a variable describes how it evolves in each instant. For `WorldLine` and `SingleSpace` we can additional set a boolean to `true` if the variable is transient (i.e. its value is re-initialized to bottom between each instant). The `Product` variant is used for records where variables have fields with various spacetime.
+/// The spacetime of a variable describes how it evolves in each instant.
+/// The `Product` variant is used for records where variables have fields with various spacetime.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Spacetime {
-  WorldLine(bool),
-  SingleSpace(bool),
+  WorldLine,
+  SingleSpace,
   SingleTime,
 }
 
 impl Spacetime {
-  pub fn is_transient(self) -> bool {
-    use self::Spacetime::*;
-    match self {
-      WorldLine(transient)
-    | SingleSpace(transient) => transient,
-      _ => false
-    }
-  }
-
   #[allow(dead_code)]
   pub fn example() -> Self {
-    Spacetime::SingleSpace(false)
+    Spacetime::SingleSpace
   }
 }
 
 impl Display for Spacetime {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    match self {
-      &Spacetime::WorldLine(transient) => {
-        if transient { fmt.write_str("transient")?; }
-        fmt.write_str("world_line")
-      }
-      &Spacetime::SingleSpace(transient) => {
-        if transient { fmt.write_str("transient")?; }
-        fmt.write_str("single_space")
-      }
-      &Spacetime::SingleTime => fmt.write_str("single_time")
-    }
+    let st = match self {
+      &Spacetime::WorldLine => "world_line",
+      &Spacetime::SingleSpace => "single_space",
+      &Spacetime::SingleTime => "single_time"
+    };
+    fmt.write_str(st)
   }
 }
 

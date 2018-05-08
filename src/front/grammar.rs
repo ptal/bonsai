@@ -453,13 +453,13 @@ grammar! bonsai {
     / MODULE > kind_product
 
   spacetime
-    = TRANSIENT? WORLD_LINE > world_line
+    = WORLD_LINE > world_line
     / SINGLE_TIME > single_time
-    / TRANSIENT? SINGLE_SPACE > single_space
+    / SINGLE_SPACE > single_space
 
-  fn world_line(is_transient: Option<()>) -> Spacetime { Spacetime::WorldLine(is_transient.is_some()) }
+  fn world_line() -> Spacetime { Spacetime::WorldLine }
   fn single_time() -> Spacetime { Spacetime::SingleTime }
-  fn single_space(is_transient: Option<()>) -> Spacetime { Spacetime::SingleSpace(is_transient.is_some()) }
+  fn single_space() -> Spacetime { Spacetime::SingleSpace }
 
   fn kind_product() -> Kind { Kind::Product }
   fn kind_spacetime(spacetime: Spacetime) -> Kind { Kind::Spacetime(spacetime) }
@@ -506,7 +506,7 @@ grammar! bonsai {
   fn make_kunknown() -> Kleene { Kleene::Unknown }
 
   keyword
-    = "let" / "proc" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
+    = "let" / "proc" / "fn" / "par" / "space" / "end" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "run" / "True" / "False" / "Unknown" / "nothing" / "universe" / "suspend" / java_kw
@@ -517,7 +517,6 @@ grammar! bonsai {
   PAR = "par" kw_tail
   SPACE = "space" kw_tail
   END = "end" kw_tail
-  TRANSIENT = "transient" kw_tail -> ()
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
   SUSPEND = "suspend" kw_tail
@@ -689,9 +688,6 @@ grammar! bonsai {
 //         ref single_time int c1 = bot;
 //         protected ref single_space int c2 = 0;
 //         ref world_line int c3 = bot;
-
-//         ref single_time transient int t1 = bot;
-//         single_space transient int t2 = bot;
 //       }
 //      "#.into_state());
 //     let result = state.into_result();
