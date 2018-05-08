@@ -14,6 +14,7 @@
 
 package bonsai.runtime.synchronous.variables;
 
+/// NOTE: Variable must be immutable because it is not copied in the class containing it.
 public class Variable
 {
   private String name;

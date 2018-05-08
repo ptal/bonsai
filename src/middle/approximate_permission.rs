@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// For each variable, depending on its context, we approximate its permission.
-/// Permissions can either be `Read`, `Write` or `ReadWrite` if the variable is read-only, write-only or both.
+/// Permissions can either be `Read`, `Write` or `ReadWrite` if the variable is accessed in read-only, write-only or both.
 /// When calling external method, we do not know how the method is actually modifying the variable so we approximate it with `ReadWrite`.
 /// In a tell statement `x <- e`, `x` is only wrote and variables occurring in `e` are supposed to be only read.
 /// In an entailment condition `e |= e'`, every variables appearing in `e` or `e'` are supposed to be only read.

@@ -26,5 +26,8 @@ syntex_errors = "0.58.1"
 syntex_syntax = "0.58.1"
 regex = "0.2"
 
+[dependencies.pcp]
+git = "https://github.com/ptal/pcp"
+
 [dev-dependencies]
 term = "^0.5.1"

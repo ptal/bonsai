@@ -22,6 +22,7 @@ extern crate syntex_pos;
 extern crate syntex_syntax;
 extern crate syntex_errors;
 extern crate regex;
+extern crate pcp;
 
 pub mod session;
 pub mod ast;

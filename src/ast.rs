@@ -21,6 +21,7 @@ pub use syntex_pos::Span;
 pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
 pub use syntex_errors::Level;
 pub use regex::Regex;
+pub use pcp::kernel::trilean::Trilean as Kleene;
 
 #[derive(Clone, Debug)]
 pub enum TestAnnotation {
@@ -674,6 +675,7 @@ impl Expr {
 pub enum ExprKind {
   NewInstance(NewObjectInstance),
   CallChain(MethodCallChain),
+  Trilean(Kleene),
   Boolean(bool),
   Number(u64),
   StringLiteral(String),

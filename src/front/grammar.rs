@@ -366,6 +366,7 @@ grammar! bonsai {
     / new_instance_expr > make_new_instance
     / variable > make_var_expr
     / boolean > make_boolean_expr
+    / trilean > make_trilean_expr
     / number > make_number_expr
     / string_literal > make_string_literal
 
@@ -378,6 +379,7 @@ grammar! bonsai {
   }
   fn make_call_chain(calls: MethodCallChain) -> ExprKind { ExprKind::CallChain(calls) }
   fn make_boolean_expr(b: bool) -> ExprKind { ExprKind::Boolean(b) }
+  fn make_trilean_expr(t: Kleene) -> ExprKind { ExprKind::Trilean(t) }
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
 
@@ -494,11 +496,20 @@ grammar! bonsai {
   fn make_true() -> bool { true }
   fn make_false() -> bool { false }
 
+  trilean
+    = KTRUE > make_ktrue
+    / KFALSE > make_kfalse
+    / KUNKNOWN > make_kunknown
+
+  fn make_ktrue() -> Kleene { Kleene::True }
+  fn make_kfalse() -> Kleene { Kleene::False }
+  fn make_kunknown() -> Kleene { Kleene::Unknown }
+
   keyword
     = "let" / "proc" / "fn" / "par" / "space" / "end" / "transient" / "pre" / "when"
     / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
-    / "run" / "true" / "false" / "nothing" / "universe" / "suspend" / java_kw
+    / "run" / "True" / "False" / "Unknown" / "nothing" / "universe" / "suspend" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -525,14 +536,15 @@ grammar! bonsai {
   REF = "ref" kw_tail
   MODULE = "module" kw_tail
   RUN = "run" kw_tail
-  TRUE = "true" kw_tail
-  FALSE = "false" kw_tail
+  KTRUE = "True" kw_tail
+  KFALSE = "False" kw_tail
+  KUNKNOWN = "Unknown" kw_tail
   NOTHING = "nothing" kw_tail
   UNIVERSE = "universe" kw_tail
 
   // Java keyword
   java_kw
-    = "new" / "private" / "public" / "class"
+    = "true" / "false" / "new" / "private" / "public" / "class"
     / "implements" / "static"
     / "protected" / "final" / "import" / "package"
   NEW = "new" kw_tail
@@ -545,6 +557,8 @@ grammar! bonsai {
   FINAL = "final" kw_tail
   PACKAGE = "package" kw_tail
   IMPORT = "import" kw_tail
+  TRUE = "true" kw_tail
+  FALSE = "false" kw_tail
 
   UNDERSCORE = "_"
   DOTDOT = ".." spacing

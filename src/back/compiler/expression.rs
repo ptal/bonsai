@@ -49,6 +49,7 @@ impl<'a> ExpressionCompiler<'a>
     match expr.node {
       NewInstance(new_instance) => self.java_new(new_instance.ty, new_instance.args),
       CallChain(chain) => self.method_call_chain(chain),
+      Trilean(t) => self.trilean(t),
       Boolean(b) => self.boolean(b),
       Number(n) => self.number(n),
       StringLiteral(lit) => self.literal(lit),
@@ -155,6 +156,15 @@ impl<'a> ExpressionCompiler<'a>
         self.fmt.push(".");
       }
     }
+  }
+
+  fn trilean(&mut self, t: Kleene) {
+    let k = match t {
+      Kleene::True => "Kleene.TRUE",
+      Kleene::False => "Kleene.FALSE",
+      Kleene::Unknown => "Kleene.UNKNOWN"
+    };
+    self.fmt.push(k);
   }
 
   fn boolean(&mut self, b: bool) {

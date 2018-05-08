@@ -127,6 +127,7 @@ pub trait Visitor<H>
     walk_exprs(self, call.args)
   }
 
+  fn visit_trilean(&mut self, _value: Kleene) {}
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
@@ -196,6 +197,7 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
   match expr.node {
     NewInstance(new_instance) => visitor.visit_new_instance(new_instance.ty, new_instance.args),
     CallChain(chain) => visitor.visit_method_call_chain(chain),
+    Trilean(value) => visitor.visit_trilean(value),
     Boolean(value) => visitor.visit_boolean(value),
     Number(value) => visitor.visit_number(value),
     StringLiteral(value) => visitor.visit_string_lit(value),
@@ -344,6 +346,7 @@ pub trait VisitorMut<H>
   }
 
   fn visit_var(&mut self, _var: &mut Variable) {}
+  fn visit_trilean(&mut self, _value: Kleene) {}
   fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
@@ -412,6 +415,7 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
   match &mut expr.node {
     &mut NewInstance(ref mut new_instance) => visitor.visit_new_instance(new_instance.ty.clone(), &mut new_instance.args),
     &mut CallChain(ref mut chain) => visitor.visit_method_call_chain(chain),
+    &mut Trilean(value) => visitor.visit_trilean(value),
     &mut Boolean(value) => visitor.visit_boolean(value),
     &mut Number(value) => visitor.visit_number(value),
     &mut StringLiteral(ref value) => visitor.visit_string_lit(value.clone()),
