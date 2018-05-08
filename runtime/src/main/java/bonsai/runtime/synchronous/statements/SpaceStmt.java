@@ -22,12 +22,13 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
 
-public class SpaceStmt implements Program
+public class SpaceStmt extends Instruction
 {
   private ArrayList<String> singleTimeClosure;
   private Program branch;
 
   public SpaceStmt(ArrayList<String> singleTimeClosure, Program branch) {
+    super();
     this.singleTimeClosure = singleTimeClosure;
     this.branch = branch;
   }

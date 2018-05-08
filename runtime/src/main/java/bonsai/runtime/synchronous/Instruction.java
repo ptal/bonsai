@@ -12,15 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous.interfaces;
+package bonsai.runtime.synchronous;
 
-import bonsai.runtime.core.Copy;
-import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.interfaces.*;
 
-public interface Program extends Copy<Program>
+public abstract class Instruction implements Program
 {
-  Result execute(SpaceEnvironment env);
-  void countReadWrite(SpaceEnvironment env);
-  void setParent(Program parent);
-  void wakeUp(Program from);
+  private Program parent;
+
+  public Instruction() {
+    parent = null;
+  }
+
+  public void setParent(Program parent) {
+    this.parent = parent;
+  }
+
+  public void wakeUp(Program from) {
+    parent.wakeUp(from);
+  }
 }

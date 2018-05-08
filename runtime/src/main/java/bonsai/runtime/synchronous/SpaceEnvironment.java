@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
+import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.statements.SpaceStmt;
 
 public class SpaceEnvironment<Queue extends Queueing<Future>>
@@ -30,6 +31,19 @@ public class SpaceEnvironment<Queue extends Queueing<Future>>
 
   private Queue queue;
 
+  private HashMap<String, RWCounter> monotonic_counters;
+  private HashMap<String, RWCounter> anti_monotonic_counters;
+  private HashMap<String, ArrayList<Program>> waiting_queue;
+
+  class RWCounter {
+    public int write;
+    public int readwrite;
+    public RWCounter(int write, int readwrite) {
+      this.write = write;
+      this.readwrite = readwrite;
+    }
+  }
+
   public SpaceEnvironment(Queue queue)
   {
     varsST = new HashMap();
@@ -38,6 +52,9 @@ public class SpaceEnvironment<Queue extends Queueing<Future>>
     varsModule = new HashMap();
     refsUpdaters = new HashMap();
     this.queue = queue;
+    monotonic_counters = new HashMap();
+    anti_monotonic_counters = new HashMap();
+    waiting_queue = new HashMap();
   }
 
   /// We create and push the branches created in the current instant onto the queue.
