@@ -276,7 +276,7 @@ pub enum StmtKind {
   Par(Vec<Stmt>),
   Space(Vec<Stmt>),
   Let(LetStmt),
-  When(Expr, Box<Stmt>),
+  When(Expr, Box<Stmt>, Box<Stmt>),
   Suspend(Expr, Box<Stmt>),
   Abort(Expr, Box<Stmt>),
   Tell(Variable, Expr),
@@ -284,7 +284,7 @@ pub enum StmtKind {
   PauseUp,
   Stop,
   Loop(Box<Stmt>),
-  ProcCall(Option<Variable>, Ident),
+  ProcCall(Option<Variable>, Ident, Vec<Variable>),
   ExprStmt(Expr),
   Universe(Box<Stmt>),
   Nothing
@@ -532,6 +532,10 @@ impl Variable {
 
   pub fn access(span: Span, path: VarPath, permission: Option<Permission>) -> Self {
     Self::new(span, path, 0, permission)
+  }
+
+  pub fn proc_arg(span: Span, path: VarPath) -> Self {
+    Self::new(span, path, 0, None)
   }
 
   pub fn first(&self) -> Ident {

@@ -98,7 +98,7 @@ grammar! bonsai {
 
   item
     = module_field
-    / .. java_visibility? PROC identifier java_param_list block > make_process_item
+    / .. java_visibility? PROC identifier java_param_list EQ open_sequence > make_process_item
     / java_field
     / java_method
     / java_constructor
@@ -201,34 +201,41 @@ grammar! bonsai {
     res.iter().flat_map(|e| e.chars()).collect()
   }
 
-  sequence = .. stmt+ > make_seq
+  // An open sequence is a sequence in a process such as `proc f = s1; s2 end`.
+  // We need a keyword `end` to be disambiguate between variable declaration and class attribute.
+  open_sequence
+    = .. stmt (SEMI_COLON stmt)+ END > make_seq
+    / stmt
 
-  fn make_seq(span: Span, stmts: Vec<Stmt>) -> Stmt {
-    Stmt::new(span, StmtKind::Seq(stmts))
+  // Sequences occurring inside a process do not need this `end` delimiter.
+  close_sequence
+    = .. stmt (SEMI_COLON stmt)+ > make_seq
+    / stmt
+
+  fn make_seq(span: Span, first: Stmt, rest: Vec<Stmt>) -> Stmt {
+    Stmt::new(span, StmtKind::Seq(extend_front(first, rest)))
   }
-
-  block = LBRACE sequence RBRACE
 
   stmt
     = .. stmt_kind > make_stmt
-    / block
+    // / block
 
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / binding SEMI_COLON > make_let_stmt
-    / WHEN expr block > make_when
-    / SUSPEND WHEN expr block > make_suspend
-    / ABORT WHEN expr block > make_abort
-    / PAUSE UP SEMI_COLON > make_pause_up
-    / STOP SEMI_COLON > make_stop
-    / PAUSE SEMI_COLON > make_pause
-    / NOTHING SEMI_COLON > make_nothing
-    / LOOP block > make_loop
-    / UNIVERSE block > make_universe
-    / RUN proc_call SEMI_COLON > make_proc_call
-    / expr SEMI_COLON > make_expr_stmt
-    / variable LEFT_ARROW expr SEMI_COLON > make_tell
+    / binding > make_let_stmt
+    / WHEN expr THEN close_sequence ELSE close_sequence END > make_when
+    / SUSPEND WHEN expr IN close_sequence END > make_suspend
+    / ABORT WHEN expr IN close_sequence END > make_abort
+    / PAUSEUP > make_pause_up
+    / STOP > make_stop
+    / PAUSE > make_pause
+    / NOTHING > make_nothing
+    / LOOP close_sequence END > make_loop
+    / UNIVERSE close_sequence END > make_universe
+    / RUN proc_call > make_proc_call
+    / expr &(SEMI_COLON / END) > make_expr_stmt
+    / variable LEFT_ARROW expr > make_tell
 
   fn make_stmt(span: Span, stmt_kind: StmtKind) -> Stmt {
     Stmt::new(span, stmt_kind)
@@ -263,8 +270,8 @@ grammar! bonsai {
     Binding::new(span, name, Kind::Host, ty, expr)
   }
 
-  fn make_when(condition: Expr, body: Stmt) -> StmtKind {
-    StmtKind::When(condition, Box::new(body))
+  fn make_when(condition: Expr, then_branch: Stmt, else_branch: Stmt) -> StmtKind {
+    StmtKind::When(condition, Box::new(then_branch), Box::new(else_branch))
   }
 
   fn make_suspend(condition: Expr, body: Stmt) -> StmtKind {
@@ -303,16 +310,28 @@ grammar! bonsai {
     StmtKind::ExprStmt(expr)
   }
 
-  fn make_proc_call(var: Option<Variable>, process: Ident) -> StmtKind {
-    StmtKind::ProcCall(var, process)
+  fn make_proc_call(var: Option<Variable>, process: Ident, args: Vec<Variable>) -> StmtKind {
+    StmtKind::ProcCall(var, process, args)
   }
 
   fn make_universe(body: Stmt) -> StmtKind {
     StmtKind::Universe(Box::new(body))
   }
 
-  // No argument yet. Should not be a problem though. Just takes some time to perform the usual check (arity, ...).
-  proc_call = (variable DOT)? identifier LPAREN RPAREN
+  proc_call = (variable DOT)? identifier LPAREN list_var RPAREN
+
+  list_var
+    = variable (COMMA variable)* > make_list_var
+    / "" > empty_var_list
+
+  fn make_list_var(first: Variable, rest: Vec<Variable>) -> Vec<Variable> {
+    extend_front(first, rest)
+  }
+
+  fn empty_var_list() -> Vec<Variable> {
+    vec![]
+  }
+
 
   java_ty
     = .. identifier java_generic_list (LBRACKET RBRACKET -> ())? > make_java_ty
@@ -549,28 +568,30 @@ grammar! bonsai {
   fn make_kunknown() -> Kleene { Kleene::Unknown }
 
   keyword
-    = "let" / "proc" / "fn" / "par" / "space" / "end" / "pre" / "when"
-    / "loop" / "pause" / "up" / "stop" / "in" / "world_line"
+    = "proc" / "par" / "space" / "end" / "pre" / "nothing"
+    / "when" / "then" / "else"
+    / "loop" / "pause up" / "pause" / "stop" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "read" / "write" / "readwrite"
     / "or" / "and" / "not"
-    / "run" / "True" / "False" / "Unknown" / "nothing" / "universe"
+    / "run" / "True" / "False" / "Unknown" / "universe"
     / "suspend" / "abort" / java_kw
   kw_tail = !ident_char spacing
 
-  LET = "let" kw_tail
   PROC = "proc" kw_tail
   PAR = "par" kw_tail
   SPACE = "space" kw_tail
   END = "end" kw_tail
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
+  ELSE = "else" kw_tail
+  THEN = "then" kw_tail
   SUSPEND = "suspend" kw_tail
   ABORT = "abort" kw_tail
   LOOP = "loop" kw_tail
-  UP = "up" kw_tail
   STOP = "stop" kw_tail
   PAUSE = "pause" kw_tail
+  PAUSEUP = "pause up" kw_tail
   IN = "in" kw_tail
   WORLD_LINE = "world_line" kw_tail
   SINGLE_TIME = "single_time" kw_tail

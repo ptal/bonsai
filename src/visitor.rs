@@ -56,9 +56,10 @@ pub trait Visitor<H>
     self.visit_stmt(*(let_stmt.body))
   }
 
-  fn visit_when(&mut self, condition: Expr, child: Stmt) {
+  fn visit_when(&mut self, condition: Expr, then_branch: Stmt, else_branch: Stmt) {
     self.visit_expr(condition);
-    self.visit_stmt(child)
+    self.visit_stmt(then_branch);
+    self.visit_stmt(else_branch);
   }
 
   fn visit_suspend(&mut self, condition: Expr, child: Stmt) {
@@ -84,8 +85,8 @@ pub trait Visitor<H>
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, var: Option<Variable>, _process: Ident) {
-    walk_proc_call(self, var);
+  fn visit_proc_call(&mut self, var: Option<Variable>, _process: Ident, args: Vec<Variable>) {
+    walk_proc_call(self, var, args);
   }
 
   fn visit_expr_stmt(&mut self, expr: Expr) {
@@ -182,7 +183,7 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     Par(branches) => visitor.visit_par(branches),
     Space(branches) => visitor.visit_space(branches),
     Let(stmt) => visitor.visit_let(stmt),
-    When(cond, body) => visitor.visit_when(cond, *body),
+    When(cond, then_branch, else_branch) => visitor.visit_when(cond, *then_branch, *else_branch),
     Suspend(cond, body) => visitor.visit_suspend(cond, *body),
     Abort(cond, body) => visitor.visit_abort(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
@@ -191,7 +192,7 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     Stop => visitor.visit_stop(),
     Loop(body) => visitor.visit_loop(*body),
     ExprStmt(expr) => visitor.visit_expr_stmt(expr),
-    ProcCall(var, process) => visitor.visit_proc_call(var, process),
+    ProcCall(var, process, args) => visitor.visit_proc_call(var, process, args),
     Universe(body) => visitor.visit_universe(*body),
     Nothing => visitor.visit_nothing()
   }
@@ -249,10 +250,13 @@ pub fn walk_binding<H, V: ?Sized>(visitor: &mut V, binding: Binding) where
   if let Some(expr) = binding.expr { visitor.visit_expr(expr) }
 }
 
-pub fn walk_proc_call<H, V: ?Sized>(visitor: &mut V, var: Option<Variable>) where
+pub fn walk_proc_call<H, V: ?Sized>(visitor: &mut V, var: Option<Variable>, args: Vec<Variable>) where
   V: Visitor<H>
 {
   if let Some(var) = var { visitor.visit_var(var) }
+  for arg in args {
+    visitor.visit_var(arg);
+  }
 }
 
 pub trait VisitorMut<H>
@@ -295,9 +299,10 @@ pub trait VisitorMut<H>
     self.visit_stmt(&mut *(let_stmt.body))
   }
 
-  fn visit_when(&mut self, condition: &mut Expr, child: &mut Stmt) {
+  fn visit_when(&mut self, condition: &mut Expr, then_branch: &mut Stmt, else_branch: &mut Stmt) {
     self.visit_expr(condition);
-    self.visit_stmt(child)
+    self.visit_stmt(then_branch);
+    self.visit_stmt(else_branch);
   }
 
   fn visit_suspend(&mut self, condition: &mut Expr, child: &mut Stmt) {
@@ -323,8 +328,8 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
-  fn visit_proc_call(&mut self, var: &mut Option<Variable>, _process: Ident) {
-    walk_proc_call_mut(self, var)
+  fn visit_proc_call(&mut self, var: &mut Option<Variable>, _process: Ident, args: &mut Vec<Variable>) {
+    walk_proc_call_mut(self, var, args)
   }
 
   fn visit_expr_stmt(&mut self, expr: &mut Expr) {
@@ -421,7 +426,7 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut Par(ref mut branches) => visitor.visit_par(branches),
     &mut Space(ref mut branches) => visitor.visit_space(branches),
     &mut Let(ref mut stmt) => visitor.visit_let(stmt),
-    &mut When(ref mut cond, ref mut body) => visitor.visit_when(cond, &mut **body),
+    &mut When(ref mut cond, ref mut then_branch, ref mut else_branch) => visitor.visit_when(cond, &mut **then_branch, &mut **else_branch),
     &mut Suspend(ref mut cond, ref mut body) => visitor.visit_suspend(cond, &mut **body),
     &mut Abort(ref mut cond, ref mut body) => visitor.visit_abort(cond, &mut **body),
     &mut Tell(ref mut var, ref mut expr) => visitor.visit_tell(var, expr),
@@ -429,7 +434,7 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut PauseUp => visitor.visit_pause_up(),
     &mut Stop => visitor.visit_stop(),
     &mut Loop(ref mut body) => visitor.visit_loop(&mut **body),
-    &mut ProcCall(ref mut var, ref process) => visitor.visit_proc_call(var, process.clone()),
+    &mut ProcCall(ref mut var, ref process, ref mut args) => visitor.visit_proc_call(var, process.clone(), args),
     &mut ExprStmt(ref mut expr) => visitor.visit_expr_stmt(expr),
     &mut Universe(ref mut body) => visitor.visit_universe(&mut **body),
     &mut Nothing => visitor.visit_nothing()
@@ -490,10 +495,13 @@ pub fn walk_binding_mut<H, V: ?Sized>(visitor: &mut V, binding: &mut Binding) wh
   }
 }
 
-pub fn walk_proc_call_mut<H, V: ?Sized>(visitor: &mut V, var: &mut Option<Variable>) where
+pub fn walk_proc_call_mut<H, V: ?Sized>(visitor: &mut V, var: &mut Option<Variable>, args: &mut Vec<Variable>) where
   V: VisitorMut<H>
 {
   if let &mut Some(ref mut var) = var {
     visitor.visit_var(var)
+  }
+  for arg in args {
+    visitor.visit_var(arg);
   }
 }

@@ -144,10 +144,13 @@ impl VisitorMut<JClass> for Resolve
     self.resolve_path(var);
   }
 
-  fn visit_proc_call(&mut self, var: &mut Option<Variable>, process: Ident) {
+  fn visit_proc_call(&mut self, var: &mut Option<Variable>, process: Ident, args: &mut Vec<Variable>) {
     if let &mut Some(ref mut var) = var {
       self.visit_var(var);
       self.resolve_process(var, process);
+    }
+    for arg in args {
+      self.visit_var(arg);
     }
   }
 }

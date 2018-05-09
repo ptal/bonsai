@@ -41,7 +41,8 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
     Seq(branches) => lift_let_sequence(branches).node,
     Par(branches) => Par(lift_stmts(branches)),
     Space(branches) => Space(lift_stmts(branches)),
-    When(condition, body) => When(condition, Box::new(lift_stmt(*body))),
+    When(condition, then_branch, else_branch) =>
+      When(condition, Box::new(lift_stmt(*then_branch)), Box::new(lift_stmt(*else_branch))),
     Suspend(condition, body) => Suspend(condition, Box::new(lift_stmt(*body))),
     Abort(condition, body) => Abort(condition, Box::new(lift_stmt(*body))),
     Loop(body) => Loop(Box::new(lift_stmt(*body))),

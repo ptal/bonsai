@@ -161,10 +161,13 @@ impl<'a> VisitorMut<JClass> for Undeclared
     }
   }
 
-  fn visit_proc_call(&mut self, var: &mut Option<Variable>, process: Ident) {
+  fn visit_proc_call(&mut self, var: &mut Option<Variable>, process: Ident, args: &mut Vec<Variable>) {
     match var {
       &mut Some(ref mut var) => self.visit_var(var),
       &mut None => self.undeclared_process(process)
+    };
+    for arg in args {
+      self.visit_var(arg);
     }
   }
 
