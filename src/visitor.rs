@@ -66,6 +66,11 @@ pub trait Visitor<H>
     self.visit_stmt(child)
   }
 
+  fn visit_abort(&mut self, condition: Expr, child: Stmt) {
+    self.visit_expr(condition);
+    self.visit_stmt(child)
+  }
+
   fn visit_tell(&mut self, var: Variable, expr: Expr) {
     self.visit_var(var);
     self.visit_expr(expr);
@@ -74,12 +79,6 @@ pub trait Visitor<H>
   fn visit_pause(&mut self) {}
   fn visit_pause_up(&mut self) {}
   fn visit_stop(&mut self) {}
-
-  fn visit_trap(&mut self, _name: Ident, child: Stmt) {
-    self.visit_stmt(child)
-  }
-
-  fn visit_exit(&mut self, _name: Ident) {}
 
   fn visit_loop(&mut self, child: Stmt) {
     self.visit_stmt(child)
@@ -185,12 +184,11 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     Let(stmt) => visitor.visit_let(stmt),
     When(cond, body) => visitor.visit_when(cond, *body),
     Suspend(cond, body) => visitor.visit_suspend(cond, *body),
+    Abort(cond, body) => visitor.visit_abort(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
     Pause => visitor.visit_pause(),
     PauseUp => visitor.visit_pause_up(),
     Stop => visitor.visit_stop(),
-    Trap(name, body) => visitor.visit_trap(name, *body),
-    Exit(name) => visitor.visit_exit(name),
     Loop(body) => visitor.visit_loop(*body),
     ExprStmt(expr) => visitor.visit_expr_stmt(expr),
     ProcCall(var, process) => visitor.visit_proc_call(var, process),
@@ -307,6 +305,11 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
+  fn visit_abort(&mut self, condition: &mut Expr, child: &mut Stmt) {
+    self.visit_expr(condition);
+    self.visit_stmt(child)
+  }
+
   fn visit_tell(&mut self, var: &mut Variable, expr: &mut Expr) {
     self.visit_var(var);
     self.visit_expr(expr);
@@ -315,12 +318,6 @@ pub trait VisitorMut<H>
   fn visit_pause(&mut self) {}
   fn visit_pause_up(&mut self) {}
   fn visit_stop(&mut self) {}
-
-  fn visit_trap(&mut self, _name: Ident, child: &mut Stmt) {
-    self.visit_stmt(child)
-  }
-
-  fn visit_exit(&mut self, _name: Ident) {}
 
   fn visit_loop(&mut self, child: &mut Stmt) {
     self.visit_stmt(child)
@@ -426,12 +423,11 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut Let(ref mut stmt) => visitor.visit_let(stmt),
     &mut When(ref mut cond, ref mut body) => visitor.visit_when(cond, &mut **body),
     &mut Suspend(ref mut cond, ref mut body) => visitor.visit_suspend(cond, &mut **body),
+    &mut Abort(ref mut cond, ref mut body) => visitor.visit_abort(cond, &mut **body),
     &mut Tell(ref mut var, ref mut expr) => visitor.visit_tell(var, expr),
     &mut Pause => visitor.visit_pause(),
     &mut PauseUp => visitor.visit_pause_up(),
     &mut Stop => visitor.visit_stop(),
-    &mut Trap(ref name, ref mut body) => visitor.visit_trap(name.clone(), &mut **body),
-    &mut Exit(ref name) => visitor.visit_exit(name.clone()),
     &mut Loop(ref mut body) => visitor.visit_loop(&mut **body),
     &mut ProcCall(ref mut var, ref process) => visitor.visit_proc_call(var, process.clone()),
     &mut ExprStmt(ref mut expr) => visitor.visit_expr_stmt(expr),

@@ -41,9 +41,9 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
     Seq(branches) => lift_let_sequence(branches).node,
     Par(branches) => Par(lift_stmts(branches)),
     Space(branches) => Space(lift_stmts(branches)),
-    When(entailment, body) => When(entailment, Box::new(lift_stmt(*body))),
-    Suspend(entailment, body) => Suspend(entailment, Box::new(lift_stmt(*body))),
-    Trap(name, body) => Trap(name, Box::new(lift_stmt(*body))),
+    When(condition, body) => When(condition, Box::new(lift_stmt(*body))),
+    Suspend(condition, body) => Suspend(condition, Box::new(lift_stmt(*body))),
+    Abort(condition, body) => Abort(condition, Box::new(lift_stmt(*body))),
     Loop(body) => Loop(Box::new(lift_stmt(*body))),
     Let(mut decl) => {
       decl.body = Box::new(lift_stmt(*decl.body));

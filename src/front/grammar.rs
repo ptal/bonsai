@@ -219,12 +219,11 @@ grammar! bonsai {
     / binding SEMI_COLON > make_let_stmt
     / WHEN expr block > make_when
     / SUSPEND WHEN expr block > make_suspend
+    / ABORT WHEN expr block > make_abort
     / PAUSE UP SEMI_COLON > make_pause_up
     / STOP SEMI_COLON > make_stop
     / PAUSE SEMI_COLON > make_pause
     / NOTHING SEMI_COLON > make_nothing
-    / TRAP identifier block > make_trap
-    / EXIT identifier SEMI_COLON > make_exit
     / LOOP block > make_loop
     / UNIVERSE block > make_universe
     / RUN proc_call SEMI_COLON > make_proc_call
@@ -272,6 +271,10 @@ grammar! bonsai {
     StmtKind::Suspend(condition, Box::new(body))
   }
 
+  fn make_abort(condition: Expr, body: Stmt) -> StmtKind {
+    StmtKind::Abort(condition, Box::new(body))
+  }
+
   fn make_pause() -> StmtKind {
     StmtKind::Pause
   }
@@ -286,14 +289,6 @@ grammar! bonsai {
 
   fn make_nothing() -> StmtKind {
     StmtKind::Nothing
-  }
-
-  fn make_trap(name: Ident, body: Stmt) -> StmtKind {
-    StmtKind::Trap(name, Box::new(body))
-  }
-
-  fn make_exit(name: Ident) -> StmtKind {
-    StmtKind::Exit(name)
   }
 
   fn make_loop(body: Stmt) -> StmtKind {
@@ -555,11 +550,12 @@ grammar! bonsai {
 
   keyword
     = "let" / "proc" / "fn" / "par" / "space" / "end" / "pre" / "when"
-    / "loop" / "pause" / "up" / "stop" / "trap" / "exit" / "in" / "world_line"
+    / "loop" / "pause" / "up" / "stop" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "read" / "write" / "readwrite"
     / "or" / "and" / "not"
-    / "run" / "True" / "False" / "Unknown" / "nothing" / "universe" / "suspend" / java_kw
+    / "run" / "True" / "False" / "Unknown" / "nothing" / "universe"
+    / "suspend" / "abort" / java_kw
   kw_tail = !ident_char spacing
 
   LET = "let" kw_tail
@@ -570,12 +566,11 @@ grammar! bonsai {
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
   SUSPEND = "suspend" kw_tail
+  ABORT = "abort" kw_tail
   LOOP = "loop" kw_tail
   UP = "up" kw_tail
   STOP = "stop" kw_tail
   PAUSE = "pause" kw_tail
-  TRAP = "trap" kw_tail
-  EXIT = "exit" kw_tail
   IN = "in" kw_tail
   WORLD_LINE = "world_line" kw_tail
   SINGLE_TIME = "single_time" kw_tail
