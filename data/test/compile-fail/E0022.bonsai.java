@@ -21,9 +21,9 @@ public class ModuleRefInitializer
 {
   public single_space T a;
 
-  proc test() {
+  proc test() =
     module Module2 ok1 = new Module2(a);
     module Module2 ko1 = new Module2(new T());
     module Module2 ko2 = new Module2(J.make());
-  }
+  end
 }

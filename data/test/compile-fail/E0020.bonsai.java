@@ -20,7 +20,7 @@ public class IllegalRefKind
 {
   // ref JavaHost h = new JavaHost();  // error handled during parsing.
   ref module Module m;
-  ref transient single_space T ok;
+  ref single_space T ok;
 
   public IllegalRefKind(JavaHost h, Module m, T ok) {
     this.h = h;

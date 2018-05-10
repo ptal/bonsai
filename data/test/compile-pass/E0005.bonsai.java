@@ -16,9 +16,9 @@ package test;
 
 public class CorrectFieldInitialization
 {
-  single_space Integer t1 = new Integer(0);
-  single_space Boolean t2 = new Boolean(true);
+  single_space LMax t1 = new LMax(0);
+  single_space L<Boolean> t2 = new L<Boolean>(true);
   single_space Mixed t3 = new Mixed(0, true, 8, "bonsai");
 
-  proc test() { nothing; }
+  proc test() = nothing
 }

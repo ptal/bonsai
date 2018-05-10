@@ -22,5 +22,5 @@ public class MissingConstructor
   single_space N b;
   ref single_space T ok;
 
-  proc missing_constructor() { nothing; }
+  proc missing_constructor() = nothing
 }

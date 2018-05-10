@@ -19,11 +19,11 @@ package test;
 
 public class ParallelOutput
 {
-  proc test() {
+  proc test() =
     par
-    || System.out.print("1");
-    || System.out.print("2");
-    || System.out.print("3");
+    || System.out.print("1")
+    || System.out.print("2")
+    || System.out.print("3")
     end
-  }
+  end
 }

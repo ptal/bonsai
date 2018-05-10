@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[error(E0023, 30, 37)]
+#[error(E0023, 31, 37)]
 #[error(E0023, 32, 37)]
-#[error(E0023, 33, 37)]
-#[error(E0023, 34, 37)]
-#[error(E0023, 35, 37)]
 
 package test;
 
@@ -25,13 +24,11 @@ public class ModuleParameterMismatch
   public single_space T2 b;
   public single_time T c;
   public module Module d;
-  public transient single_space T e;
 
-  proc test() {
+  proc test() =
     module Module2 ok1 = new Module2(a);
     module Module2 ko1 = new Module2(b);
     module Module2 ko2 = new Module2(c);
     module Module2 ko3 = new Module2(d);
-    module Module2 ko4 = new Module2(e);
-  }
+  end
 }

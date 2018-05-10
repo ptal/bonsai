@@ -24,17 +24,17 @@ public class PreOnlyOnStream
 {
   JavaHost h = new JavaHost();
   module Module m;
-  transient single_space T ok;
+  single_space T ok;
 
   public PreOnlyOnStream(T a) {
     this.a = a;
   }
 
-  proc test() {
+  proc test() =
     single_time N b;
     ok <- pre b;
     ok <- pre m;
     ok <- pre h;
-    when pre b |= pre m { nothing; }
-  }
+    when pre b |= pre m then nothing end
+  end
 }

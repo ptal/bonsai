@@ -23,5 +23,5 @@ public class Module2
     this.a = a;
   }
 
-  proc test() { nothing; }
+  proc test() = nothing
 }

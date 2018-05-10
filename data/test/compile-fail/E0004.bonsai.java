@@ -19,10 +19,10 @@ package test;
 
 public class DuplicateProc
 {
-  proc unique1() { nothing; }
-  proc dup() { nothing; }
-  proc dup() { nothing; }
+  proc unique1() = nothing
+  proc dup() = nothing
+  proc dup() = nothing
 
-  proc unique2() { nothing; }
-  proc dup() { nothing; }
+  proc unique2() = nothing
+  proc dup() = nothing
 }

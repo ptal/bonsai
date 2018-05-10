@@ -21,9 +21,9 @@ public class UnknownField
 {
   module Module m = new Module();
 
-  proc test() {
+  proc test() =
     m.a;
     m.c;
     J.inside_args(m.d, m.a);
-  }
+  end
 }

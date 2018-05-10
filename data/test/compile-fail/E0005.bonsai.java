@@ -25,5 +25,5 @@ public class FieldInitializationWithRef
 
   public FieldInitializationWithRef(T a) {}
 
-  proc test() { nothing; }
+  proc test() = nothing
 }

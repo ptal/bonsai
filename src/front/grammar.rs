@@ -204,27 +204,26 @@ grammar! bonsai {
   // An open sequence is a sequence in a process such as `proc f = s1; s2 end`.
   // We need a keyword `end` to be disambiguate between variable declaration and class attribute.
   open_sequence
-    = .. stmt (SEMI_COLON stmt)+ END > make_seq
-    / stmt
+    = .. stmt (SEMI_COLON stmt)+ SEMI_COLON? END > make_seq
+    / stmt SEMI_COLON? END?
 
   // Sequences occurring inside a process do not need this `end` delimiter.
   close_sequence
-    = .. stmt (SEMI_COLON stmt)+ > make_seq
+    = .. stmt (SEMI_COLON stmt)+ SEMI_COLON? > make_seq
     / stmt
 
   fn make_seq(span: Span, first: Stmt, rest: Vec<Stmt>) -> Stmt {
-    Stmt::new(span, StmtKind::Seq(extend_front(first, rest)))
+    make_stmt(span, StmtKind::Seq(extend_front(first, rest)))
   }
 
   stmt
     = .. stmt_kind > make_stmt
-    // / block
 
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
     / binding > make_let_stmt
-    / WHEN expr THEN close_sequence ELSE close_sequence END > make_when
+    / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when
     / SUSPEND WHEN expr IN close_sequence END > make_suspend
     / ABORT WHEN expr IN close_sequence END > make_abort
     / PAUSEUP > make_pause_up
@@ -234,8 +233,8 @@ grammar! bonsai {
     / LOOP close_sequence END > make_loop
     / UNIVERSE close_sequence END > make_universe
     / RUN proc_call > make_proc_call
-    / expr &(SEMI_COLON / END) > make_expr_stmt
     / variable LEFT_ARROW expr > make_tell
+    / expr > make_expr_stmt
 
   fn make_stmt(span: Span, stmt_kind: StmtKind) -> Stmt {
     Stmt::new(span, stmt_kind)
@@ -270,7 +269,15 @@ grammar! bonsai {
     Binding::new(span, name, Kind::Host, ty, expr)
   }
 
-  fn make_when(condition: Expr, then_branch: Stmt, else_branch: Stmt) -> StmtKind {
+  fn make_when(condition: Expr, then_branch: Stmt, else_branch: Option<Stmt>) -> StmtKind {
+    let else_branch =
+      match else_branch {
+        Some(b) => b,
+        None => {
+          let sp = mk_sp(then_branch.span.hi, then_branch.span.hi);
+          make_stmt(sp, StmtKind::Nothing)
+        }
+      };
     StmtKind::When(condition, Box::new(then_branch), Box::new(else_branch))
   }
 
@@ -332,7 +339,6 @@ grammar! bonsai {
     vec![]
   }
 
-
   java_ty
     = .. identifier java_generic_list (LBRACKET RBRACKET -> ())? > make_java_ty
 
@@ -380,6 +386,7 @@ grammar! bonsai {
   expr_2
     = .. NOT expr_atom > make_trilean_not_expr
     / .. expr_atom entailment_kind expr_atom > make_entailment_rel
+    / expr_atom
 
   expr_atom
     = .. expr_atom_kind > make_expr
@@ -389,15 +396,15 @@ grammar! bonsai {
     = trilean > make_trilean_expr
     / BOT > make_bottom_expr
     / TOP > make_top_expr
-    / variable > make_var_expr
     / host_expr
+    / variable > make_var_expr
 
   host_expr
-    = method_call_chain > make_call_chain
-    / new_instance_expr > make_new_instance
+    = number > make_number_expr
     / boolean > make_boolean_expr
-    / number > make_number_expr
+    / method_call_chain > make_call_chain
     / string_literal > make_string_literal
+    / new_instance_expr > make_new_instance
 
   entailment_kind
     = ENTAILMENT > make_false
@@ -544,12 +551,12 @@ grammar! bonsai {
   string_identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
   ident_char = ["a-zA-Z0-9_"]
 
-  number = digits > make_number
+  number = digits spacing > make_number
   digits = digit+ (UNDERSCORE* digit)* > concat
   digit = ["0-9"]
 
   // TODO: proper escape mechanism
-  string_literal = "\"" (!"\"" .)* "\"" > to_string
+  string_literal = "\"" (!"\"" .)* "\"" spacing > to_string
 
   boolean
     = TRUE > make_true

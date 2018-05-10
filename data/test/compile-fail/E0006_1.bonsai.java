@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #[error(E0006, 23, 28)]
-#[error(E0006, 32, 23)]
+#[error(E0006, 31, 36)]
 
 package test;
 
@@ -23,12 +23,10 @@ public class UndeclaredVariable
   single_space T t2 = new T(t3);
   single_space T t3 = new T();
 
-  proc test() {
+  proc test() =
     single_space T t4 = new T();
     System.out.println(t4);
-  }
+  end
 
-  proc test2() {
-    System.out.println(t4);
-  }
+  proc test2() = System.out.println(t4)
 }

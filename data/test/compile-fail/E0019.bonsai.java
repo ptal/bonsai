@@ -21,9 +21,9 @@ public class MissingModuleInitializer
 {
   public single_space T a;
 
-  proc test() {
+  proc test() =
     module Module ok3 = new Module();
     module Module2 ko1;
     module Module ko2;
-  }
+  end
 }

@@ -18,8 +18,8 @@ package test;
 
 public class DuplicateVar
 {
-  proc test() {
+  proc test() =
     single_time Dup d;
     single_time Dup d;
-  }
+  end
 }

@@ -19,5 +19,5 @@ public class Module
   public single_space T a;
   public module Module2 b;
 
-  proc test() { nothing; }
+  proc test() = nothing
 }

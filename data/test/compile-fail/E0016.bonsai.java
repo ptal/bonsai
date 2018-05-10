@@ -28,11 +28,11 @@ public class ForbiddenWriteOnPre
     this.a = a;
   }
 
-  proc test() {
+  proc test() =
     world_line N b;
     pre a <- 1;
     pre b <- 2;
     ok <- pre a;
     J.external(pre b, pre a, ok);
-  }
+  end
 }

@@ -24,9 +24,9 @@ import inria.meije.rc.sugarcubes.implementation.*;
 
 public class SequentialOutput
 {
-  proc test() {
+  proc test() =
     System.out.print("1");
     System.out.print("2");
     System.out.print("3");
-  }
+  end
 }

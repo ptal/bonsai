@@ -21,10 +21,10 @@ public class UnknownProcess
 {
   module Module m = new Module();
 
-  proc test() {
+  proc test() =
     run m.test();
     run m.wrong();
     run m.b.test();
     run m.b.wrong();
-  }
+  end
 }

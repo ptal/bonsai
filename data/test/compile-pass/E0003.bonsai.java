@@ -18,11 +18,6 @@ package test;
 
 public class DistinctScope
 {
-  proc test1() {
-    single_time Dup d;
-  }
-
-  proc test2() {
-    single_time Dup d;
-  }
+  proc test1() = single_time Dup d
+  proc test2() = single_time Dup d
 }
