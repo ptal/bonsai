@@ -127,7 +127,6 @@ pub trait Visitor<H>
     walk_exprs(self, call.args)
   }
 
-  fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_var(&mut self, _var: Variable) {}
@@ -210,7 +209,6 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
   V: Visitor<H>
 {
   match expr.node {
-    Boolean(value) => visitor.visit_boolean(value),
     Number(value) => visitor.visit_number(value),
     StringLiteral(value) => visitor.visit_string_lit(value),
     NewInstance(new_instance) => visitor.visit_new_instance(new_instance.ty, new_instance.args),
@@ -371,7 +369,6 @@ pub trait VisitorMut<H>
   }
 
   fn visit_var(&mut self, _var: &mut Variable) {}
-  fn visit_boolean(&mut self, _value: bool) {}
   fn visit_number(&mut self, _value: u64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_bot(&mut self) {}
@@ -453,7 +450,6 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
   V: VisitorMut<H>
 {
   match &mut expr.node {
-    &mut Boolean(value) => visitor.visit_boolean(value),
     &mut Number(value) => visitor.visit_number(value),
     &mut StringLiteral(ref value) => visitor.visit_string_lit(value.clone()),
     &mut NewInstance(ref mut new_instance) => visitor.visit_new_instance(new_instance.ty.clone(), &mut new_instance.args),

@@ -60,8 +60,8 @@ impl Engine
       test_path.join(Path::new("compile-pass")), CompileSuccess, false);
     self.test_directory(format!("Compile and Fail tests"),
       test_path.join(Path::new("compile-fail")), CompileFail, false);
-    self.test_directory(format!("Compile and Run tests"),
-      test_path.join(Path::new("run-pass")), CompileSuccess, true);
+    // self.test_directory(format!("Compile and Run tests"),
+    //   test_path.join(Path::new("run-pass")), CompileSuccess, true);
     self.display.stats();
     self.display.panic_if_failure();
   }
@@ -88,6 +88,7 @@ impl Engine
   }
 
   fn compile_and_run(&mut self, filepath: PathBuf, expect: ExpectedResult, execute: bool) {
+    println!("{:?}", filepath);
     let obtained_diagnostics = Rc::new(RefCell::new(vec![]));
     let codemap = Rc::new(CodeMap::new());
     let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));

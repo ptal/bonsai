@@ -401,7 +401,6 @@ grammar! bonsai {
 
   host_expr
     = number > make_number_expr
-    / boolean > make_boolean_expr
     / method_call_chain > make_call_chain
     / string_literal > make_string_literal
     / new_instance_expr > make_new_instance
@@ -447,7 +446,6 @@ grammar! bonsai {
     ExprKind::NewInstance(new_instance)
   }
   fn make_call_chain(calls: MethodCallChain) -> ExprKind { ExprKind::CallChain(calls) }
-  fn make_boolean_expr(b: bool) -> ExprKind { ExprKind::Boolean(b) }
   fn make_trilean_expr(t: Kleene) -> ExprKind { ExprKind::Trilean(t) }
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
@@ -558,10 +556,6 @@ grammar! bonsai {
   // TODO: proper escape mechanism
   string_literal = "\"" (!"\"" .)* "\"" spacing > to_string
 
-  boolean
-    = TRUE > make_true
-    / FALSE > make_false
-
   fn make_true() -> bool { true }
   fn make_false() -> bool { false }
 
@@ -581,7 +575,7 @@ grammar! bonsai {
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "read" / "write" / "readwrite"
     / "or" / "and" / "not"
-    / "run" / "True" / "False" / "Unknown" / "universe"
+    / "run" / "true" / "false" / "unknown" / "universe"
     / "suspend" / "abort" / java_kw
   kw_tail = !ident_char spacing
 
@@ -608,9 +602,9 @@ grammar! bonsai {
   REF = "ref" kw_tail
   MODULE = "module" kw_tail
   RUN = "run" kw_tail
-  KTRUE = "True" kw_tail
-  KFALSE = "False" kw_tail
-  KUNKNOWN = "Unknown" kw_tail
+  KTRUE = "true" kw_tail
+  KFALSE = "false" kw_tail
+  KUNKNOWN = "unknown" kw_tail
   NOTHING = "nothing" kw_tail
   UNIVERSE = "universe" kw_tail
   READ = "read" kw_tail
@@ -622,7 +616,7 @@ grammar! bonsai {
 
   // Java keyword
   java_kw
-    = "true" / "false" / "new" / "private" / "public" / "class"
+    = "new" / "private" / "public" / "class"
     / "implements" / "static"
     / "protected" / "final" / "import" / "package"
   NEW = "new" kw_tail
@@ -635,8 +629,6 @@ grammar! bonsai {
   FINAL = "final" kw_tail
   PACKAGE = "package" kw_tail
   IMPORT = "import" kw_tail
-  TRUE = "true" kw_tail
-  FALSE = "false" kw_tail
 
   UNDERSCORE = "_"
   DOTDOT = ".." spacing

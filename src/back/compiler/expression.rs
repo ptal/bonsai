@@ -50,7 +50,6 @@ impl<'a> ExpressionCompiler<'a>
       NewInstance(new_instance) => self.java_new(new_instance.ty, new_instance.args),
       CallChain(chain) => self.method_call_chain(chain),
       Trilean(t) => self.trilean(t),
-      Boolean(b) => self.boolean(b),
       Number(n) => self.number(n),
       StringLiteral(lit) => self.literal(lit),
       Var(var) => self.variable(var),
@@ -170,10 +169,6 @@ impl<'a> ExpressionCompiler<'a>
       Kleene::Unknown => "Kleene.UNKNOWN"
     };
     self.fmt.push(k);
-  }
-
-  fn boolean(&mut self, b: bool) {
-    self.fmt.push(&format!("{}", b));
   }
 
   fn number(&mut self, n: u64) {

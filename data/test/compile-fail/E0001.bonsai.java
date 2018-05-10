@@ -19,6 +19,6 @@ package test;
 
 public class CannotFindModule
 {
-  module Unknown2 unknown;
+  module Unknown2 unknown2;
   proc test() = module NotFound notFound;
 }

@@ -653,7 +653,6 @@ impl Expr {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
   // Host expressions
-  Boolean(bool),
   Number(u64),
   StringLiteral(String),
   NewInstance(NewObjectInstance),
