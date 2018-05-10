@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0016, 33, 4)]
-#[error(E0016, 34, 4)]
-#[error(E0016, 36, 15)]
-#[error(E0016, 36, 22)]
+#[error(E0016, 31, 4)]
+#[error(E0016, 32, 4)]
 
 package test;
 
@@ -33,6 +31,6 @@ public class ForbiddenWriteOnPre
     pre a <- 1;
     pre b <- 2;
     ok <- pre a;
-    J.external(pre b, pre a, ok);
+    J.external(pre b, pre a, ok); // OK
   end
 }

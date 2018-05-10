@@ -222,7 +222,6 @@ grammar! bonsai {
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
     / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
-    / binding > make_let_stmt
     / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when
     / SUSPEND WHEN expr IN close_sequence END > make_suspend
     / ABORT WHEN expr IN close_sequence END > make_abort
@@ -233,6 +232,7 @@ grammar! bonsai {
     / LOOP close_sequence END > make_loop
     / UNIVERSE close_sequence END > make_universe
     / RUN proc_call > make_proc_call
+    / binding > make_let_stmt
     / variable LEFT_ARROW expr > make_tell
     / expr > make_expr_stmt
 
@@ -573,7 +573,7 @@ grammar! bonsai {
     / "when" / "then" / "else"
     / "loop" / "pause up" / "pause" / "stop" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
-    / "read" / "write" / "readwrite"
+    / "readwrite" / "read" / "write"
     / "or" / "and" / "not"
     / "run" / "true" / "false" / "unknown" / "universe"
     / "suspend" / "abort" / java_kw

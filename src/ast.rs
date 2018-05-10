@@ -506,6 +506,16 @@ pub enum Permission {
   ReadWrite
 }
 
+impl Display for Permission {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    match self {
+      Permission::Read => fmt.write_str("read"),
+      Permission::Write => fmt.write_str("write"),
+      Permission::ReadWrite => fmt.write_str("readwrite"),
+    }
+  }
+}
+
 #[derive(Clone, Debug, Eq)]
 pub struct Variable {
   pub path: VarPath,

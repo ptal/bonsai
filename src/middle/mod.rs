@@ -17,7 +17,7 @@ mod undeclared;
 mod resolve;
 mod initialization;
 mod stream_bound;
-mod approximate_permission;
+mod infer_permission;
 mod constructor;
 
 use context::*;
@@ -27,7 +27,7 @@ use middle::undeclared::*;
 use middle::resolve::*;
 use middle::initialization::*;
 use middle::stream_bound::*;
-use middle::approximate_permission::*;
+use middle::infer_permission::*;
 use middle::constructor::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
@@ -38,5 +38,5 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(constructor)
     .and_then(initialization)
     .and_then(stream_bound)
-    .and_then(approximate_permission)
+    .and_then(infer_permission)
 }
