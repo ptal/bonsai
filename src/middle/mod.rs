@@ -19,6 +19,7 @@ mod initialization;
 mod stream_bound;
 mod infer_permission;
 mod constructor;
+mod instantaneous_analysis;
 
 use context::*;
 use session::*;
@@ -29,6 +30,7 @@ use middle::initialization::*;
 use middle::stream_bound::*;
 use middle::infer_permission::*;
 use middle::constructor::*;
+use middle::instantaneous_analysis::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
   env
@@ -39,4 +41,5 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(initialization)
     .and_then(stream_bound)
     .and_then(infer_permission)
+    .and_then(instantaneous_analysis)
 }

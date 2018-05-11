@@ -221,7 +221,7 @@ grammar! bonsai {
 
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
-    / SPACE BARBAR? stmt (BARBAR stmt)* END > make_space
+    / SPACE stmt END > make_space
     / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when
     / SUSPEND WHEN expr IN close_sequence END > make_suspend
     / ABORT WHEN expr IN close_sequence END > make_abort
@@ -244,8 +244,8 @@ grammar! bonsai {
     StmtKind::Par(extend_front(first, rest))
   }
 
-  fn make_space(first: Stmt, rest: Vec<Stmt>) -> StmtKind {
-    StmtKind::Space(extend_front(first, rest))
+  fn make_space(branch: Stmt) -> StmtKind {
+    StmtKind::Space(Box::new(branch))
   }
 
   fn make_let_stmt(binding: Binding) -> StmtKind {

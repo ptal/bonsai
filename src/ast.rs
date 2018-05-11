@@ -274,7 +274,7 @@ impl Stmt {
 pub enum StmtKind {
   Seq(Vec<Stmt>),
   Par(Vec<Stmt>),
-  Space(Vec<Stmt>),
+  Space(Box<Stmt>),
   Let(LetStmt),
   When(Expr, Box<Stmt>, Box<Stmt>),
   Suspend(Expr, Box<Stmt>),

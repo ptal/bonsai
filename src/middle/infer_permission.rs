@@ -174,8 +174,10 @@ impl VisitorMut<JClass> for InferPermission
   }
 
   fn visit_stmt(&mut self, child: &mut Stmt) {
+    let old = self.context_span;
     self.context_span = child.span;
-    walk_stmt_mut(self, child)
+    walk_stmt_mut(self, child);
+    self.context_span = old;
   }
 
   fn visit_when(&mut self, condition: &mut Expr, then_branch: &mut Stmt, else_branch: &mut Stmt) {

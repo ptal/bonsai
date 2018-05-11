@@ -40,7 +40,7 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
   let node = match stmt.node {
     Seq(branches) => lift_let_sequence(branches).node,
     Par(branches) => Par(lift_stmts(branches)),
-    Space(branches) => Space(lift_stmts(branches)),
+    Space(branch) => Space(Box::new(lift_stmt(*branch))),
     When(condition, then_branch, else_branch) =>
       When(condition, Box::new(lift_stmt(*then_branch)), Box::new(lift_stmt(*else_branch))),
     Suspend(condition, body) => Suspend(condition, Box::new(lift_stmt(*body))),
