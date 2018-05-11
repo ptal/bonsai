@@ -65,23 +65,22 @@ impl InferPermission {
 
   // Returns false if an error occurred.
   fn pre_on_variable(&self, var: &Variable) -> bool {
-    let mut has_err = true;
     if var.past > 0 {
       let uid = var.last_uid();
       match self.context.var_by_uid(uid).kind {
-        Kind::Product => { self.err_forbid_pre_on(var, "module"); has_err = false }
-        Kind::Host => { self.err_forbid_pre_on(var, "host"); has_err = false }
-        Kind::Spacetime(Spacetime::SingleTime) => { self.err_forbid_pre_on(var, "single_time"); has_err = false }
+        Kind::Product => self.err_forbid_pre_on(var, "module"),
+        Kind::Host => self.err_forbid_pre_on(var, "host"),
+        Kind::Spacetime(Spacetime::SingleTime) => self.err_forbid_pre_on(var, "single_time"),
         _ => {
           // Forbid to write `pre x <- 1`.
           if self.perm_context == Write {
             self.err_forbid_write_on_pre(var);
-            has_err = false;
           }
+          else { return true; }
         }
       }
-    }
-    has_err
+    } else { return true; }
+    false
   }
 
   fn check_permission(&self, var: &Variable, perm: Permission) {
@@ -94,6 +93,23 @@ impl InferPermission {
     | (Write, Read) => self.err_illegal_permission_in_context(var, perm),
       _ => ()
     }
+  }
+
+  fn check_host_function(&self) -> bool {
+    if self.perm_context == Read {
+      self.err_forbid_host_in_read_context();
+      false
+    }
+    else { true }
+  }
+
+  fn err_forbid_host_in_read_context(&self) {
+    self.session().struct_span_err_with_code(self.context_span,
+      &format!("illegal host function in a read only context."),
+      "E0027")
+    .help(&"Host function cannot be called inside an entailment expression.\n\
+            Solution: call the host function outside of the entailment expression.")
+    .emit();
   }
 
   fn err_forbid_write_on_pre(&self, var: &Variable) {
@@ -130,10 +146,24 @@ impl InferPermission {
     .help(&context_msg)
     .emit();
   }
+
+  fn visit_read_only_expr(&mut self, condition: &mut Expr) {
+    let old = self.perm_context;
+    self.perm_context = Read;
+    self.visit_expr(condition);
+    self.perm_context = old;
+  }
 }
 
 impl VisitorMut<JClass> for InferPermission
 {
+  fn visit_expr(&mut self, expr: &mut Expr) {
+    let old = self.context_span;
+    self.context_span = expr.span;
+    walk_expr_mut(self, expr);
+    self.context_span = old;
+  }
+
   fn visit_var(&mut self, var: &mut Variable) {
     if self.pre_on_variable(var) {
       match var.permission.clone() {
@@ -146,6 +176,22 @@ impl VisitorMut<JClass> for InferPermission
   fn visit_stmt(&mut self, child: &mut Stmt) {
     self.context_span = child.span;
     walk_stmt_mut(self, child)
+  }
+
+  fn visit_when(&mut self, condition: &mut Expr, then_branch: &mut Stmt, else_branch: &mut Stmt) {
+    self.visit_read_only_expr(condition);
+    self.visit_stmt(then_branch);
+    self.visit_stmt(else_branch);
+  }
+
+  fn visit_suspend(&mut self, condition: &mut Expr, child: &mut Stmt) {
+    self.visit_read_only_expr(condition);
+    self.visit_stmt(child)
+  }
+
+  fn visit_abort(&mut self, condition: &mut Expr, child: &mut Stmt) {
+    self.visit_read_only_expr(condition);
+    self.visit_stmt(child)
   }
 
   fn visit_tell(&mut self, var: &mut Variable, expr: &mut Expr) {
@@ -163,5 +209,17 @@ impl VisitorMut<JClass> for InferPermission
     self.visit_expr(&mut rel.left);
     self.visit_expr(&mut rel.right);
     self.perm_context = old;
+  }
+
+  fn visit_new_instance(&mut self, _ty: JType, args: &mut Vec<Expr>) {
+    if self.check_host_function() {
+      walk_exprs_mut(self, args);
+    }
+  }
+
+  fn visit_method_call_chain(&mut self, call: &mut MethodCallChain) {
+    if self.check_host_function() {
+      walk_method_call_chain_mut(self, call)
+    }
   }
 }

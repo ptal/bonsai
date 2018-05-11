@@ -116,11 +116,8 @@ pub trait Visitor<H>
     walk_exprs(self, args)
   }
 
-  fn visit_method_call_chain(&mut self, chain: MethodCallChain) {
-    if let Some(target) = chain.target {
-      self.visit_new_instance(target.ty, target.args);
-    }
-    walk_call_chain(self, chain.calls)
+  fn visit_method_call_chain(&mut self, call: MethodCallChain) {
+    walk_method_call_chain(self, call)
   }
 
   fn visit_method_call(&mut self, call: MethodCall) {
@@ -234,10 +231,13 @@ pub fn walk_exprs<H, V: ?Sized>(visitor: &mut V, exprs: Vec<Expr>) where
   }
 }
 
-pub fn walk_call_chain<H, V: ?Sized>(visitor: &mut V, chain: Vec<MethodCall>) where
+pub fn walk_method_call_chain<H, V: ?Sized>(visitor: &mut V, chain: MethodCallChain) where
   V: Visitor<H>
 {
-  for fragment in chain {
+  if let Some(target) = chain.target {
+    visitor.visit_new_instance(target.ty, target.args);
+  }
+  for fragment in chain.calls {
     visitor.visit_method_call(fragment);
   }
 }
@@ -352,11 +352,8 @@ pub trait VisitorMut<H>
     walk_exprs_mut(self, args)
   }
 
-  fn visit_method_call_chain(&mut self, chain: &mut MethodCallChain) {
-    if let Some(ref mut target) = chain.target {
-      self.visit_new_instance(target.ty.clone(), &mut target.args)
-    }
-    walk_call_chain_mut(self, &mut chain.calls)
+  fn visit_method_call_chain(&mut self, call: &mut MethodCallChain) {
+    walk_method_call_chain_mut(self, call)
   }
 
   fn visit_method_call(&mut self, call: &mut MethodCall) {
@@ -475,10 +472,13 @@ pub fn walk_exprs_mut<H, V: ?Sized>(visitor: &mut V, exprs: &mut Vec<Expr>) wher
   }
 }
 
-pub fn walk_call_chain_mut<H, V: ?Sized>(visitor: &mut V, chain: &mut Vec<MethodCall>) where
+pub fn walk_method_call_chain_mut<H, V: ?Sized>(visitor: &mut V, chain: &mut MethodCallChain) where
   V: VisitorMut<H>
 {
-  for fragment in chain {
+  if let Some(ref mut target) = chain.target {
+    visitor.visit_new_instance(target.ty.clone(), &mut target.args)
+  }
+  for fragment in &mut chain.calls {
     visitor.visit_method_call(fragment);
   }
 }
