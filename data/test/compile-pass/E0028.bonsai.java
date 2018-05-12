@@ -49,4 +49,20 @@ public class NonInstantaneousLoop
         end
       end
     end
+
+  proc test9() =
+    loop
+      par
+      || when a |= b then stop end
+      || pause
+      end
+    end
+
+  proc test10() =
+    loop
+      par
+      <> when a |= b then pause end
+      <> pause up
+      end
+    end
 }

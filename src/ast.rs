@@ -273,7 +273,8 @@ impl Stmt {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum StmtKind {
   Seq(Vec<Stmt>),
-  Par(Vec<Stmt>),
+  OrPar(Vec<Stmt>),  // par p || q end
+  AndPar(Vec<Stmt>), // par p <> q end
   Space(Box<Stmt>),
   Let(LetStmt),
   When(Expr, Box<Stmt>, Box<Stmt>),

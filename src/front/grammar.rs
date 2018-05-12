@@ -220,7 +220,8 @@ grammar! bonsai {
     = .. stmt_kind > make_stmt
 
   stmt_kind
-    = PAR BARBAR? stmt (BARBAR stmt)* END > make_par
+    = PAR BARBAR? stmt (BARBAR stmt)* END > make_or_par
+    / PAR DIAMOND? stmt (DIAMOND stmt)* END > make_and_par
     / SPACE stmt END > make_space
     / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when
     / SUSPEND WHEN expr IN close_sequence END > make_suspend
@@ -240,8 +241,12 @@ grammar! bonsai {
     Stmt::new(span, stmt_kind)
   }
 
-  fn make_par(first: Stmt, rest: Vec<Stmt>) -> StmtKind {
-    StmtKind::Par(extend_front(first, rest))
+  fn make_or_par(first: Stmt, rest: Vec<Stmt>) -> StmtKind {
+    StmtKind::OrPar(extend_front(first, rest))
+  }
+
+  fn make_and_par(first: Stmt, rest: Vec<Stmt>) -> StmtKind {
+    StmtKind::AndPar(extend_front(first, rest))
   }
 
   fn make_space(branch: Stmt) -> StmtKind {
@@ -638,6 +643,7 @@ grammar! bonsai {
   COMMA = "," spacing
   DOT = "." spacing
   BARBAR = "||" spacing
+  DIAMOND = "<>" spacing
   ENTAILMENT = "|=" spacing
   ENTAILMENT_STRICT = "|<" spacing
   LEFT_ARROW = "<-" spacing

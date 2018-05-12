@@ -39,7 +39,8 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
   use ast::StmtKind::*;
   let node = match stmt.node {
     Seq(branches) => lift_let_sequence(branches).node,
-    Par(branches) => Par(lift_stmts(branches)),
+    OrPar(branches) => OrPar(lift_stmts(branches)),
+    AndPar(branches) => AndPar(lift_stmts(branches)),
     Space(branch) => Space(Box::new(lift_stmt(*branch))),
     When(condition, then_branch, else_branch) =>
       When(condition, Box::new(lift_stmt(*then_branch)), Box::new(lift_stmt(*else_branch))),

@@ -47,6 +47,14 @@ pub trait Visitor<H>
     walk_stmts(self, children);
   }
 
+  fn visit_or_par(&mut self, children: Vec<Stmt>) {
+    self.visit_par(children)
+  }
+
+  fn visit_and_par(&mut self, children: Vec<Stmt>) {
+    self.visit_par(children)
+  }
+
   fn visit_space(&mut self, child: Stmt) {
     self.visit_stmt(child);
   }
@@ -176,7 +184,8 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
 {
   match stmt.node {
     Seq(branches) => visitor.visit_seq(branches),
-    Par(branches) => visitor.visit_par(branches),
+    OrPar(branches) => visitor.visit_or_par(branches),
+    AndPar(branches) => visitor.visit_and_par(branches),
     Space(branch) => visitor.visit_space(*branch),
     Let(stmt) => visitor.visit_let(stmt),
     When(cond, then_branch, else_branch) => visitor.visit_when(cond, *then_branch, *else_branch),
@@ -286,6 +295,14 @@ pub trait VisitorMut<H>
 
   fn visit_par(&mut self, children: &mut Vec<Stmt>) {
     walk_stmts_mut(self, children);
+  }
+
+  fn visit_or_par(&mut self, children: &mut Vec<Stmt>) {
+    self.visit_par(children)
+  }
+
+  fn visit_and_par(&mut self, children: &mut Vec<Stmt>) {
+    self.visit_par(children);
   }
 
   fn visit_space(&mut self, child: &mut Stmt) {
@@ -417,7 +434,8 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
 {
   match &mut stmt.node {
     &mut Seq(ref mut branches) => visitor.visit_seq(branches),
-    &mut Par(ref mut branches) => visitor.visit_par(branches),
+    &mut OrPar(ref mut branches) => visitor.visit_or_par(branches),
+    &mut AndPar(ref mut branches) => visitor.visit_and_par(branches),
     &mut Space(ref mut branch) => visitor.visit_space(&mut **branch),
     &mut Let(ref mut stmt) => visitor.visit_let(stmt),
     &mut When(ref mut cond, ref mut then_branch, ref mut else_branch) => visitor.visit_when(cond, &mut **then_branch, &mut **else_branch),
