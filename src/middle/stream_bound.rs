@@ -31,10 +31,7 @@ struct StreamBound {
 
 impl StreamBound {
   pub fn new(session: Session, context: Context) -> Self {
-    StreamBound {
-      session: session,
-      context: context
-    }
+    StreamBound { session, context }
   }
 
   fn compute(mut self) -> Env<Context> {

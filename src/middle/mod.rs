@@ -20,6 +20,7 @@ mod stream_bound;
 mod infer_permission;
 mod constructor;
 mod instantaneous;
+mod causality;
 
 use context::*;
 use session::*;
@@ -31,9 +32,10 @@ use middle::stream_bound::*;
 use middle::infer_permission::*;
 use middle::constructor::*;
 use middle::instantaneous::*;
+use middle::causality::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
-  env
+  let env = env
     .and_then(duplicate)
     .and_then(undeclared)
     .and_then(resolve)
@@ -41,5 +43,6 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(initialization)
     .and_then(stream_bound)
     .and_then(infer_permission)
-    .and_then(instantaneous_analysis)
+    .and_then(instantaneous_analysis);
+  causality_analysis(env)
 }

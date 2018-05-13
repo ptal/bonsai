@@ -519,6 +519,7 @@ impl Display for Permission {
 
 #[derive(Clone, Debug, Eq)]
 pub struct Variable {
+  pub op_no: usize, // This field represents the operation number computed and used during the causality analysis.
   pub path: VarPath,
   pub past: usize,
   pub permission: Option<Permission>,
@@ -530,6 +531,7 @@ impl Variable {
     permission: Option<Permission>) -> Self
   {
     Variable {
+      op_no: 0,
       path: path,
       past: past,
       permission: permission,
