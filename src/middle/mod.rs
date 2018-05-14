@@ -21,6 +21,7 @@ mod infer_permission;
 mod constructor;
 mod instantaneous;
 mod causality;
+mod recursive_call;
 
 use context::*;
 use session::*;
@@ -33,6 +34,7 @@ use middle::infer_permission::*;
 use middle::constructor::*;
 use middle::instantaneous::*;
 use middle::causality::*;
+use middle::recursive_call::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
   let env = env
@@ -43,6 +45,7 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(initialization)
     .and_then(stream_bound)
     .and_then(infer_permission)
-    .and_then(instantaneous_analysis);
+    .and_then(instantaneous_analysis)
+    .and_then(recursive_call);
   causality_analysis(env)
 }

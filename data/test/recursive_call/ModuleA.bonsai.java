@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,29 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+package test;
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-extern crate syntex_pos;
-extern crate syntex_syntax;
-extern crate syntex_errors;
-extern crate regex;
-extern crate pcp;
-extern crate gcollections;
-extern crate interval;
-
-mod session;
-mod ast;
-mod visitor;
-mod context;
-mod driver;
-mod front;
-mod middle;
-mod back;
-
-fn main() {
-  driver::run();
+public class ModuleA
+{
+  proc test() =
+    when true then
+      module ModuleB m = new ModuleB();
+      run m.test();
+    end
 }

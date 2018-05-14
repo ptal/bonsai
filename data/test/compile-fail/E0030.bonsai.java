@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+#[error(E0030, 23, 7)]
+#[error(E0030, 25, 7)]
+#[error(E0030, 29, 7)]
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-extern crate syntex_pos;
-extern crate syntex_syntax;
-extern crate syntex_errors;
-extern crate regex;
-extern crate pcp;
-extern crate gcollections;
-extern crate interval;
+package test;
 
-mod session;
-mod ast;
-mod visitor;
-mod context;
-mod driver;
-mod front;
-mod middle;
-mod back;
+public class E0030
+{
+  proc test_ko1() = run test_ko1()
 
-fn main() {
-  driver::run();
+  proc test_ko2() = run test_ko2_1()
+
+  proc test_ko2_1() = run test_ko2()
+
+  proc test_ko3() =
+    when true then
+      module E0030 m = new E0030();
+      run m.test_ko3();
+    end
+
+  // The error is caugth in test_ko1, we do not repeat it.
+  proc test_ok4() =
+    module E0030 m = new E0030();
+    run m.test_ko1();
+  end
 }

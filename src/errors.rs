@@ -41,7 +41,8 @@ E0023: r##"`ref` argument must match the type and kind of the called constructor
 E0024: r##"Constructor's parameters list and instantiation list differ in size."##,
 E0025: r##"Missing spacetime specifier for local host variable."##,
 E0026: r##"Variable accessed with an illegal permission in the current context."##,
-E0027: r##"Illegal host function call in a read only context (in an entailment condition)."##,
+E0027: r##"Illegal host function call in a read only context (e.g. an entailment expression)."##,
 E0028: r##"`loop` statement with an instantaneous body."##,
 E0029: r##"`space` statement with a body that is not instantaneous."##,
+E0030: r##"Recursive process calls are forbidden."##,
 }
