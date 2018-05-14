@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// The declaration of variable in Java is a statement and not an expression. We perform this transformation as follows:
+/// The declaration of variable in Java is a statement without a body.
+/// We perform this transformation as follows:
 /// `single_time Type var = expr; <code-following>` into
 /// `single_time Type var = expr in <code-following>`.
 /// The code following the variable declaration is lifted inside the structure of the let statement.
@@ -38,7 +39,7 @@ fn lift_item(item: Item) -> Item {
 fn lift_stmt(stmt: Stmt) -> Stmt {
   use ast::StmtKind::*;
   let node = match stmt.node {
-    Seq(branches) => lift_let_sequence(branches).node,
+    Seq(branches) => lift_seq(branches).node,
     OrPar(branches) => OrPar(lift_stmts(branches)),
     AndPar(branches) => AndPar(lift_stmts(branches)),
     Space(branch) => Space(Box::new(lift_stmt(*branch))),
@@ -60,8 +61,8 @@ fn lift_stmts(stmts: Vec<Stmt>) -> Vec<Stmt> {
   stmts.into_iter().map(|stmt| lift_stmt(stmt)).collect()
 }
 
-pub fn lift_let_sequence(mut stmts: Vec<Stmt>) -> Stmt {
-  stmts = lift_let(stmts);
+pub fn lift_seq(mut stmts: Vec<Stmt>) -> Stmt {
+  stmts = lift_single_stmt(stmts);
   if stmts.len() == 1 {
     lift_stmt(stmts.pop().unwrap())
   }
@@ -70,7 +71,7 @@ pub fn lift_let_sequence(mut stmts: Vec<Stmt>) -> Stmt {
   }
 }
 
-fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
+fn lift_single_stmt(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
   use ast::StmtKind::*;
   if stmts.len() == 1 {
     stmts
@@ -80,12 +81,12 @@ fn lift_let(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
     match stmts.remove(0) {
       Stmt { node: Let(ref decl), span: _ } if decl.body.is_nothing() => {
         let mut decl = decl.clone();
-        decl.body = Box::new(lift_let_sequence(stmts));
+        decl.body = Box::new(lift_seq(stmts));
         vec![Stmt::new(decl.span, Let(decl))]
       },
       mut front => {
         front = lift_stmt(front);
-        let mut rest = lift_let(stmts);
+        let mut rest = lift_single_stmt(stmts);
         rest.insert(0, front);
         rest
       }

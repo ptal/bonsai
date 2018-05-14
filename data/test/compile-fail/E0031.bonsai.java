@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0031, 27, 20)]
-#[error(E0031, 28, 20)]
-#[error(E0031, 35, 20)]
-#[error(E0031, 38, 4)]
+#[error(E0031, 32, 20)]
+#[error(E0031, 33, 20)]
+#[error(E0031, 40, 20)]
+#[error(E0031, 43, 4)]
+#[error(E0031, 46, 20)]
+#[error(E0031, 48, 20)]
+#[error(E0031, 50, 4)]
+#[error(E0031, 62, 4)]
+#[error(E0031, 71, 4)]
 
 package test;
 
@@ -37,4 +42,31 @@ public class E0031 // SpaceInSpace
     module E0031 m = new E0031();
     space run m.test1() end
   end
+
+  proc test_ko5() = space prune end
+  proc test2() = prune
+  proc test_ko6() = space run test2() end
+  proc test_ko7() =
+    space
+      module E0031 m = new E0031();
+      run m.test2()
+    end
+
+  proc test3() =
+    par
+    || prune
+    || space nothing end
+    end
+
+  proc test_ko8() =
+    space run test3() end
+
+  proc test4() =
+    a <- 1;
+    prune;
+    prune;
+  end
+
+  proc test_ko9() =
+    space run test4() end
 }

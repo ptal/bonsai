@@ -276,6 +276,7 @@ pub enum StmtKind {
   OrPar(Vec<Stmt>),  // par p || q end
   AndPar(Vec<Stmt>), // par p <> q end
   Space(Box<Stmt>),
+  Prune,
   Let(LetStmt),
   When(Expr, Box<Stmt>, Box<Stmt>),
   Suspend(Expr, Box<Stmt>),

@@ -222,7 +222,8 @@ grammar! bonsai {
   stmt_kind
     = PAR BARBAR? stmt (BARBAR stmt)* END > make_or_par
     / PAR DIAMOND? stmt (DIAMOND stmt)* END > make_and_par
-    / SPACE stmt END > make_space
+    / SPACE close_sequence END > make_space
+    / PRUNE > make_prune
     / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when
     / SUSPEND WHEN expr IN close_sequence END > make_suspend
     / ABORT WHEN expr IN close_sequence END > make_abort
@@ -251,6 +252,10 @@ grammar! bonsai {
 
   fn make_space(branch: Stmt) -> StmtKind {
     StmtKind::Space(Box::new(branch))
+  }
+
+  fn make_prune() -> StmtKind {
+    StmtKind::Prune
   }
 
   fn make_let_stmt(binding: Binding) -> StmtKind {
@@ -574,7 +579,7 @@ grammar! bonsai {
   fn make_kunknown() -> Kleene { Kleene::Unknown }
 
   keyword
-    = "proc" / "par" / "space" / "end" / "pre" / "nothing"
+    = "proc" / "par" / "space" / "prune" / "end" / "pre" / "nothing"
     / "when" / "then" / "else"
     / "loop" / "pause up" / "pause" / "stop" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
@@ -587,6 +592,7 @@ grammar! bonsai {
   PROC = "proc" kw_tail
   PAR = "par" kw_tail
   SPACE = "space" kw_tail
+  PRUNE = "prune" kw_tail
   END = "end" kw_tail
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail

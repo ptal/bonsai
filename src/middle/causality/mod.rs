@@ -13,6 +13,7 @@
 // limitations under the License.
 
 mod index_op;
+mod causal;
 
 use context::*;
 use session::*;
