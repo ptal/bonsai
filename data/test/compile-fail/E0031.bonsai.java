@@ -12,13 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod index_op;
+#[error(E0031, 27, 20)]
+#[error(E0031, 28, 20)]
+#[error(E0031, 35, 20)]
+#[error(E0031, 38, 4)]
 
-use context::*;
-use session::*;
-use middle::causality::index_op::*;
+package test;
 
-pub fn causality_analysis(env: Env<Context>) -> Env<Context> {
-  env
-    .and_then(index_op)
+public class E0031 // SpaceInSpace
+{
+  public single_space LMax a;
+  public single_space LMax b;
+
+  proc test_ko1() = space space nothing end end
+  proc test_ko2() = space
+    par
+    || space nothing end
+    || nothing
+    end
+  end
+  proc test1() = space nothing end
+  proc test_ko3() = space run test1() end
+  proc test_ko4() =
+    module E0031 m = new E0031();
+    space run m.test1() end
+  end
 }

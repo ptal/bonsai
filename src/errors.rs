@@ -45,4 +45,5 @@ E0027: r##"Illegal host function call in a read only context (e.g. an entailment
 E0028: r##"`loop` statement with an instantaneous body."##,
 E0029: r##"`space` statement with a body that is not instantaneous."##,
 E0030: r##"Recursive process calls are forbidden."##,
+E0031: r##"Search statement (`space` and `prune`) in the process `p` of a `space p end` statement."##,
 }
