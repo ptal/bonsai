@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0028, 32, 20)]
-#[error(E0028, 35, 4)]
-#[error(E0028, 40, 4)]
-#[error(E0028, 50, 4)]
-#[error(E0028, 57, 4)]
-#[error(E0028, 64, 4)]
-#[error(E0028, 77, 8)]
-#[error(E0028, 87, 8)]
-#[error(E0028, 85, 4)]
+#[error(E0028, 34, 20)]
+#[error(E0028, 37, 4)]
+#[error(E0028, 42, 4)]
+#[error(E0028, 52, 4)]
+#[error(E0028, 59, 4)]
+#[error(E0028, 66, 4)]
+#[error(E0028, 79, 8)]
+#[error(E0028, 89, 8)]
+#[error(E0028, 87, 4)]
+#[error(E0028, 101, 4)]
+#[error(E0028, 106, 4)]
 
 package test;
 
-public class InstantaneousLoop
+public class E0028 // InstantaneousLoop
 {
   public single_space LMax a;
   public single_space LMax b;
@@ -87,6 +89,24 @@ public class InstantaneousLoop
         loop
           when a |= b then pause end
         end
+      end
+    end
+
+  proc test1() =
+    abort when a |= b in
+      pause
+    end
+
+  proc test_ko9() =
+    loop
+      run test1();
+    end
+
+  proc test_ko10() =
+    loop
+      par
+      || run test1()
+      || run test1()
       end
     end
 }

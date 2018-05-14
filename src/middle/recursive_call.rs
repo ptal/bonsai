@@ -24,6 +24,8 @@ pub fn recursive_call(session: Session, context: Context) -> Env<Context> {
   recursive_call.analyse()
 }
 
+/// `recursion_path` detects a recursive path.
+/// `process_visited` avoids reporting an error twice on a same recursive cycle.
 struct RecursiveCall {
   session: Session,
   context: Context,
@@ -34,7 +36,7 @@ struct RecursiveCall {
 
 impl RecursiveCall {
   pub fn new(session: Session, context: Context) -> Self {
-    let dummy_ident = context.vars[0].name.clone();
+    let dummy_ident = context.dummy_ident();
     RecursiveCall {
       session: session,
       context: context,
@@ -113,18 +115,10 @@ impl Visitor<JClass> for RecursiveCall
   }
 
   fn visit_proc_call(&mut self, var: Option<Variable>, process: Ident, _args: Vec<Variable>) {
-    let bug_msg = "[BUG] Module and process calls should already be checked.";
-    let mod_name =
-      match var {
-        None => self.current_module.clone(),
-        Some(var) => self.context.var_by_uid(var.last_uid()).mod_name()
-      };
-    let module = self.context.ast.find_mod_by_name(&mod_name).expect(bug_msg);
-    let process = module.find_process_by_name(&process).expect(bug_msg);
+    let (mod_name, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
     let old = self.current_module.clone();
     self.current_module = mod_name;
     self.visit_process(process);
     self.current_module = old;
   }
 }
-

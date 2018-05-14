@@ -210,7 +210,7 @@ grammar! bonsai {
   // Sequences occurring inside a process do not need this `end` delimiter.
   close_sequence
     = .. stmt (SEMI_COLON stmt)+ SEMI_COLON? > make_seq
-    / stmt
+    / stmt SEMI_COLON?
 
   fn make_seq(span: Span, first: Stmt, rest: Vec<Stmt>) -> Stmt {
     make_stmt(span, StmtKind::Seq(extend_front(first, rest)))

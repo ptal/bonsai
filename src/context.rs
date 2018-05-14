@@ -121,6 +121,10 @@ impl Context {
     }
   }
 
+  pub fn dummy_ident(&self) -> Ident{
+    self.vars[0].name.clone()
+  }
+
   pub fn clone_ast(&self) -> JCrate {
     self.ast.clone()
   }
@@ -172,5 +176,21 @@ impl Context {
       .find(|m| m.name == name)
       .cloned()
       .expect("module_by_name: Module not declared.")
+  }
+
+  // From a process call, we retrieve its module and definition.
+  // It can be used to follow to the call to a process, in contrast to `walk_proc_call` which does not.
+  pub fn find_proc_from_call(&self, current_mod: Ident, process: Ident,
+    var: Option<Variable>) -> (Ident, Process)
+  {
+    let bug_msg =
+      &format!("[BUG] Verification that processes and modules exist should be done before calling `follow_proc_call`. ({}.{})", current_mod, process);
+      let mod_name =
+        match var {
+          None => current_mod.clone(),
+          Some(var) => self.var_by_uid(var.last_uid()).mod_name()
+        };
+      let module = self.ast.find_mod_by_name(&mod_name).expect(bug_msg);
+      (mod_name, module.find_process_by_name(&process).expect(bug_msg))
   }
 }

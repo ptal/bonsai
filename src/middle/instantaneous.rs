@@ -29,17 +29,20 @@ struct InstantaneousAnalysis {
   context: Context,
   can_pause: bool,
   must_pause: bool,
-  context_span: Span
+  context_span: Span,
+  current_module: Ident
 }
 
 impl InstantaneousAnalysis {
   pub fn new(session: Session, context: Context) -> Self {
+    let dummy_ident = context.dummy_ident();
     InstantaneousAnalysis {
       session: session,
       context: context,
       can_pause: false,
       must_pause: false,
-      context_span: DUMMY_SP
+      context_span: DUMMY_SP,
+      current_module: dummy_ident,
     }
   }
 
@@ -84,6 +87,13 @@ impl InstantaneousAnalysis {
 
 impl Visitor<JClass> for InstantaneousAnalysis
 {
+  fn visit_module(&mut self, module: JModule) {
+    let old = self.current_module.clone();
+    self.current_module = module.mod_name();
+    walk_processes(self, module.processes);
+    self.current_module = old;
+  }
+
   fn visit_stmt(&mut self, child: Stmt) {
     let old = self.context_span;
     self.context_span = child.span;
@@ -156,5 +166,13 @@ impl Visitor<JClass> for InstantaneousAnalysis
   fn visit_abort(&mut self, _condition: Expr, child: Stmt) {
     self.visit_stmt(child);
     self.must_pause = false;
+  }
+
+  fn visit_proc_call(&mut self, var: Option<Variable>, process: Ident, _args: Vec<Variable>) {
+    let (mod_name, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
+    let old = self.current_module.clone();
+    self.current_module = mod_name;
+    self.visit_process(process);
+    self.current_module = old;
   }
 }

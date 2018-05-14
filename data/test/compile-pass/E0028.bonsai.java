@@ -14,7 +14,7 @@
 
 package test;
 
-public class NonInstantaneousLoop
+public class E0028 // NonInstantaneousLoop
 {
   single_space LMax a;
   single_space LMax b;
@@ -63,6 +63,19 @@ public class NonInstantaneousLoop
       par
       <> when a |= b then pause end
       <> pause up
+      end
+    end
+
+  proc test11() =
+    loop
+      run test10();
+    end
+
+  proc test12() =
+    loop
+      par
+      || when a |= b then run test10() end
+      || pause
       end
     end
 }

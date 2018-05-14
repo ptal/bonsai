@@ -45,7 +45,7 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(initialization)
     .and_then(stream_bound)
     .and_then(infer_permission)
-    .and_then(instantaneous_analysis)
-    .and_then(recursive_call);
+    .and_then(recursive_call)
+    .and_next(instantaneous_analysis);
   causality_analysis(env)
 }
