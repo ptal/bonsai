@@ -127,12 +127,8 @@ pub trait Visitor<H>
     walk_exprs(self, args)
   }
 
-  fn visit_method_call_chain(&mut self, call: MethodCallChain) {
-    walk_method_call_chain(self, call)
-  }
-
   fn visit_method_call(&mut self, call: MethodCall) {
-    walk_exprs(self, call.args)
+    walk_method_call(self, call)
   }
 
   fn visit_number(&mut self, _value: u64) {}
@@ -222,7 +218,7 @@ pub fn walk_expr<H, V: ?Sized>(visitor: &mut V, expr: Expr) where
     Number(value) => visitor.visit_number(value),
     StringLiteral(value) => visitor.visit_string_lit(value),
     NewInstance(new_instance) => visitor.visit_new_instance(new_instance.ty, new_instance.args),
-    CallChain(chain) => visitor.visit_method_call_chain(chain),
+    Call(call) => visitor.visit_method_call(call),
     // Bonsai expressions
     Var(var) => visitor.visit_var(var),
     Bottom => visitor.visit_bot(),
@@ -244,15 +240,13 @@ pub fn walk_exprs<H, V: ?Sized>(visitor: &mut V, exprs: Vec<Expr>) where
   }
 }
 
-pub fn walk_method_call_chain<H, V: ?Sized>(visitor: &mut V, chain: MethodCallChain) where
+pub fn walk_method_call<H, V: ?Sized>(visitor: &mut V, call: MethodCall) where
   V: Visitor<H>
 {
-  if let Some(target) = chain.target {
-    visitor.visit_new_instance(target.ty, target.args);
+  if let Some(target) = call.target {
+    visitor.visit_var(target);
   }
-  for fragment in chain.calls {
-    visitor.visit_method_call(fragment);
-  }
+  walk_exprs(visitor, call.args)
 }
 
 pub fn walk_binding<H, V: ?Sized>(visitor: &mut V, binding: Binding) where
@@ -376,12 +370,8 @@ pub trait VisitorMut<H>
     walk_exprs_mut(self, args)
   }
 
-  fn visit_method_call_chain(&mut self, call: &mut MethodCallChain) {
-    walk_method_call_chain_mut(self, call)
-  }
-
   fn visit_method_call(&mut self, call: &mut MethodCall) {
-    walk_exprs_mut(self, &mut call.args)
+    walk_method_call_mut(self, call)
   }
 
   fn visit_entailment(&mut self, rel: &mut EntailmentRel) {
@@ -476,7 +466,7 @@ pub fn walk_expr_mut<H, V: ?Sized>(visitor: &mut V, expr: &mut Expr) where
     &mut Number(value) => visitor.visit_number(value),
     &mut StringLiteral(ref value) => visitor.visit_string_lit(value.clone()),
     &mut NewInstance(ref mut new_instance) => visitor.visit_new_instance(new_instance.ty.clone(), &mut new_instance.args),
-    &mut CallChain(ref mut chain) => visitor.visit_method_call_chain(chain),
+    &mut Call(ref mut call) => visitor.visit_method_call(call),
     // Bonsai expressions
     &mut Var(ref mut var) => visitor.visit_var(var),
     &mut Bottom => visitor.visit_bot(),
@@ -498,15 +488,13 @@ pub fn walk_exprs_mut<H, V: ?Sized>(visitor: &mut V, exprs: &mut Vec<Expr>) wher
   }
 }
 
-pub fn walk_method_call_chain_mut<H, V: ?Sized>(visitor: &mut V, chain: &mut MethodCallChain) where
+pub fn walk_method_call_mut<H, V: ?Sized>(visitor: &mut V, call: &mut MethodCall) where
   V: VisitorMut<H>
 {
-  if let Some(ref mut target) = chain.target {
-    visitor.visit_new_instance(target.ty.clone(), &mut target.args)
+  if let Some(ref mut target) = call.target {
+    visitor.visit_var(target);
   }
-  for fragment in &mut chain.calls {
-    visitor.visit_method_call(fragment);
-  }
+  walk_exprs_mut(visitor, &mut call.args)
 }
 
 pub fn walk_binding_mut<H, V: ?Sized>(visitor: &mut V, binding: &mut Binding) where

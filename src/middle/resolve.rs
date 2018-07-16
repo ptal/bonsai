@@ -17,6 +17,7 @@
 /// (1) Verify that the fields called on modules exist.
 /// (2) Verify that processes called on modules exist.
 /// (3) Compute the UID of path variables.
+/// Note: Whenever we encounter a variable that is a host variable, we do not try to verify that the fields accessed really exist.
 
 use context::*;
 use session::*;
@@ -62,6 +63,7 @@ impl Resolve {
       .expect("[BUG] Every module variable is supposed to exist (analysis in `undeclared.rs`)")
   }
 
+  // Precondition: The UID of the first variable in the path is already computed (in `undeclared.rs`).
   fn resolve_path(&mut self, var: &mut Variable) {
     let mut i = 1;
     // At each iteration, we check if the field `var[i]` is a field of the module given by the type of `var[i-1]`.
@@ -69,18 +71,22 @@ impl Resolve {
       let info = self.context.var_by_uid(var.path.uids[i-1]);
       // If the current variable is not a bonsai module, we stop the resolution.
       // This marks the limit between Bonsai and its host language.
+      // See also context.rs (`Context.vars`).
       if info.kind != Kind::Product {
-        break;
+        assert_eq!(info.kind, Kind::Host, "{}", info.name);
+        var.path.uids[i] = var.path.uids[i-1];
       }
-      let module = self.find_mod(&info);
-      let field_name = var.path.fragments[i].clone();
-      match module.find_field_by_name(&field_name) {
-        Some(field) => {
-          var.path.uids[i] = field.binding.uid;
-        }
-        None => {
-          self.err_unknown_field(module, field_name);
-          break;
+      else {
+        let module = self.find_mod(&info);
+        let field_name = var.path.fragments[i].clone();
+        match module.find_field_by_name(&field_name) {
+          Some(field) => {
+            var.path.uids[i] = field.binding.uid;
+          }
+          None => {
+            self.err_unknown_field(module, field_name);
+            break;
+          }
         }
       }
       i += 1;
@@ -89,7 +95,7 @@ impl Resolve {
 
   fn resolve_process(&mut self, var: &mut Variable, process: Ident) {
     let target_uid = *var.path.uids.last().unwrap();
-    if target_uid != 0 { // It is equals to 0 if `resolve_path` failed.
+    if target_uid != 0 { // It is equals to 0 if `resolve_path` failed (we avoid errors cascading).
       let info = self.context.var_by_uid(target_uid);
       if info.kind != Kind::Product {
         self.err_foreign_process_call(&info, process.clone());
@@ -154,4 +160,3 @@ impl VisitorMut<JClass> for Resolve
     }
   }
 }
-

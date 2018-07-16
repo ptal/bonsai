@@ -16,12 +16,6 @@ pub use ast::*;
 pub use visitor::*;
 pub use partial::*;
 
-pub struct Context {
-  pub ast: JCrate,
-  pub vars: Vec<VarInfo>,
-  pub modules: Vec<ModuleInfo>
-}
-
 #[derive(Clone, Debug)]
 pub struct VarInfo {
   pub name: Ident,
@@ -112,11 +106,23 @@ impl ModuleInfo {
   }
 }
 
+pub struct Context {
+  pub ast: JCrate,
+  /// Indexes of `vars` are referred to as "UIDs", and are contained in the `VarPath` structure.
+  /// The index `0` is reserved for external names for which we do not have information.
+  /// For example: in `System.out.println`, the class `System` and global variable `out` will have a UID of `0`.
+  ///              Similarly for the fields of host objects declared in "bonsai".
+  /// Basically, everything we cannot access and that is not part of the "bonsai" world.
+  pub vars: Vec<VarInfo>,
+  pub modules: Vec<ModuleInfo>
+}
+
 impl Context {
   pub fn new(ast: JCrate) -> Self {
     Context {
       ast: ast,
-      vars: vec![VarInfo::local(Ident::gen("<error-var>"), Kind::example(), JType::example())],
+      vars: vec![VarInfo::local(Ident::gen("<external-var>"), Kind::Host,
+        JType::simple(DUMMY_SP, Ident::gen("<External-Java-type>")))],
       modules: vec![]
     }
   }
@@ -184,7 +190,7 @@ impl Context {
     var: Option<Variable>) -> (Ident, Process)
   {
     let bug_msg =
-      &format!("[BUG] Verification that processes and modules exist should be done before calling `follow_proc_call`. ({}.{})", current_mod, process);
+      &format!("[BUG] Verification that processes and modules exist should be done before calling `find_proc_from_call`. ({}.{})", current_mod, process);
       let mod_name =
         match var {
           None => current_mod.clone(),
@@ -192,5 +198,12 @@ impl Context {
         };
       let module = self.ast.find_mod_by_name(&mod_name).expect(bug_msg);
       (mod_name, module.find_process_by_name(&process).expect(bug_msg))
+  }
+
+  /// Check in the imports of the current module `mod_name` if `class_name` is explicitly imported.
+  pub fn is_imported(&self, mod_name: &Ident, class_name: &Ident) -> bool {
+    let module = self.ast.find_mod_by_name(mod_name)
+      .expect(&format!("is_imported: Module `{}` not declared.", mod_name));
+    module.host.is_imported(class_name)
   }
 }

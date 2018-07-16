@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0008, 26, 6)]
-#[error(E0008, 27, 20)]
+#[error(E0008, 28, 6)]
+#[error(E0008, 29, 20)]
 
 package test;
+import test.Module;
+import test.J;
 
 public class UnknownField
 {

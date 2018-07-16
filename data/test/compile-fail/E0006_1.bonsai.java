@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0006, 23, 28)]
-#[error(E0006, 31, 36)]
+#[error(E0006, 24, 28)]
+#[error(E0006, 32, 36)]
 
 package test;
+import java.lang.System;
 
 public class UndeclaredVariable
 {

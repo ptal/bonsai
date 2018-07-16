@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0016, 31, 4)]
 #[error(E0016, 32, 4)]
+#[error(E0016, 33, 4)]
 
 package test;
+import test.J;
 
 public class ForbiddenWriteOnPre
 {

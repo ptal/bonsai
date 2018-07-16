@@ -411,7 +411,7 @@ grammar! bonsai {
 
   host_expr
     = number > make_number_expr
-    / method_call_chain > make_call_chain
+    / method_call > make_call
     / string_literal > make_string_literal
     / new_instance_expr > make_new_instance
 
@@ -455,7 +455,7 @@ grammar! bonsai {
   fn make_new_instance(new_instance: NewObjectInstance) -> ExprKind {
     ExprKind::NewInstance(new_instance)
   }
-  fn make_call_chain(calls: MethodCallChain) -> ExprKind { ExprKind::CallChain(calls) }
+  fn make_call(call: MethodCall) -> ExprKind { ExprKind::Call(call) }
   fn make_trilean_expr(t: Kleene) -> ExprKind { ExprKind::Trilean(t) }
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
@@ -495,34 +495,18 @@ grammar! bonsai {
   fn make_write_permission() -> Permission { Permission::Write }
   fn make_readwrite_permission() -> Permission { Permission::ReadWrite }
 
-  method_call_chain = .. (new_instance_expr DOT)? method_call (DOT method_chain_fragment)* > make_method_call_chain
-
   method_call
-    = .. var_path method_call_trail > make_method_call
-    / fn_call > make_this_call
+    = .. (THIS DOT)? fn_call > make_static_method_call
+    / .. variable DOT fn_call > make_method_call
 
-  method_call_trail = DOT identifier LPAREN list_expr RPAREN
+  fn_call = identifier LPAREN list_expr RPAREN
 
-  method_chain_fragment = fn_call > make_chain_fragment
-
-  fn_call = .. identifier LPAREN list_expr RPAREN
-
-  fn make_method_call(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> MethodCall {
-    MethodCall::call_on_var(span, target, method, args)
+  fn make_static_method_call(span: Span, method: Ident, args: Vec<Expr>) -> MethodCall {
+    MethodCall::new(span, None, method, args)
   }
 
-  fn make_this_call(span: Span, method: Ident, args: Vec<Expr>) -> MethodCall {
-    MethodCall::call_on_this(span, method, args)
-  }
-
-  fn make_chain_fragment(span: Span, method: Ident, args: Vec<Expr>) -> MethodCall {
-    MethodCall::call_fragment(span, method, args)
-  }
-
-  fn make_method_call_chain(span: Span, new_instance_target: Option<NewObjectInstance>,
-   target: MethodCall, chain: Vec<MethodCall>) -> MethodCallChain
-  {
-    MethodCallChain::new(span, new_instance_target, extend_front(target, chain))
+  fn make_method_call(span: Span, target: Variable, method: Ident, args: Vec<Expr>) -> MethodCall {
+    MethodCall::new(span, Some(target), method, args)
   }
 
   kind
@@ -630,6 +614,7 @@ grammar! bonsai {
     = "new" / "private" / "public" / "class"
     / "implements" / "static"
     / "protected" / "final" / "import" / "package"
+    / "this"
   NEW = "new" kw_tail
   PRIVATE = "private" kw_tail
   PUBLIC = "public" kw_tail
@@ -640,6 +625,7 @@ grammar! bonsai {
   FINAL = "final" kw_tail
   PACKAGE = "package" kw_tail
   IMPORT = "import" kw_tail
+  THIS = "this" kw_tail
 
   UNDERSCORE = "_"
   DOTDOT = ".." spacing

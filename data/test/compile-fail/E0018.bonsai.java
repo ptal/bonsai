@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0018, 26, 4)]
-#[error(E0018, 27, 4)]
+#[error(E0018, 28, 4)]
+#[error(E0018, 29, 4)]
 
 package test;
+import test.Module;
+import test.Module2;
 
 public class IllegalLocalModuleInitializer
 {

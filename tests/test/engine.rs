@@ -88,7 +88,7 @@ impl Engine
   }
 
   fn compile_and_run(&mut self, filepath: PathBuf, expect: ExpectedResult, execute: bool) {
-    // println!("{:?}", filepath);
+    println!("{:?}", filepath);
     let obtained_diagnostics = Rc::new(RefCell::new(vec![]));
     let codemap = Rc::new(CodeMap::new());
     let emitter = Box::new(TestEmitter::new(obtained_diagnostics.clone(), codemap.clone()));

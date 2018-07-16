@@ -28,7 +28,8 @@ pub fn undeclared(session: Session, context: Context) -> Env<Context> {
 struct Undeclared {
   session: Session,
   context: Context,
-  in_scope_vars: Vec<(Ident, usize)>,
+  current_mod: Ident,
+  in_scope_vars: Vec<(Ident, usize, bool)>, // (Name, UID, is_field)
   in_scope_processes: Vec<Ident>,
 }
 
@@ -37,6 +38,7 @@ impl Undeclared {
     Undeclared {
       session: session,
       context: context,
+      current_mod: Ident::gen("Undeclared::new: no current_mod yet"),
       in_scope_vars: Vec::new(),
       in_scope_processes: Vec::new(),
     }
@@ -71,35 +73,39 @@ impl Undeclared {
 
   fn enter_local_scope(&mut self, binding: &mut Binding) {
     let uid = self.context.alloc_local(binding);
-    self.enter_scope(binding, uid);
+    self.enter_scope(binding, uid, false);
   }
 
   fn enter_field_scope(&mut self, field: &mut ModuleField) {
     let uid = self.context.alloc_field(field);
-    self.enter_scope(&field.binding, uid);
+    self.enter_scope(&field.binding, uid, true);
   }
 
-  fn enter_scope(&mut self, binding: &Binding, uid: usize) {
-    self.in_scope_vars.push((binding.name.clone(), uid));
+  fn enter_scope(&mut self, binding: &Binding, uid: usize, is_field: bool) {
+    self.in_scope_vars.push((binding.name.clone(), uid, is_field));
   }
 
   fn exit_scope(&mut self) {
     self.in_scope_vars.pop();
   }
 
-  fn lookup(&self, name: Ident) -> Option<usize> {
+  fn lookup(&self, name: Ident, only_field: bool) -> Option<usize> {
     self.in_scope_vars.iter()
-      .find(|&&(ref name2, _)| &name == name2)
-      .map(|&(_, uid)| uid)
+      .filter(|&(_,_,is_field)| !only_field || *is_field)
+      .find(|&&(ref name2, _, _)| &name == name2)
+      .map(|&(_, uid, _)| uid)
   }
 
-  fn undeclared_var(&mut self, var: &mut Variable) {
-    match self.lookup(var.path.first()) {
+  fn undeclared_var(&mut self, var: &mut Variable, is_method_target: bool) {
+    let head = var.path.first();
+    match self.lookup(head.clone(), var.with_this) {
       Some(uid) => {
         var.path.uids[0] = uid;
       }
       None => {
-        self.err_undeclared_var(var);
+        if !(is_method_target && self.context.is_imported(&self.current_mod, &head)) {
+          self.err_undeclared_var(var, is_method_target);
+        }
       }
     }
   }
@@ -120,12 +126,19 @@ impl Undeclared {
     }
   }
 
-  fn err_undeclared_var(&mut self, var: &mut Variable) {
-    self.session().struct_span_err_with_code(var.span,
+  fn err_undeclared_var(&mut self, var: &mut Variable, is_method_target: bool) {
+    let mut db = self.session().struct_span_err_with_code(var.span,
       &format!("cannot find variable `{}` in this scope.", var.path.clone()),
-      "E0006")
-    .span_label(var.span, &format!("undeclared variable"))
-    .emit();
+      "E0006");
+    db.span_label(var.span, &format!("undeclared variable"));
+    if is_method_target {
+      db.help(&format!(
+        "if `{}` is a static class or object, import the corresponding Java class.\n\
+         For example: in the case of `System.out.println()` you should add `import java.lang.System;`.\n\
+         It enables the bonsai compiler to distinguish between bonsai variables and external Java entities.",
+         var.path.clone()));
+    }
+    db.emit();
   }
 
   fn err_undeclared_process(&mut self, process: Ident) {
@@ -149,6 +162,7 @@ impl Undeclared {
 impl<'a> VisitorMut<JClass> for Undeclared
 {
   fn visit_module(&mut self, module: &mut JModule) {
+    self.current_mod = module.mod_name();
     for field in &mut module.fields {
       self.enter_field_scope(field);
       self.visit_field(field);
@@ -171,8 +185,15 @@ impl<'a> VisitorMut<JClass> for Undeclared
     }
   }
 
+  fn visit_method_call(&mut self, call: &mut MethodCall) {
+    if let Some(ref mut target) = call.target {
+      self.undeclared_var(target, true);
+    }
+    walk_exprs_mut(self, &mut call.args)
+  }
+
   fn visit_var(&mut self, var: &mut Variable) {
-    self.undeclared_var(var);
+    self.undeclared_var(var, false);
   }
 
   fn visit_let(&mut self, let_stmt: &mut LetStmt) {

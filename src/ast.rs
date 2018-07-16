@@ -90,17 +90,18 @@ pub struct Crate<Host> {
   pub modules: Vec<Module<Host>>,
 }
 
-impl<Host> Crate<Host> where Host: Clone {
+impl<Host> Crate<Host> {
   pub fn new() -> Self {
     Crate {
       modules: vec![],
     }
   }
+}
 
-  pub fn find_mod_by_name(&self, name: &Ident) -> Option<Module<Host>> {
-    let name = name.unwrap();
+impl Crate<JClass> {
+  pub fn find_mod_by_name(&self, name: &Ident) -> Option<Module<JClass>> {
     self.modules.iter()
-      .find(|m| m.file.mod_name() == name).cloned()
+      .find(|m| &m.mod_name() == name).cloned()
   }
 }
 
@@ -466,6 +467,18 @@ impl VarPath {
   pub fn last_uid(&self) -> usize {
     *self.uids.last().unwrap()
   }
+
+  pub fn extract_this(&mut self) -> bool {
+    let first = format!("{}", self.first());
+    if first == "this" {
+      self.fragments.remove(0);
+      self.uids.remove(0);
+      assert!(self.len() > 0,
+        "Variable path with a unique `this`. A variable prefixed with `this` must refer to a field.");
+      true
+    }
+    else { false }
+  }
 }
 
 impl Display for VarPath {
@@ -522,22 +535,29 @@ impl Display for Permission {
 pub struct Variable {
   pub op_no: usize, // This field represents the operation number computed and used during the causality analysis.
   pub path: VarPath,
+  pub with_this: bool, // If the variable path starts with `this` (e.g. `this.x`), then we must look it up in the fields hashmap.
   pub past: usize,
   pub permission: Option<Permission>,
   pub span: Span
 }
 
 impl Variable {
-  fn new(span: Span, path: VarPath, past: usize,
+  fn new(span: Span, mut path: VarPath, past: usize,
     permission: Option<Permission>) -> Self
   {
+    let with_this = Variable::extract_this(&mut path);
     Variable {
       op_no: 0,
       path: path,
+      with_this: with_this,
       past: past,
       permission: permission,
       span: span
     }
+  }
+
+  fn extract_this(path: &mut VarPath) -> bool {
+    path.extract_this()
   }
 
   pub fn stream(span: Span, path: VarPath, past: usize) -> Self {
@@ -670,7 +690,7 @@ pub enum ExprKind {
   Number(u64),
   StringLiteral(String),
   NewInstance(NewObjectInstance),
-  CallChain(MethodCallChain),
+  Call(MethodCall),
   // Bonsai expressions
   Var(Variable),
   Bottom,
@@ -704,62 +724,17 @@ impl NewObjectInstance {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MethodCallChain {
-  pub target: Option<NewObjectInstance>,
-  pub calls: Vec<MethodCall>,
-  pub span: Span
-}
-
-impl MethodCallChain {
-  pub fn new(span: Span, target: Option<NewObjectInstance>, mut calls: Vec<MethodCall>) -> Self {
-    if target.is_some() {
-      Self::remove_this(&mut calls);
-    }
-    MethodCallChain {
-      target: target,
-      calls: calls,
-      span: span
-    }
-  }
-
-  fn remove_this(calls: &mut Vec<MethodCall>) {
-    if calls[0].is_this_target {
-      calls[0].target = VarPath::empty();
-    }
-  }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MethodCall {
-  pub target: VarPath,
-  pub is_this_target: bool,
+  /// If `None` the method called is supposed `static` (we forbid method call on `this`, see issue#3).
+  pub target: Option<Variable>,
   pub method: Ident,
   pub args: Vec<Expr>,
   pub span: Span
 }
 
 impl MethodCall {
-  fn new(span: Span, target: VarPath, is_this_target: bool, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall {
-      target: target,
-      is_this_target: is_this_target,
-      method: method,
-      args: args,
-      span: span,
-    }
-  }
-
-  pub fn call_on_var(span: Span, target: VarPath, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall::new(span, target, false, method, args)
-  }
-
-  pub fn call_on_this(span: Span, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall::new(span, VarPath::gen("this"), true, method, args)
-  }
-
-  /// The target of the method is part of the `MethodCallChain` structure.
-  pub fn call_fragment(span: Span, method: Ident, args: Vec<Expr>) -> Self {
-    MethodCall::new(span, VarPath::empty(), false, method, args)
+  pub fn new(span: Span, target: Option<Variable>, method: Ident, args: Vec<Expr>) -> Self {
+    MethodCall { span, target, method, args }
   }
 }
 
@@ -793,7 +768,7 @@ impl Display for FQN {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JImport {
   pub fqn: FQN,
-  pub import_all: bool,
+  pub import_all: bool, // `import A.B.*;`
   pub span: Span
 }
 
@@ -842,6 +817,15 @@ impl JClass {
       java_methods: vec![],
       java_constructors: vec![]
     }
+  }
+
+  pub fn is_imported(&self, class_name: &Ident) -> bool {
+    for import in &self.imports {
+      if !import.import_all && import.fqn.names.last().unwrap() == class_name {
+        return true;
+      }
+    }
+    false
   }
 }
 

@@ -48,7 +48,7 @@ impl<'a> ExpressionCompiler<'a>
     use ast::ExprKind::*;
     match expr.node {
       NewInstance(new_instance) => self.java_new(new_instance.ty, new_instance.args),
-      CallChain(chain) => self.method_call_chain(chain),
+      Call(call) => self.method_call(call),
       Trilean(t) => self.trilean(t),
       Number(n) => self.number(n),
       StringLiteral(lit) => self.literal(lit),
@@ -107,18 +107,16 @@ impl<'a> ExpressionCompiler<'a>
           self.collect_variable(variables, arg);
         }
       }
-      CallChain(chain) => {
-        for call in chain.calls {
-          if !call.target.is_empty() {
-            let uid = call.target.first_uid();
-            // Host variables can only appear as fields, and thus do not need to be retrieved from the environment.
-            if !self.context.var_by_uid(uid).is_host() {
-              variables.insert(uid, (call.target.first(), 0));
-            }
+      Call(call) => {
+        if let Some(target) = call.target {
+          let uid = target.first_uid();
+          // Host variables can only appear as fields, and thus do not need to be retrieved from the environment.
+          if !self.context.var_by_uid(uid).is_host() {
+            variables.insert(uid, (target.first(), 0));
           }
-          for arg in call.args {
-            self.collect_variable(variables, arg);
-          }
+        }
+        for arg in call.args {
+          self.collect_variable(variables, arg);
         }
       }
       Var(var) => { variables.insert(var.first_uid(), (var.first(), var.past)); }
@@ -143,23 +141,13 @@ impl<'a> ExpressionCompiler<'a>
     self.args_list(args);
   }
 
-  fn method_call_chain(&mut self, chain: MethodCallChain) {
-    if let Some(target) = chain.target {
-      self.java_new(target.ty, target.args);
+  fn method_call(&mut self, call: MethodCall) {
+    if let Some(target) = call.target {
+      self.variable(target);
       self.fmt.push(".");
     }
-    let chain_len = chain.calls.len();
-    for (i, call) in chain.calls.into_iter().enumerate() {
-      if !call.target.is_empty() {
-        self.var_path(call.target);
-        self.fmt.push(".");
-      }
-      self.fmt.push(&format!("{}", call.method));
-      self.args_list(call.args);
-      if i != chain_len - 1 {
-        self.fmt.push(".");
-      }
-    }
+    self.fmt.push(&format!("{}", call.method));
+    self.args_list(call.args);
   }
 
   fn trilean(&mut self, t: Kleene) {
@@ -180,6 +168,9 @@ impl<'a> ExpressionCompiler<'a>
   }
 
   fn variable(&mut self, var: Variable) {
+    if var.with_this {
+      self.fmt.push("this.");
+    }
     self.var_path(var.path);
   }
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package test;
+import test.Module2;
 
 public class Module
 {

@@ -219,9 +219,9 @@ impl VisitorMut<JClass> for InferPermission
     }
   }
 
-  fn visit_method_call_chain(&mut self, call: &mut MethodCallChain) {
+  fn visit_method_call(&mut self, call: &mut MethodCall) {
     if self.check_host_function() {
-      walk_method_call_chain_mut(self, call)
+      walk_method_call_mut(self, call)
     }
   }
 }

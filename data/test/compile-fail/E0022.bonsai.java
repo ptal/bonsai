@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0022, 26, 37)]
-#[error(E0022, 27, 37)]
+#[error(E0022, 28, 37)]
+#[error(E0022, 29, 37)]
 
 package test;
+import test.Module2;
+import test.J;
 
 public class ModuleRefInitializer
 {

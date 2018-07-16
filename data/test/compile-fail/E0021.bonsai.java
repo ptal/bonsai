@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0021, 26, 9)]
-#[error(E0021, 27, 9)]
+#[error(E0021, 29, 9)]
+#[error(E0021, 30, 9)]
 
 package test;
+
+import test.Module;
+import test.Module2;
 
 public class ModuleRefFieldInitializer
 {
