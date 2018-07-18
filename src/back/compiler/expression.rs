@@ -150,11 +150,11 @@ impl<'a> ExpressionCompiler<'a>
     self.args_list(call.args);
   }
 
-  fn trilean(&mut self, t: Kleene) {
+  fn trilean(&mut self, t: SKleene) {
     let k = match t {
-      Kleene::True => "Kleene.TRUE",
-      Kleene::False => "Kleene.FALSE",
-      Kleene::Unknown => "Kleene.UNKNOWN"
+      SKleene::True => "Kleene.TRUE",
+      SKleene::False => "Kleene.FALSE",
+      SKleene::Unknown => "Kleene.UNKNOWN"
     };
     self.fmt.push(k);
   }

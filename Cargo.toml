@@ -25,8 +25,9 @@ syntex_pos = "0.58.1"
 syntex_errors = "0.58.1"
 syntex_syntax = "0.58.1"
 regex = "0.2"
-intervallum = "^0.6.5"
-gcollections = "^0.3.5"
+trilean = "^1.0.1"
+intervallum = "^1.2.0"
+gcollections = "^1.4.0"
 
 [dependencies.pcp]
 git = "https://github.com/ptal/pcp"

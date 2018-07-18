@@ -137,7 +137,7 @@ pub trait Visitor<H>
   fn visit_bot(&mut self) {}
   fn visit_top(&mut self) {}
 
-  fn visit_trilean(&mut self, _value: Kleene) {}
+  fn visit_trilean(&mut self, _value: SKleene) {}
 
   fn visit_trilean_or(&mut self, left: Expr, right: Expr) {
     self.visit_expr(left);
@@ -385,7 +385,7 @@ pub trait VisitorMut<H>
   fn visit_bot(&mut self) {}
   fn visit_top(&mut self) {}
 
-  fn visit_trilean(&mut self, _value: Kleene) {}
+  fn visit_trilean(&mut self, _value: SKleene) {}
 
   fn visit_trilean_or(&mut self, left: &mut Expr, right: &mut Expr) {
     self.visit_expr(left);

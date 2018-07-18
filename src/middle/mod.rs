@@ -20,7 +20,7 @@ mod stream_bound;
 mod infer_permission;
 mod constructor;
 mod instantaneous;
-// mod causality;
+mod causality;
 mod recursive_call;
 mod search_tree_wf;
 
@@ -34,7 +34,7 @@ use middle::stream_bound::*;
 use middle::infer_permission::*;
 use middle::constructor::*;
 use middle::instantaneous::*;
-// use middle::causality::*;
+use middle::causality::*;
 use middle::recursive_call::*;
 use middle::search_tree_wf::*;
 
@@ -50,6 +50,5 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(recursive_call)
     .and_next(instantaneous_analysis)
     .and_next(search_tree_wf);
-    env
-  // causality_analysis(env)
+  causality_analysis(env)
 }

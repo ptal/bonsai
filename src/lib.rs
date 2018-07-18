@@ -25,6 +25,7 @@ extern crate regex;
 extern crate pcp;
 extern crate gcollections;
 extern crate interval;
+extern crate trilean;
 
 pub mod session;
 pub mod ast;

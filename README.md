@@ -5,7 +5,10 @@
 [travis-image]: https://travis-ci.org/ptal/bonsai.png
 [travis]: https://travis-ci.org/ptal/bonsai
 
-Bonsai is a programming language on top of Java inspired by synchronous programming and aims at be used to solve Constraint Satisfaction Problems (CSP). The project is decomposed into two parts:
+Bonsai is a programming language on top of Java inspired by synchronous programming and aims at be used to solve Constraint Satisfaction Problems (CSP).
+This is a work-in-progress to implement the language formally described in [this dissertation](http://hyc.io/papers/dissertation-talbot.pdf).
+
+The project is decomposed into two parts:
 
 * *Bonsai* is the compiler of the Java extension and is written in Rust.
 * *Bonsai runtime* is the Java runtime used by the code compiled by bonsai.

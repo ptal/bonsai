@@ -13,7 +13,10 @@
 // limitations under the License.
 
 mod index_op;
-mod causal;
+mod causal_stmt;
+mod causal_deps;
+mod causal_model;
+mod model_parameters;
 
 use context::*;
 use session::*;
@@ -22,4 +25,6 @@ use middle::causality::index_op::*;
 pub fn causality_analysis(env: Env<Context>) -> Env<Context> {
   env
     .and_then(index_op)
+    .map(|(c,_)| c)
+    // .and_then(causal)
 }

@@ -21,7 +21,7 @@ pub use syntex_pos::Span;
 pub use syntex_syntax::codemap::{mk_sp, DUMMY_SP};
 pub use syntex_errors::Level;
 pub use regex::Regex;
-pub use pcp::kernel::trilean::Trilean as Kleene;
+pub use trilean::SKleene;
 
 #[derive(Clone, Debug)]
 pub enum TestAnnotation {
@@ -678,6 +678,13 @@ impl Expr {
     }
   }
 
+  pub fn is_var(&self) -> bool {
+    match &self.node {
+      &ExprKind::Var(_) => true,
+      _ => false
+    }
+  }
+
   #[allow(dead_code)]
   pub fn example() -> Self {
     Expr::new(DUMMY_SP, ExprKind::example())
@@ -696,7 +703,7 @@ pub enum ExprKind {
   Bottom,
   Top,
   // Trilean
-  Trilean(Kleene),
+  Trilean(SKleene),
   Or(Box<Expr>, Box<Expr>),
   And(Box<Expr>, Box<Expr>),
   Not(Box<Expr>),

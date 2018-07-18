@@ -456,7 +456,7 @@ grammar! bonsai {
     ExprKind::NewInstance(new_instance)
   }
   fn make_call(call: MethodCall) -> ExprKind { ExprKind::Call(call) }
-  fn make_trilean_expr(t: Kleene) -> ExprKind { ExprKind::Trilean(t) }
+  fn make_trilean_expr(t: SKleene) -> ExprKind { ExprKind::Trilean(t) }
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
 
@@ -558,9 +558,9 @@ grammar! bonsai {
     / KFALSE > make_kfalse
     / KUNKNOWN > make_kunknown
 
-  fn make_ktrue() -> Kleene { Kleene::True }
-  fn make_kfalse() -> Kleene { Kleene::False }
-  fn make_kunknown() -> Kleene { Kleene::Unknown }
+  fn make_ktrue() -> SKleene { SKleene::True }
+  fn make_kfalse() -> SKleene { SKleene::False }
+  fn make_kunknown() -> SKleene { SKleene::Unknown }
 
   keyword
     = "proc" / "par" / "space" / "prune" / "end" / "pre" / "nothing"

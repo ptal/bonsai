@@ -14,11 +14,14 @@
 
 /// Given a process P, we index every access operation with an integer.
 /// For example, `read x` becomes `read^n x` where `n` is its index (field `op_no` in `Variable`).
+/// We also create a `reversed index lookup` in `ModelParameters` where we can search a variable from an operation number.
 
 use context::*;
 use session::*;
+use middle::causality::model_parameters::*;
 
-pub fn index_op(session: Session, context: Context) -> Env<Context> {
+/// Returns the number of access operations in the AST.
+pub fn index_op(session: Session, context: Context) -> Env<(Context, ModelParameters)> {
   let index = IndexOp::new(session, context);
   index.compute()
 }
@@ -26,31 +29,25 @@ pub fn index_op(session: Session, context: Context) -> Env<Context> {
 struct IndexOp {
   session: Session,
   context: Context,
-  index_gen: usize
+  params: ModelParameters
 }
 
 impl IndexOp {
   pub fn new(session: Session, context: Context) -> Self {
-    IndexOp { session, context, index_gen:0 }
+    IndexOp { session, context, params: ModelParameters::new() }
   }
 
-  fn compute(mut self) -> Env<Context> {
+  fn compute(mut self) -> Env<(Context, ModelParameters)> {
     let mut bcrate_clone = self.context.clone_ast();
     self.visit_crate(&mut bcrate_clone);
     self.context.replace_ast(bcrate_clone);
-    Env::value(self.session, self.context)
-  }
-
-  fn gen_op_no(&mut self) -> usize {
-    let op_no = self.index_gen;
-    self.index_gen += 1;
-    op_no
+    Env::value(self.session, (self.context, self.params))
   }
 }
 
 impl VisitorMut<JClass> for IndexOp
 {
   fn visit_var(&mut self, var: &mut Variable) {
-    var.op_no = self.gen_op_no();
+    self.params.alloc_variable(var);
   }
 }
