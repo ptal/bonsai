@@ -39,7 +39,7 @@ use middle::recursive_call::*;
 use middle::search_tree_wf::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
-  let env = env
+  env
     .and_then(duplicate)
     .and_then(undeclared)
     .and_then(resolve)
@@ -49,6 +49,6 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(infer_permission)
     .and_then(recursive_call)
     .and_next(instantaneous_analysis)
-    .and_next(search_tree_wf);
-  causality_analysis(env)
+    .and_next(search_tree_wf)
+    .and_next(causality_analysis)
 }

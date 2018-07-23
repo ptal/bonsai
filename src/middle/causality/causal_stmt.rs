@@ -26,6 +26,45 @@ pub fn build_causal_model(session: Session, c: (Context, ModelParameters)) -> En
   model.compute()
 }
 
+trait Continuation {
+  fn call(&self, this: &CausalStmt, model: CausalModel) -> Vec<CausalModel>;
+  fn bclone(&self) -> Box<Continuation>;
+}
+
+type Cont = Box<Continuation>;
+
+#[derive(Clone)]
+struct IdentityCont;
+
+impl Continuation for IdentityCont {
+  fn call(&self, _this: &CausalStmt, model: CausalModel) -> Vec<CausalModel> {
+    vec![model]
+  }
+
+  fn bclone(&self) -> Cont { Box::new(self.clone()) }
+}
+
+struct SequenceCont {
+  children: Vec<Stmt>,
+  continuation: Cont
+}
+
+impl SequenceCont {
+  pub fn new(children: Vec<Stmt>, continuation: Cont) -> Self {
+    SequenceCont { children, continuation }
+  }
+}
+
+impl Continuation for SequenceCont {
+  fn call(&self, this: &CausalStmt, model: CausalModel) -> Vec<CausalModel> {
+    this.visit_seq(self.children.clone(), model, self.continuation.bclone())
+  }
+
+  fn bclone(&self) -> Cont {
+    Box::new(SequenceCont::new(self.children.clone(), self.continuation.bclone()))
+  }
+}
+
 struct CausalStmt {
   session: Session,
   context: Context,
@@ -47,47 +86,46 @@ impl CausalStmt {
 
   fn causal_analysis(&self, ast: JCrate) -> Vec<CausalModel> {
     let model = CausalModel::new(self.params.clone());
-    let models = self.visit_crate(ast, model, |m| vec![m]);
+    let models = self.visit_crate(ast, model, Box::new(IdentityCont));
     models
   }
 
-  fn visit_crate<Cont>(&self, ast: JCrate, model: CausalModel,
+  fn visit_crate(&self, ast: JCrate, model: CausalModel,
       continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     let mut models = vec![];
     for module in ast.modules {
-      let mut m = self.visit_module(module, model.clone(), continuation.clone());
+      let mut m = self.visit_module(module, model.clone(), continuation.bclone());
       models.append(&mut m);
     }
     models
   }
 
-  fn visit_module<Cont>(&self, module: JModule, model: CausalModel,
+  fn visit_module(&self, module: JModule, model: CausalModel,
       continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     let mut models = vec![];
     for process in module.processes {
       // We only visit the entry points into the crate, because private processes must be called from these public processes.
+      // Note: We should verify all processes, but only those that have not been called from another process.
+      // Proposition: If a process "P" is not causal, then every process "C[P]" is not causal.
+      // Therefore, it is more efficient to first call the top-level process, so more analysis can be performed from here.
       if process.visibility == JVisibility::Public {
-        let mut m = self.visit_process(process, model.clone(), continuation.clone());
+        let mut m = self.visit_process(process, model.clone(), continuation.bclone());
         models.append(&mut m);
       }
     }
     models
   }
 
-  fn visit_process<Cont>(&self, process: Process, model: CausalModel,
+  fn visit_process(&self, process: Process, model: CausalModel,
       continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     self.visit_stmt(process.body, model, continuation)
   }
 
-  fn visit_stmt<Cont>(&self, stmt: Stmt, model: CausalModel,
+  fn visit_stmt(&self, stmt: Stmt, model: CausalModel,
       continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     use ast::StmtKind::*;
     match stmt.node {
@@ -96,7 +134,7 @@ impl CausalStmt {
     | Stop => self.visit_delay(model, continuation),
       Space(_)
     | Prune
-    | Nothing => continuation(model),
+    | Nothing => continuation.call(self, model),
       Seq(branches) => self.visit_seq(branches, model, continuation),
       Let(stmt) => self.visit_let(stmt, model, continuation),
       Tell(var, expr) => self.visit_tell(var, expr, model, continuation),
@@ -114,30 +152,28 @@ impl CausalStmt {
     }
   }
 
-  fn visit_delay<Cont>(&self, mut model: CausalModel, _continuation: Cont) -> Vec<CausalModel>
+  fn visit_delay(&self, mut model: CausalModel, _continuation: Cont) -> Vec<CausalModel>
   {
     model.instantaneous = false;
     vec![model]
   }
 
-  fn visit_seq<Cont>(&self, mut children: Vec<Stmt>,
+  fn visit_seq(&self, mut children: Vec<Stmt>,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     match children.len() {
-      0 => continuation(model),
+      0 => continuation.call(self, model),
       1 => self.visit_stmt(children.remove(0), model, continuation),
       _ => {
         let stmt = children.remove(0);
         self.visit_stmt(stmt, model,
-          |m| self.visit_seq(children, m, continuation))
+          Box::new(SequenceCont::new(children, continuation)))
       }
     }
   }
 
-  fn visit_let<Cont>(&self, let_stmt: LetStmt,
+  fn visit_let(&self, let_stmt: LetStmt,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     let model = match let_stmt.binding.expr {
       None => model,
@@ -146,32 +182,30 @@ impl CausalStmt {
     self.visit_stmt(*(let_stmt.body), model, continuation)
   }
 
-  fn visit_tell<Cont>(&self, var: Variable, expr: Expr,
+  fn visit_tell(&self, var: Variable, expr: Expr,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     let m1 = self.deps.visit_var(var, false, model);
     let m2 = self.deps.visit_expr(expr, false, m1);
-    continuation(m2)
+    continuation.call(self, m2)
   }
 
-  fn visit_when<Cont>(&self, condition: Expr, then_branch: Stmt, else_branch: Stmt,
+  fn visit_when(&self, condition: Expr, then_branch: Stmt, else_branch: Stmt,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
     let then_m = self.deps.visit_expr(condition.clone(), true, model.clone());
     let else_m = self.deps.visit_expr(condition, false, model);
-    let mut m1 = self.visit_stmt(then_branch, then_m, continuation.clone());
+    let mut m1 = self.visit_stmt(then_branch, then_m, continuation.bclone());
     let mut m2 = self.visit_stmt(else_branch, else_m, continuation);
     m1.append(&mut m2);
     m1
   }
 
-  fn visit_expr_stmt<Cont>(&self, expr: Expr,
+  fn visit_expr_stmt(&self, expr: Expr,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
-    where Cont: FnOnce(CausalModel) -> Vec<CausalModel> + Clone
   {
-    continuation(self.deps.visit_expr(expr, false, model))
+    let m = self.deps.visit_expr(expr, false, model);
+    continuation.call(self, m)
   }
 
   // fn visit_suspend(&self, condition: Expr, child: Stmt,

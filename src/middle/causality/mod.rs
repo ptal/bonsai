@@ -17,14 +17,17 @@ mod causal_stmt;
 mod causal_deps;
 mod causal_model;
 mod model_parameters;
+mod solver;
 
 use context::*;
 use session::*;
 use middle::causality::index_op::*;
+use middle::causality::causal_stmt::*;
+use middle::causality::solver::*;
 
-pub fn causality_analysis(env: Env<Context>) -> Env<Context> {
-  env
+pub fn causality_analysis(session: Session, context: Context) -> Env<Context> {
+  Env::value(session, context)
     .and_then(index_op)
-    .map(|(c,_)| c)
-    // .and_then(causal)
+    .and_then(build_causal_model)
+    .and_then(solve_causal_model)
 }

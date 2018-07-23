@@ -14,7 +14,7 @@
 
 use driver::module_file::ModuleFile;
 use std::fmt::{Display, Error, Formatter};
-use std::cmp::PartialEq;
+use std::cmp::{Ordering, PartialEq};
 use std::ops::Deref;
 use std::hash::{Hash, Hasher};
 pub use syntex_pos::Span;
@@ -517,13 +517,26 @@ impl Hash for VarPath {
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Permission {
   Read,
+  ReadWrite,
   Write,
-  ReadWrite
+}
+
+impl PartialOrd for Permission {
+  fn partial_cmp(&self, other: &Permission) -> Option<Ordering> {
+    if self == other { Some(Ordering::Equal) }
+    else {
+      match *self {
+        Permission::Read => Some(Ordering::Less),
+        Permission::Write => Some(Ordering::Greater),
+        Permission::ReadWrite => Some(other.partial_cmp(self).unwrap().reverse())
+      }
+    }
+  }
 }
 
 impl Display for Permission {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    match self {
+    match *self {
       Permission::Read => fmt.write_str("read"),
       Permission::Write => fmt.write_str("write"),
       Permission::ReadWrite => fmt.write_str("readwrite"),
@@ -600,7 +613,7 @@ impl Variable {
 
 impl PartialEq for Variable {
   fn eq(&self, other: &Variable) -> bool {
-    self.path == other.path
+    self.path == other.path && self.past == other.past
   }
 }
 

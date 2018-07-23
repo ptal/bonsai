@@ -24,7 +24,6 @@ use gcollections::ops::*;
 use interval::interval_set::*;
 use interval::ops::Range;
 use std::clone::Clone;
-use std::iter::repeat;
 
 pub struct CausalModel {
   pub space: FDSpace,
@@ -50,12 +49,12 @@ impl CausalModel {
   fn init_op_vars(&mut self) {
     let n =  self.num_ops();
     for _ in 0..n {
-      let v = Box::new(self.space.vstore.alloc(IntervalSet::new(1, n as i32))) as Var<VStore>;
+      let v = Box::new(self.space.vstore.alloc(IntervalSet::new(0, (n-1) as i32))) as Var<VStore>;
       self.order_of_op.push(v);
     }
   }
 
-  fn num_ops(&self) -> usize {
+  pub fn num_ops(&self) -> usize {
     self.params.num_ops()
   }
 
@@ -87,19 +86,25 @@ impl CausalModel {
   }
 
   pub fn add_simultaneous_ops_constraint(&mut self, ops: Vec<usize>) {
-    let vars: Vec<Var<VStore>> = ops.into_iter().map(|op| self.order_of_op[op].bclone()).collect();
-    let all_equal = Box::new(AllEqual::new(vars));
-    self.space.cstore.alloc(all_equal);
+    if ops.len() > 1 {
+      let vars: Vec<Var<VStore>> = ops.into_iter().map(|op| self.order_of_op[op].bclone()).collect();
+      let all_equal = Box::new(AllEqual::new(vars));
+      self.space.cstore.alloc(all_equal);
+    }
   }
 
-  pub fn add_sequential_constraint(&mut self, after_op: usize) {
+  pub fn add_after_latest_constraint(&mut self, after_op: usize) {
     self.params.activate_op(after_op);
-    for before_op in &self.latest_ops {
-      let gt = Box::new(x_greater_y(
-        self.order_of_op[after_op].bclone(), self.order_of_op[*before_op].bclone()));
-      self.space.cstore.alloc(gt);
+    for before_op in self.latest_ops.clone() {
+      self.add_sequential_constraint(before_op, after_op);
     }
     self.latest_ops = vec![after_op];
+  }
+
+  pub fn add_sequential_constraint(&mut self, before_op: usize, after_op: usize) {
+    let gt = Box::new(x_greater_y(
+      self.order_of_op[after_op].bclone(), self.order_of_op[before_op].bclone()));
+    self.space.cstore.alloc(gt);
   }
 }
 

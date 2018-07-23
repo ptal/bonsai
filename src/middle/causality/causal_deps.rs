@@ -101,7 +101,7 @@ impl CausalDeps {
     if is_monotonic {
       return model;
     }
-    model.add_sequential_constraint(var.op_no);
+    model.add_after_latest_constraint(var.op_no);
     model.instantaneous = true;
     model
   }
