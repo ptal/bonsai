@@ -99,9 +99,9 @@ impl Visitor<JClass> for SearchTreeWellFormedness
   }
 
   fn visit_proc_call(&mut self, var: Option<Variable>, process: Ident, _args: Vec<Variable>) {
-    let (mod_name, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
+    let (uid, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
     let old_mod = self.current_module.clone();
-    self.current_module = mod_name;
+    self.current_module = uid.module;
     let mut old_search = self.search_statements.clone();
     self.search_statements = vec![];
     self.visit_process(process);

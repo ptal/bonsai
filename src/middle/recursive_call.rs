@@ -16,8 +16,13 @@
 /// Recursion is forbidden in spacetime because an instant must be statically bounded in time.
 /// On the other hand, we do not allow recursion across instant yet to keep the causality analysis simple.
 
+/// In addition, it sets the entry points UID (of the form `module.proc`) in `context` such that:
+///   1. They are not called from another process.
+///   2. They are not processes from libraries.
+
 use context::*;
 use session::*;
+use std::collections::HashSet;
 
 pub fn recursive_call(session: Session, context: Context) -> Env<Context> {
   let recursive_call = RecursiveCall::new(session, context);
@@ -29,8 +34,9 @@ pub fn recursive_call(session: Session, context: Context) -> Env<Context> {
 struct RecursiveCall {
   session: Session,
   context: Context,
-  recursion_path: Vec<String>,
-  process_visited: Vec<String>,
+  entry_points: HashSet<ProcessUID>,
+  recursion_path: Vec<ProcessUID>,
+  process_visited: Vec<ProcessUID>,
   current_module: Ident
 }
 
@@ -38,8 +44,9 @@ impl RecursiveCall {
   pub fn new(session: Session, context: Context) -> Self {
     let dummy_ident = context.dummy_ident();
     RecursiveCall {
-      session: session,
-      context: context,
+      session,
+      context,
+      entry_points: HashSet::new(),
       recursion_path: vec![],
       process_visited: vec![],
       current_module: dummy_ident,
@@ -49,11 +56,32 @@ impl RecursiveCall {
   fn analyse(mut self) -> Env<Context> {
     let bcrate_clone = self.context.clone_ast();
     self.visit_crate(bcrate_clone);
+    self.check_entry_points();
+    let entry_points: Vec<_> = self.entry_points.into_iter().collect();
+    self.context.set_entry_points(entry_points);
     if self.session.has_errors() {
       Env::fake(self.session, self.context)
     } else {
       Env::value(self.session, self.context)
     }
+  }
+
+  fn check_entry_points(&self) {
+    for uid in self.entry_points.iter().cloned() {
+      let process = self.context.find_proc(uid);
+      if process.visibility == JVisibility::Private {
+        self.warn_private_entry_point(process);
+      }
+    }
+  }
+
+  fn warn_private_entry_point(&self, process: Process) {
+    self.session.struct_span_warn_with_code(process.name.span,
+      "private process never called.",
+      "W0001")
+    .help(&"This process is private but never called.\n\
+            Solution: Make the process `public` or delete this process.")
+    .emit();
   }
 
   fn err_forbid_recursive_call(&mut self, process: Process) {
@@ -77,25 +105,47 @@ impl RecursiveCall {
     path_desc
   }
 
-  fn is_rec(&self, uid: &String) -> bool {
+  fn is_rec(&self, uid: &ProcessUID) -> bool {
     self.recursion_path.iter().any(|p| p == uid)
   }
 
-  fn already_visited(&self, uid: &String) -> bool {
+  fn already_visited(&self, uid: &ProcessUID) -> bool {
     self.process_visited.iter().any(|p| p == uid)
   }
 
-  fn process_uid(&self, process: &Ident) -> String {
-    format!("{}.{}", self.current_module, process)
+  fn process_uid(&self, process_name: &Ident) -> ProcessUID {
+    ProcessUID::new(self.current_module.clone(), process_name.clone())
+  }
+
+  fn current_mod_is_lib(&self) -> bool {
+    self.context.ast.find_mod_by_name(&self.current_module).unwrap().file.is_lib()
+  }
+
+  /// Entry points are added only for processes that are not in a library module, and if they have not been explored before.
+  /// This latest condition is important in case a process is called before its declaration is visited (without this condition, we would consider it an entry point).
+  fn insert_entry_point(&mut self, process: &Process) {
+    let uid = self.process_uid(&process.name);
+    if !self.current_mod_is_lib() && !self.already_visited(&uid) {
+      self.entry_points.insert(uid);
+    }
+  }
+
+  fn remove_entry_point(&mut self, uid: &ProcessUID) {
+    self.entry_points.remove(uid);
   }
 }
 
 impl Visitor<JClass> for RecursiveCall
 {
+  /// Every process is a potential entry point.
+  /// Processes are removed in `visit_proc_call` if they are called.
   fn visit_module(&mut self, module: JModule) {
     let old = self.current_module.clone();
     self.current_module = module.mod_name();
-    walk_processes(self, module.processes);
+    for process in module.processes {
+      self.insert_entry_point(&process);
+      self.visit_process(process);
+    }
     self.current_module = old;
   }
 
@@ -115,9 +165,10 @@ impl Visitor<JClass> for RecursiveCall
   }
 
   fn visit_proc_call(&mut self, var: Option<Variable>, process: Ident, _args: Vec<Variable>) {
-    let (mod_name, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
+    let (uid, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
+    self.remove_entry_point(&uid);
     let old = self.current_module.clone();
-    self.current_module = mod_name;
+    self.current_module = uid.module;
     self.visit_process(process);
     self.current_module = old;
   }

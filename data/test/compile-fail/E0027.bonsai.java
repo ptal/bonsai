@@ -27,7 +27,7 @@ public class IllegalHostFunctionInReadContext
   public single_space LMax b;
   public ES t;
 
-  proc test() =
+  public proc test() =
     t <- a |= b; // OK
     t <- f(a) |= b; // KO
     t <- a |= f(b); // KO

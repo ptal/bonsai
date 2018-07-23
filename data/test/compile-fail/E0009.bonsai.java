@@ -21,7 +21,7 @@ public class UnknownProcess
 {
   module Module m = new Module();
 
-  proc test() =
+  public proc test() =
     run m.test();
     run m.wrong();
     run m.b.test();

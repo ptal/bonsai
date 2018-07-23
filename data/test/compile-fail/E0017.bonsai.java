@@ -30,7 +30,7 @@ public class PreOnlyOnStream
     this.a = a;
   }
 
-  proc test() =
+  public proc test() =
     single_time N b;
     ok <- pre b;
     ok <- pre m;

@@ -25,7 +25,7 @@ public class ModuleParameterMismatch
   public single_time T c;
   public module Module d;
 
-  proc test() =
+  public proc test() =
     module Module2 ok1 = new Module2(a);
     module Module2 ko1 = new Module2(b);
     module Module2 ko2 = new Module2(c);

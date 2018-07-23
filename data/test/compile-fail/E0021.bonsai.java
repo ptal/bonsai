@@ -29,5 +29,5 @@ public class ModuleRefFieldInitializer
   public module Module2 ko1 = new Module2(a);
   public module Module2 ko2 = Module2.create(a);
 
-  proc test() = nothing
+  public proc test() = nothing
 }

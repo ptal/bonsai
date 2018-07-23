@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0028, 34, 20)]
+#[error(E0028, 34, 27)]
 #[error(E0028, 37, 4)]
 #[error(E0028, 42, 4)]
 #[error(E0028, 52, 4)]
@@ -31,14 +31,14 @@ public class E0028 // InstantaneousLoop
   public single_space LMax a;
   public single_space LMax b;
 
-  proc test_ko1() = loop nothing end
+  public proc test_ko1() = loop nothing end
 
-  proc test_ko2() =
+  public proc test_ko2() =
     loop
       when a |= b then nothing end
     end
 
-  proc test_ko3() =
+  public proc test_ko3() =
     loop
       when a |= b then
         nothing
@@ -48,21 +48,21 @@ public class E0028 // InstantaneousLoop
       a <- f(a)
     end
 
-  proc test_ko4() =
+  public proc test_ko4() =
     loop
       suspend when a |= b in
         nothing
       end
     end
 
-  proc test_ko5() =
+  public proc test_ko5() =
     loop
       abort when a |= b in
         pause
       end
     end
 
-  proc test_ko6() =
+  public proc test_ko6() =
     loop
       when a |= b then
         suspend when a |= b in
@@ -73,7 +73,7 @@ public class E0028 // InstantaneousLoop
       end
     end
 
-  proc test_ko7() =
+  public proc test_ko7() =
     loop
       abort when a |= b in
         loop
@@ -83,7 +83,7 @@ public class E0028 // InstantaneousLoop
       pause
     end
 
-  proc test_ko8() =
+  public proc test_ko8() =
     loop
       abort when a |= b in
         loop
@@ -92,17 +92,17 @@ public class E0028 // InstantaneousLoop
       end
     end
 
-  proc test1() =
+  public proc test1() =
     abort when a |= b in
       pause
     end
 
-  proc test_ko9() =
+  public proc test_ko9() =
     loop
       run test1();
     end
 
-  proc test_ko10() =
+  public proc test_ko10() =
     loop
       par
       || run test1()

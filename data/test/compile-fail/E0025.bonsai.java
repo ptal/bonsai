@@ -22,7 +22,7 @@ public class ForbiddenHostLocalVariable
   public T ok;
   public single_space T b;
 
-  proc test() =
+  public proc test() =
     T ko = new T();
     single_space T ok2 = new T();
     when ok2 |= ok2 then

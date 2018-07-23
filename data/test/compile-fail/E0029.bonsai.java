@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0029, 30, 20)]
-#[error(E0029, 31, 20)]
-#[error(E0029, 32, 20)]
-#[error(E0029, 33, 20)]
-#[error(E0029, 34, 20)]
-#[error(E0029, 35, 20)]
-#[error(E0029, 39, 20)]
+#[error(E0029, 30, 27)]
+#[error(E0029, 31, 27)]
+#[error(E0029, 32, 27)]
+#[error(E0029, 33, 27)]
+#[error(E0029, 34, 27)]
+#[error(E0029, 35, 27)]
+#[error(E0029, 39, 27)]
 
 package test;
 
@@ -27,14 +27,14 @@ public class E0029 // NonInstantaneousSpace
   public single_space LMax a;
   public single_space LMax b;
 
-  proc test_ko1() = space pause end
-  proc test_ko2() = space pause up end
-  proc test_ko3() = space stop end
-  proc test_ko4() = space loop pause end end
-  proc test_ko5() = space suspend when a |= b in nothing end end
-  proc test_ko6() = space when a |= b then nothing else pause end end
-  proc test1() = nothing
-  proc test2() = pause
-  proc test_ok1() = space run test1() end
-  proc test_ko8() = space run test2() end
+  public proc test_ko1() = space pause end
+  public proc test_ko2() = space pause up end
+  public proc test_ko3() = space stop end
+  public proc test_ko4() = space loop pause end end
+  public proc test_ko5() = space suspend when a |= b in nothing end end
+  public proc test_ko6() = space when a |= b then nothing else pause end end
+  public proc test1() = nothing
+  public proc test2() = pause
+  public proc test_ok1() = space run test1() end
+  public proc test_ko8() = space run test2() end
 }

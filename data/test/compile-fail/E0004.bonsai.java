@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0004, 24, 7)]
-#[error(E0004, 27, 7)]
+#[error(E0004, 24, 14)]
+#[error(E0004, 27, 14)]
 
 package test;
 
 public class DuplicateProc
 {
-  proc unique1() = nothing
-  proc dup() = nothing
-  proc dup() = nothing
+  public proc unique1() = nothing
+  public proc dup() = nothing
+  public proc dup() = nothing
 
-  proc unique2() = nothing
-  proc dup() = nothing
+  public proc unique2() = nothing
+  public proc dup() = nothing
 }

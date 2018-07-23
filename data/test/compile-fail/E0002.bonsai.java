@@ -21,5 +21,5 @@ public class DuplicateAttribute
   single_time Dup d;
   single_time Dup d;
 
-  proc test() = nothing
+  public proc test() = nothing
 }

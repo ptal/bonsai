@@ -23,7 +23,7 @@ public class IllegalLocalModuleInitializer
 {
   public single_space T a;
 
-  proc test() =
+  public proc test() =
     module Module ok3 = new Module();
     module Module2 ko3 = Module2.create();
     module Module2 ko4 = bot;

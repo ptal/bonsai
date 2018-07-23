@@ -15,6 +15,7 @@
 pub use ast::*;
 pub use visitor::*;
 pub use partial::*;
+use std::fmt::{Display, Error, Formatter};
 
 #[derive(Clone, Debug)]
 pub struct VarInfo {
@@ -106,6 +107,24 @@ impl ModuleInfo {
   }
 }
 
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct ProcessUID {
+  pub module: Ident,
+  pub process: Ident
+}
+
+impl ProcessUID {
+  pub fn new(module: Ident, process: Ident) -> Self {
+    ProcessUID { module, process }
+  }
+}
+
+impl Display for ProcessUID {
+  fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
+    formatter.write_fmt(format_args!("{}.{}", self.module, self.process))
+  }
+}
+
 pub struct Context {
   pub ast: JCrate,
   /// Indexes of `vars` are referred to as "UIDs", and are contained in the `VarPath` structure.
@@ -114,7 +133,8 @@ pub struct Context {
   ///              Similarly for the fields of host objects declared in "bonsai".
   /// Basically, everything we cannot access and that is not part of the "bonsai" world.
   pub vars: Vec<VarInfo>,
-  pub modules: Vec<ModuleInfo>
+  pub modules: Vec<ModuleInfo>,
+  pub entry_points: Vec<ProcessUID>
 }
 
 impl Context {
@@ -123,7 +143,8 @@ impl Context {
       ast: ast,
       vars: vec![VarInfo::local(Ident::gen("<external-var>"), Kind::Host,
         JType::simple(DUMMY_SP, Ident::gen("<External-Java-type>")))],
-      modules: vec![]
+      modules: vec![],
+      entry_points: vec![]
     }
   }
 
@@ -137,6 +158,11 @@ impl Context {
 
   pub fn replace_ast(&mut self, ast: JCrate) {
     self.ast = ast;
+  }
+
+  pub fn set_entry_points(&mut self, entry_points: Vec<ProcessUID>) {
+    assert!(self.entry_points.is_empty(), "Context: Entry points have already been set.");
+    self.entry_points = entry_points;
   }
 
   fn alloc_var(&mut self, binding: &mut Binding, var_info: VarInfo) -> usize {
@@ -184,20 +210,25 @@ impl Context {
       .expect("module_by_name: Module not declared.")
   }
 
+  pub fn find_proc(&self, uid: ProcessUID) -> Process {
+    let bug_msg =
+      &format!("[BUG] Verification that processes and modules exist should be done before calling `find_proc`. ({})", uid);
+    let module = self.ast.find_mod_by_name(&uid.module).expect(bug_msg);
+    module.find_process_by_name(&uid.process).expect(bug_msg)
+  }
+
   // From a process call, we retrieve its module and definition.
   // It can be used to follow to the call to a process, in contrast to `walk_proc_call` which does not.
-  pub fn find_proc_from_call(&self, current_mod: Ident, process: Ident,
-    var: Option<Variable>) -> (Ident, Process)
+  pub fn find_proc_from_call(&self, current_mod: Ident, proc_name: Ident,
+    var: Option<Variable>) -> (ProcessUID, Process)
   {
-    let bug_msg =
-      &format!("[BUG] Verification that processes and modules exist should be done before calling `find_proc_from_call`. ({}.{})", current_mod, process);
-      let mod_name =
-        match var {
-          None => current_mod.clone(),
-          Some(var) => self.var_by_uid(var.last_uid()).mod_name()
-        };
-      let module = self.ast.find_mod_by_name(&mod_name).expect(bug_msg);
-      (mod_name, module.find_process_by_name(&process).expect(bug_msg))
+    let mod_name =
+      match var {
+        None => current_mod.clone(),
+        Some(var) => self.var_by_uid(var.last_uid()).mod_name()
+      };
+    let uid = ProcessUID::new(mod_name, proc_name);
+    (uid.clone(), self.find_proc(uid))
   }
 
   /// Check in the imports of the current module `mod_name` if `class_name` is explicitly imported.

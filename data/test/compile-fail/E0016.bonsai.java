@@ -27,7 +27,7 @@ public class ForbiddenWriteOnPre
     this.a = a;
   }
 
-  proc test() =
+  public proc test() =
     world_line N b;
     pre a <- 1;
     pre b <- 2;

@@ -21,7 +21,7 @@ public class ForeignProcessCall
 {
   module Module m = new Module();
 
-  proc test() =
+  public proc test() =
     run m.test();
     run m.a.foreign();
     run m.b.a.foreign();

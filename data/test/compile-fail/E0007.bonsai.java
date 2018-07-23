@@ -18,10 +18,10 @@ package test;
 
 public class UndeclaredProcess
 {
-  proc test() =
+  public proc test() =
     run test1();
     run test2();
   end
 
-  proc test1() = nothing
+  public proc test1() = nothing
 }

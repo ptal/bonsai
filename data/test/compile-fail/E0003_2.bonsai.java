@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0003, 23, 32)]
+#[error(E0003, 23, 39)]
 
 package test;
 
@@ -20,5 +20,5 @@ public class DuplicateAttributeVar
 {
   single_time Dup d;
 
-  proc test() = single_time Dup d
+  public proc test() = single_time Dup d
 }

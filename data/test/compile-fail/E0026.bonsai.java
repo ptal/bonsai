@@ -26,7 +26,7 @@ public class IllegalPermissionInContext
   public single_space LMax a;
   public single_space LMax b;
 
-  proc test() =
+  public proc test() =
     write a <- 1; // OK
     a <- 2; // OK
     read a <- 3; // KO

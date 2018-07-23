@@ -12,28 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0030, 23, 7)]
-#[error(E0030, 25, 7)]
-#[error(E0030, 29, 7)]
+#[error(E0030, 23, 14)]
+#[error(E0030, 25, 14)]
+#[error(E0030, 29, 14)]
 
 package test;
 
 public class E0030
 {
-  proc test_ko1() = run test_ko1()
+  public proc test_ko1() = run test_ko1()
 
-  proc test_ko2() = run test_ko2_1()
+  public proc test_ko2() = run test_ko2_1()
 
-  proc test_ko2_1() = run test_ko2()
+  public proc test_ko2_1() = run test_ko2()
 
-  proc test_ko3() =
+  public proc test_ko3() =
     when true then
       module E0030 m = new E0030();
       run m.test_ko3();
     end
 
   // The error is caugth in test_ko1, we do not repeat it.
-  proc test_ok4() =
+  public proc test_ok4() =
     module E0030 m = new E0030();
     run m.test_ko1();
   end

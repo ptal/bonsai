@@ -22,7 +22,7 @@ public class ModuleParameterMismatch
   public single_space T a;
   public single_space T b;
 
-  proc test() =
+  public proc test() =
     module Module2 ko1 = new Module2(a, b);
     module Module2 ko2 = new Module2();
   end

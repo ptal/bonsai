@@ -19,27 +19,28 @@ public class E0028 // NonInstantaneousLoop
   single_space LMax a;
   single_space LMax b;
 
-  proc test1() = loop pause end
-  proc test2() =
+  proc test() = run temporary() // because causality analysis contains unimplemented fields.
+  public proc test1() = loop pause end
+  public proc test2() =
     loop
       suspend when a |= b in pause end
     end
-  proc test3() = loop stop end
-  proc test4() = loop pause up end
-  proc test5() =
+  public proc test3() = loop stop end
+  public proc test4() = loop pause up end
+  public proc test5() =
     loop
       abort when a |= b in nothing end;
       pause
     end
-  proc test6() =
+  public proc test6() =
     loop
       loop pause end
     end
-  proc test7() =
+  public proc test7() =
     loop
       when a |= b then pause else stop end
     end
-  proc test8() =
+  public proc test8() =
     loop
       when a |= b then
         pause
@@ -50,7 +51,7 @@ public class E0028 // NonInstantaneousLoop
       end
     end
 
-  proc test9() =
+  public proc test9() =
     loop
       par
       || when a |= b then stop end
@@ -58,7 +59,7 @@ public class E0028 // NonInstantaneousLoop
       end
     end
 
-  proc test10() =
+  public proc test10() =
     loop
       par
       <> when a |= b then pause end
@@ -66,12 +67,12 @@ public class E0028 // NonInstantaneousLoop
       end
     end
 
-  proc test11() =
+  public proc test11() =
     loop
       run test10();
     end
 
-  proc test12() =
+  public proc test12() =
     loop
       par
       || when a |= b then run test10() end

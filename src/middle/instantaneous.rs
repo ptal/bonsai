@@ -169,9 +169,9 @@ impl Visitor<JClass> for InstantaneousAnalysis
   }
 
   fn visit_proc_call(&mut self, var: Option<Variable>, process: Ident, _args: Vec<Variable>) {
-    let (mod_name, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
+    let (uid, process) = self.context.find_proc_from_call(self.current_module.clone(), process, var);
     let old = self.current_module.clone();
-    self.current_module = mod_name;
+    self.current_module = uid.module;
     self.visit_process(process);
     self.current_module = old;
   }

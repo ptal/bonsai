@@ -770,16 +770,23 @@ impl FQN {
       span: span
     }
   }
+
+  pub fn is_empty(&self) -> bool {
+    self.names.is_empty()
+  }
 }
 
 impl Display for FQN {
   fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-    let mut i = 0;
-    while i < self.names.len() - 1 {
-      fmt.write_fmt(format_args!("{}.", self.names[i]))?;
-      i += 1;
+    if !self.is_empty() {
+      let mut i = 0;
+      while i < self.names.len() - 1 {
+        fmt.write_fmt(format_args!("{}.", self.names[i]))?;
+        i += 1;
+      }
+      fmt.write_str(self.names[i].as_str())?;
     }
-    fmt.write_str(self.names[i].as_str())
+    Ok(())
   }
 }
 

@@ -13,12 +13,12 @@
 // limitations under the License.
 
 #[error(E0001, 22, 9)]
-#[error(E0001, 23, 23)]
+#[error(E0001, 23, 30)]
 
 package test;
 
 public class CannotFindModule
 {
   module Unknown2 unknown2;
-  proc test() = module NotFound notFound;
+  public proc test() = module NotFound notFound;
 }

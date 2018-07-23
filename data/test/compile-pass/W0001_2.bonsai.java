@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The scopes of these two variables are distinct and should not generate any error.
+#[warning(W0001, 21, 7)]
 
 package test;
 
-public class DistinctScope
+public class W0001
 {
-  public proc test1() = single_time Dup d
-  public proc test2() = single_time Dup d
+  proc test() = nothing
 }

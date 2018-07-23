@@ -20,5 +20,5 @@ public class CorrectFieldInitialization
   single_space L<Boolean> t2 = new L<Boolean>(true);
   single_space Mixed t3 = new Mixed(0, true, 8, "bonsai");
 
-  proc test() = nothing
+  public proc test() = nothing
 }

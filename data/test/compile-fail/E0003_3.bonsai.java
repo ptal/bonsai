@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0003, 24, 33)]
-#[error(E0003, 25, 33)]
+#[error(E0003, 24, 40)]
+#[error(E0003, 25, 40)]
 
 package test;
 
@@ -21,6 +21,6 @@ public class TwoDuplicateVar
 {
   single_time Dup d;
 
-  proc test1() = single_time Dup d
-  proc test2() = single_time Dup d
+  public proc test1() = single_time Dup d
+  public proc test2() = single_time Dup d
 }
