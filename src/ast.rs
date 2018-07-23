@@ -496,8 +496,6 @@ impl PartialEq for VarPath {
   fn eq(&self, other: &VarPath) -> bool {
     if self.uids.len() == other.uids.len() {
       for i in 0..self.uids.len() {
-        assert!(self.uids[i] > 0 && other.uids[i] > 0,
-          "Cannot compare variable before their UIDs are computed.");
         if self.uids[i] != other.uids[i] {
           return false;
         }

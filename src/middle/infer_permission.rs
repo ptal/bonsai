@@ -14,9 +14,9 @@
 
 /// For each variable, depending on its context, we infer its permission if not explicitly written by the user.
 /// Permissions can either be `Read`, `Write` or `ReadWrite` if the variable is accessed in read-only, write-only or both.
-/// When calling external method, we do not know how the method is actually modifying the variable so we infer it to `ReadWrite` (which is the safest choice).
+/// For arguments of external methods, we do not know how the method is actually modifying the variable so we infer it to `ReadWrite` (which is the safest choice).
 /// In a tell statement `x <- e`, `x` is write only.
-/// In an entailment condition `e |= e'`, every variable appearing in `e` or `e'` are supposed to be only read.
+/// In an entailment condition `e |= e'`, every variable appearing in `e` or `e'` are supposed to be read-only.
 
 /// In addition, we detect two errors:
 ///   1. We forbid `pre` on module, host and single_time variables.
@@ -64,8 +64,11 @@ impl InferPermission {
   }
 
   // Returns false if an error occurred.
-  fn pre_on_variable(&self, var: &Variable) -> bool {
-    if var.past > 0 {
+  fn check_pre_on_variable(&self, var: &Variable) -> bool {
+    if var.past == 0 {
+      true
+    }
+    else {
       let uid = var.last_uid();
       match self.context.var_by_uid(uid).kind {
         Kind::Product => self.err_forbid_pre_on(var, "module"),
@@ -76,11 +79,13 @@ impl InferPermission {
           if self.perm_context == Write {
             self.err_forbid_write_on_pre(var);
           }
-          else { return true; }
+          else {
+            return true;
+          }
         }
       }
-    } else { return true; }
-    false
+      false
+    }
   }
 
   fn check_permission(&self, var: &Variable, perm: Permission) {
@@ -101,6 +106,20 @@ impl InferPermission {
       false
     }
     else { true }
+  }
+
+  fn visit_method_call_target(&mut self, target: &mut Variable) {
+    // If we do not have information on the target (call on host function), we set the permission to READ.
+    // For example: `System.out.println("a")` becomes `read System.out.println("a")`.
+    if target.last_uid() == 0 {
+      if target.permission.is_some() {
+        self.err_forbid_permission_on_host_path(target);
+      }
+      target.permission = Some(Read);
+    }
+    else {
+      self.visit_var(target);
+    }
   }
 
   fn err_forbid_host_in_read_context(&self) {
@@ -147,6 +166,18 @@ impl InferPermission {
     .emit();
   }
 
+  fn err_forbid_permission_on_host_path(&self, var: &Variable) {
+    self.session().struct_span_err_with_code(var.span,
+      &format!("illegal permission on this path."),
+      "E0034")
+    .help(&"Permission on host paths are forbidden.\n\
+            Solution: Remove the permission.\n\
+            Rational: Given a host function call `m.a.f()`, we do not have information on `m.a` (e.g. is it a global variable? a package?).\n\
+            Semantics: The permission of the target will be semantically equivalent to `read`.\n\
+                       Consequently you can call several time `System.out.println`.")
+    .emit();
+  }
+
   fn visit_read_only_expr(&mut self, condition: &mut Expr) {
     let old = self.perm_context;
     self.perm_context = Read;
@@ -165,7 +196,7 @@ impl VisitorMut<JClass> for InferPermission
   }
 
   fn visit_var(&mut self, var: &mut Variable) {
-    if self.pre_on_variable(var) {
+    if self.check_pre_on_variable(var) {
       match var.permission.clone() {
         Some(p) => self.check_permission(var, p),
         None => var.permission = Some(self.perm_context)
@@ -221,7 +252,10 @@ impl VisitorMut<JClass> for InferPermission
 
   fn visit_method_call(&mut self, call: &mut MethodCall) {
     if self.check_host_function() {
-      walk_method_call_mut(self, call)
+      if let Some(ref mut target) = call.target {
+        self.visit_method_call_target(target);
+      }
+      walk_exprs_mut(self, &mut call.args)
     }
   }
 }

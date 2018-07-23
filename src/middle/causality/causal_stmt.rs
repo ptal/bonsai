@@ -109,6 +109,8 @@ impl CausalStmt {
       // We only visit the entry points into the crate, because private processes must be called from these public processes.
       // Note: We should verify all processes, but only those that have not been called from another process.
       // Proposition: If a process "P" is not causal, then every process "C[P]" is not causal.
+      // Proposition2: If a process "P" is causal, then a process "C[P]" can be not causal.
+      // Consequence of proposition 2: we need to verify the causality of the libraries even if their process is causal.
       // Therefore, it is more efficient to first call the top-level process, so more analysis can be performed from here.
       if process.visibility == JVisibility::Public {
         let mut m = self.visit_process(process, model.clone(), continuation.bclone());
