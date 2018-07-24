@@ -81,7 +81,9 @@ impl<'a> CompileTest<'a>
     }
   }
 
-  fn compare_diagnostics(self, file_name: String) -> Option<Context> {
+  fn compare_diagnostics(mut self, file_name: String) -> Option<Context> {
+    self.obtained_diagnostics.sort();
+    self.expected_diagnostics.sort();
     if &self.obtained_diagnostics != &self.expected_diagnostics {
       self.display.diagnostics_failure(self.test_path, file_name,
         &self.obtained_diagnostics,
