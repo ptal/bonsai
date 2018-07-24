@@ -37,6 +37,22 @@ pub struct CompilerTest {
   pub column: usize
 }
 
+impl Eq for CompilerTest { }
+
+impl PartialOrd for CompilerTest {
+  fn partial_cmp(&self, other: &CompilerTest) -> Option<Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
+impl Ord for CompilerTest {
+  fn cmp(&self, other: &CompilerTest) -> Ordering {
+    self.line.cmp(&other.line)
+      .then(self.column.cmp(&other.column))
+      .then(self.code.cmp(&other.code))
+  }
+}
+
 impl CompilerTest {
   pub fn new(level: String, code: String, line: usize, column: usize) -> Self {
     let level = CompilerTest::from_string_level(level);
@@ -280,12 +296,10 @@ pub enum StmtKind {
   Prune,
   Let(LetStmt),
   When(Expr, Box<Stmt>, Box<Stmt>),
-  Suspend(Expr, Box<Stmt>),
+  Suspend(SuspendStmt),
   Abort(Expr, Box<Stmt>),
   Tell(Variable, Expr),
-  Pause,
-  PauseUp,
-  Stop,
+  DelayStmt(Delay),
   Loop(Box<Stmt>),
   ProcCall(Option<Variable>, Ident, Vec<Variable>),
   ExprStmt(Expr),
@@ -297,6 +311,38 @@ impl StmtKind {
   #[allow(dead_code)]
   pub fn example() -> Self {
     StmtKind::Tell(Variable::example(), Expr::example())
+  }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Delay {
+  pub kind: DelayKind,
+  pub state_num: usize
+}
+
+impl Delay {
+  pub fn new(kind: DelayKind) -> Self {
+    Delay { kind, state_num: 0}
+  }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DelayKind {
+  Pause,
+  PauseUp,
+  Stop
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SuspendStmt {
+  pub condition: Expr,
+  pub body: Box<Stmt>,
+  pub state_num: usize,
+}
+
+impl SuspendStmt {
+  pub fn new(condition: Expr, body: Box<Stmt>) -> Self {
+    SuspendStmt { condition, body, state_num: 0 }
   }
 }
 

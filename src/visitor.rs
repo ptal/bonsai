@@ -73,9 +73,8 @@ pub trait Visitor<H>
     self.visit_stmt(else_branch);
   }
 
-  fn visit_suspend(&mut self, condition: Expr, child: Stmt) {
-    self.visit_expr(condition);
-    self.visit_stmt(child)
+  fn visit_suspend(&mut self, suspend: SuspendStmt) {
+    walk_suspend(self, suspend)
   }
 
   fn visit_abort(&mut self, condition: Expr, child: Stmt) {
@@ -88,9 +87,7 @@ pub trait Visitor<H>
     self.visit_expr(expr);
   }
 
-  fn visit_pause(&mut self) {}
-  fn visit_pause_up(&mut self) {}
-  fn visit_stop(&mut self) {}
+  fn visit_delay(&mut self, _delay: Delay) {}
 
   fn visit_loop(&mut self, child: Stmt) {
     self.visit_stmt(child)
@@ -189,12 +186,10 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     Prune => visitor.visit_prune(),
     Let(stmt) => visitor.visit_let(stmt),
     When(cond, then_branch, else_branch) => visitor.visit_when(cond, *then_branch, *else_branch),
-    Suspend(cond, body) => visitor.visit_suspend(cond, *body),
+    Suspend(suspend) => visitor.visit_suspend(suspend),
     Abort(cond, body) => visitor.visit_abort(cond, *body),
     Tell(var, expr) => visitor.visit_tell(var, expr),
-    Pause => visitor.visit_pause(),
-    PauseUp => visitor.visit_pause_up(),
-    Stop => visitor.visit_stop(),
+    DelayStmt(delay) => visitor.visit_delay(delay),
     Loop(body) => visitor.visit_loop(*body),
     ExprStmt(expr) => visitor.visit_expr_stmt(expr),
     ProcCall(var, process, args) => visitor.visit_proc_call(var, process, args),
@@ -264,6 +259,13 @@ pub fn walk_proc_call<H, V: ?Sized>(visitor: &mut V, var: Option<Variable>, args
   }
 }
 
+pub fn walk_suspend<H, V: ?Sized>(visitor: &mut V, suspend: SuspendStmt) where
+  V: Visitor<H>
+{
+  visitor.visit_expr(suspend.condition);
+  visitor.visit_stmt(*suspend.body)
+}
+
 pub trait VisitorMut<H>
 {
   fn visit_crate(&mut self, bcrate: &mut Crate<H>) {
@@ -321,9 +323,8 @@ pub trait VisitorMut<H>
     self.visit_stmt(else_branch);
   }
 
-  fn visit_suspend(&mut self, condition: &mut Expr, child: &mut Stmt) {
-    self.visit_expr(condition);
-    self.visit_stmt(child)
+  fn visit_suspend(&mut self, suspend: &mut SuspendStmt) {
+    walk_suspend_mut(self, suspend)
   }
 
   fn visit_abort(&mut self, condition: &mut Expr, child: &mut Stmt) {
@@ -336,9 +337,7 @@ pub trait VisitorMut<H>
     self.visit_expr(expr);
   }
 
-  fn visit_pause(&mut self) {}
-  fn visit_pause_up(&mut self) {}
-  fn visit_stop(&mut self) {}
+  fn visit_delay(&mut self, _delay: &mut Delay) {}
 
   fn visit_loop(&mut self, child: &mut Stmt) {
     self.visit_stmt(child)
@@ -437,12 +436,10 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut Prune => visitor.visit_prune(),
     &mut Let(ref mut stmt) => visitor.visit_let(stmt),
     &mut When(ref mut cond, ref mut then_branch, ref mut else_branch) => visitor.visit_when(cond, &mut **then_branch, &mut **else_branch),
-    &mut Suspend(ref mut cond, ref mut body) => visitor.visit_suspend(cond, &mut **body),
+    &mut Suspend(ref mut suspend) => visitor.visit_suspend(suspend),
     &mut Abort(ref mut cond, ref mut body) => visitor.visit_abort(cond, &mut **body),
     &mut Tell(ref mut var, ref mut expr) => visitor.visit_tell(var, expr),
-    &mut Pause => visitor.visit_pause(),
-    &mut PauseUp => visitor.visit_pause_up(),
-    &mut Stop => visitor.visit_stop(),
+    &mut DelayStmt(ref mut delay) => visitor.visit_delay(delay),
     &mut Loop(ref mut body) => visitor.visit_loop(&mut **body),
     &mut ProcCall(ref mut var, ref process, ref mut args) => visitor.visit_proc_call(var, process.clone(), args),
     &mut ExprStmt(ref mut expr) => visitor.visit_expr_stmt(expr),
@@ -514,4 +511,11 @@ pub fn walk_proc_call_mut<H, V: ?Sized>(visitor: &mut V, var: &mut Option<Variab
   for arg in args {
     visitor.visit_var(arg);
   }
+}
+
+pub fn walk_suspend_mut<H, V: ?Sized>(visitor: &mut V, suspend: &mut SuspendStmt) where
+  V: VisitorMut<H>
+{
+  visitor.visit_expr(&mut suspend.condition);
+  visitor.visit_stmt(&mut *suspend.body)
 }

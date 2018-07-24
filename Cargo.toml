@@ -19,7 +19,7 @@ doc = false
 [dependencies]
 oak = "^0.5.8"
 oak_runtime = "^0.5.5"
-partial = "0.2.3"
+partial = "^0.4.0"
 clap = "^2"
 syntex_pos = "0.58.1"
 syntex_errors = "0.58.1"

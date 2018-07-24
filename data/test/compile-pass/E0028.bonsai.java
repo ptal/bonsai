@@ -19,7 +19,6 @@ public class E0028 // NonInstantaneousLoop
   single_space LMax a;
   single_space LMax b;
 
-  proc test() = run temporary() // because causality analysis contains unimplemented fields.
   public proc test1() = loop pause end
   public proc test2() =
     loop

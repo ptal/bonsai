@@ -12,22 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod index_op;
+mod indexing;
 mod causal_stmt;
 mod causal_deps;
 mod causal_model;
 mod model_parameters;
 mod solver;
+mod symbolic_execution;
 
 use context::*;
 use session::*;
-use middle::causality::index_op::*;
-use middle::causality::causal_stmt::*;
+use middle::causality::indexing::*;
 use middle::causality::solver::*;
+use middle::causality::causal_stmt::*;
+use middle::causality::symbolic_execution::*;
+use middle::causality::model_parameters::*;
 
 pub fn causality_analysis(session: Session, context: Context) -> Env<Context> {
   Env::value(session, context)
-    .and_then(index_op)
-    .and_then(build_causal_model)
-    .and_then(solve_causal_model)
+    .and_then(index_ops_and_delay)
+    .and_then(execute_symbolically)
 }
+
+fn execute_symbolically(session: Session, (context, params): (Context, ModelParameters)) -> Env<Context> {
+  let symbolic = SymbolicExecution::new(session, context);
+  // let params = c.1;
+  symbolic.for_each(|env| {
+    env.and_then(|session, (context, instant)|
+          build_causal_model(session, context, instant, params.clone()))
+       .and_then(solve_causal_model)
+    })
+}
+

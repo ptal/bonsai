@@ -20,10 +20,13 @@ use session::*;
 use middle::causality::causal_model::*;
 use middle::causality::model_parameters::*;
 use middle::causality::causal_deps::*;
+use middle::causality::symbolic_execution::SymbolicInstant;
 
-pub fn build_causal_model(session: Session, c: (Context, ModelParameters)) -> Env<(Context,Vec<CausalModel>)> {
-  let model = CausalStmt::new(session, c.0, c.1);
-  model.compute()
+pub fn build_causal_model(session: Session, context: Context, instant: SymbolicInstant, params: ModelParameters)
+  -> Env<(Context,Vec<CausalModel>)>
+{
+  let model = CausalStmt::new(session, context, params);
+  model.compute(instant)
 }
 
 trait Continuation {
@@ -69,61 +72,25 @@ struct CausalStmt {
   session: Session,
   context: Context,
   deps: CausalDeps,
-  params: ModelParameters
+  params: ModelParameters,
 }
 
 impl CausalStmt {
-  pub fn new(session: Session, context: Context, params: ModelParameters) -> Self {
+  pub fn new(session: Session, context: Context, params: ModelParameters) -> Self
+  {
     let deps = CausalDeps::new();
     CausalStmt { session, context, deps, params }
   }
 
-  fn compute(self) -> Env<(Context,Vec<CausalModel>)> {
-    let bcrate_clone = self.context.clone_ast();
-    let models = self.causal_analysis(bcrate_clone);
+  fn compute(self, instant: SymbolicInstant) -> Env<(Context,Vec<CausalModel>)> {
+    let models = self.causal_analysis(instant);
     Env::value(self.session, (self.context, models))
   }
 
-  fn causal_analysis(&self, ast: JCrate) -> Vec<CausalModel> {
+  fn causal_analysis(&self, instant: SymbolicInstant) -> Vec<CausalModel> {
     let model = CausalModel::new(self.params.clone());
-    let models = self.visit_crate(ast, model, Box::new(IdentityCont));
+    let models = self.visit_stmt(instant.program, model, Box::new(IdentityCont));
     models
-  }
-
-  fn visit_crate(&self, ast: JCrate, model: CausalModel,
-      continuation: Cont) -> Vec<CausalModel>
-  {
-    let mut models = vec![];
-    for module in ast.modules {
-      let mut m = self.visit_module(module, model.clone(), continuation.bclone());
-      models.append(&mut m);
-    }
-    models
-  }
-
-  fn visit_module(&self, module: JModule, model: CausalModel,
-      continuation: Cont) -> Vec<CausalModel>
-  {
-    let mut models = vec![];
-    for process in module.processes {
-      // We only visit the entry points into the crate, because private processes must be called from these public processes.
-      // Note: We should verify all processes, but only those that have not been called from another process.
-      // Proposition: If a process "P" is not causal, then every process "C[P]" is not causal.
-      // Proposition2: If a process "P" is causal, then a process "C[P]" can be not causal.
-      // Consequence of proposition 2: we need to verify the causality of the libraries even if their process is causal.
-      // Therefore, it is more efficient to first call the top-level process, so more analysis can be performed from here.
-      if process.visibility == JVisibility::Public {
-        let mut m = self.visit_process(process, model.clone(), continuation.bclone());
-        models.append(&mut m);
-      }
-    }
-    models
-  }
-
-  fn visit_process(&self, process: Process, model: CausalModel,
-      continuation: Cont) -> Vec<CausalModel>
-  {
-    self.visit_stmt(process.body, model, continuation)
   }
 
   fn visit_stmt(&self, stmt: Stmt, model: CausalModel,
@@ -131,9 +98,7 @@ impl CausalStmt {
   {
     use ast::StmtKind::*;
     match stmt.node {
-      Pause
-    | PauseUp
-    | Stop => self.visit_delay(model, continuation),
+      DelayStmt(_) => self.visit_delay(model, continuation),
       Space(_)
     | Prune
     | Nothing => continuation.call(self, model),
@@ -143,7 +108,7 @@ impl CausalStmt {
       When(cond, then_branch, else_branch) =>
         self.visit_when(cond, *then_branch, *else_branch, model, continuation),
       ExprStmt(expr) => self.visit_expr_stmt(expr, model, continuation),
-      _ => panic!("not implemented")
+      _ => vec![]
       // Suspend(cond, body) => self.visit_suspend(cond, *body, model, continuation),
       // Abort(cond, body) => self.visit_abort(cond, *body, model, continuation),
       // OrPar(branches) => self.visit_or_par(branches),

@@ -292,7 +292,7 @@ grammar! bonsai {
   }
 
   fn make_suspend(condition: Expr, body: Stmt) -> StmtKind {
-    StmtKind::Suspend(condition, Box::new(body))
+    StmtKind::Suspend(SuspendStmt::new(condition, Box::new(body)))
   }
 
   fn make_abort(condition: Expr, body: Stmt) -> StmtKind {
@@ -300,15 +300,15 @@ grammar! bonsai {
   }
 
   fn make_pause() -> StmtKind {
-    StmtKind::Pause
+    StmtKind::DelayStmt(Delay::new(DelayKind::Pause))
   }
 
   fn make_pause_up() -> StmtKind {
-    StmtKind::PauseUp
+    StmtKind::DelayStmt(Delay::new(DelayKind::PauseUp))
   }
 
   fn make_stop() -> StmtKind {
-    StmtKind::Stop
+    StmtKind::DelayStmt(Delay::new(DelayKind::Stop))
   }
 
   fn make_nothing() -> StmtKind {

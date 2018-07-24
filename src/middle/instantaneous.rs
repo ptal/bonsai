@@ -112,15 +112,7 @@ impl Visitor<JClass> for InstantaneousAnalysis
     self.can_pause = self.can_pause || then_can;
   }
 
-  fn visit_pause(&mut self) {
-    self.can_pause = true;
-    self.must_pause = true;
-  }
-  fn visit_pause_up(&mut self) {
-    self.can_pause = true;
-    self.must_pause = true;
-  }
-  fn visit_stop(&mut self) {
+  fn visit_delay(&mut self, _delay: Delay) {
     self.can_pause = true;
     self.must_pause = true;
   }
@@ -158,8 +150,8 @@ impl Visitor<JClass> for InstantaneousAnalysis
     }
   }
 
-  fn visit_suspend(&mut self, _condition: Expr, child: Stmt) {
-    self.visit_stmt(child);
+  fn visit_suspend(&mut self, suspend: SuspendStmt) {
+    self.visit_stmt(*suspend.body);
     self.can_pause = self.can_pause || true;
   }
 

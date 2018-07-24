@@ -45,7 +45,8 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
     Space(branch) => Space(Box::new(lift_stmt(*branch))),
     When(condition, then_branch, else_branch) =>
       When(condition, Box::new(lift_stmt(*then_branch)), Box::new(lift_stmt(*else_branch))),
-    Suspend(condition, body) => Suspend(condition, Box::new(lift_stmt(*body))),
+    Suspend(suspend) =>
+      Suspend(SuspendStmt::new(suspend.condition, Box::new(lift_stmt(*suspend.body)))),
     Abort(condition, body) => Abort(condition, Box::new(lift_stmt(*body))),
     Loop(body) => Loop(Box::new(lift_stmt(*body))),
     Let(mut decl) => {

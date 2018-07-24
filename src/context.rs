@@ -107,7 +107,7 @@ impl ModuleInfo {
   }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ProcessUID {
   pub module: Ident,
   pub process: Ident

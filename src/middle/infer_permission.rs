@@ -217,9 +217,9 @@ impl VisitorMut<JClass> for InferPermission
     self.visit_stmt(else_branch);
   }
 
-  fn visit_suspend(&mut self, condition: &mut Expr, child: &mut Stmt) {
-    self.visit_read_only_expr(condition);
-    self.visit_stmt(child)
+  fn visit_suspend(&mut self, suspend: &mut SuspendStmt) {
+    self.visit_read_only_expr(&mut suspend.condition);
+    self.visit_stmt(&mut *suspend.body)
   }
 
   fn visit_abort(&mut self, condition: &mut Expr, child: &mut Stmt) {
