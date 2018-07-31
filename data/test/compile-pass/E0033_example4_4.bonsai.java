@@ -18,7 +18,7 @@ package test;
 
 public class E0033_example4_4
 {
-  public proc test() =
+  public proc test1() =
     single_time LMax x = new LMax(0);
     single_time LMax y = new LMax(0);
     when x |= y then
@@ -26,6 +26,30 @@ public class E0033_example4_4
     else
       y <- 3;
       pause
+    end;
+    x <- 3;
+  end
+
+  public proc test2() =
+    single_time LMax x = new LMax(0);
+    single_time LMax y = new LMax(0);
+    when x |= y then
+      x <- 2
+    else
+      pause;
+      y <- 3;
+    end;
+    x <- 3;
+  end
+
+  public proc test3() =
+    single_time LMax x = new LMax(0);
+    single_time LMax y = new LMax(0);
+    when x |= y then
+      x <- 2
+    else
+      pause;
+      y <- 3;
     end;
     x <- 3;
   end

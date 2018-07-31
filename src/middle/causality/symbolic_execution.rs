@@ -20,32 +20,88 @@ use gcollections::VectorStack;
 use gcollections::ops::*;
 use std::collections::HashSet;
 
-#[derive(Copy, Clone, PartialOrd, Ord, Eq, PartialEq, Debug)]
-enum CompletionCode {
-  Terminate = 0,
-  Pause = 1,
-  PauseUp = 2,
-  Stop = 3
+/// A state is the set of all delay statements that must be resumed in the next instant.
+/// Therefore, `usize` are only pushed by parallel statements.
+/// An empty `HashSet` represents a terminated execution path.
+type State = HashSet<usize>;
+
+/// The set of all states such that one state represents one possible next instant.
+struct StatesSet {
+  /// Invariant: `states` is never empty.
+  states: Vec<State>
 }
 
-#[derive(Clone, Debug)]
-pub struct SymbolicInstant {
-  pub program: Stmt,
-  pub current_process: ProcessUID,
-  pub state: HashSet<usize>
-}
-
-impl SymbolicInstant {
-  pub fn new(program: Stmt, current_process: ProcessUID, state: HashSet<usize>) -> Self {
-    SymbolicInstant { program, current_process, state }
+impl StatesSet {
+  fn terminated_state() -> Self {
+    StatesSet { states: vec![HashSet::new()] }
   }
+
+  fn paused_state(num_state: usize) -> Self {
+    let mut state = HashSet::new();
+    state.insert(num_state);
+    StatesSet { states: vec![state] }
+  }
+
+  fn terminated_index(&self) -> Option<usize> {
+    for (i, state) in self.states.iter().enumerate() {
+      if state.is_empty() {
+        return Some(i)
+      }
+    }
+    None
+  }
+
+  fn remove_terminated(&mut self) -> bool {
+    let i = self.terminated_index();
+    if let Some(i) = i {
+      self.states.swap_remove(i);
+      true
+    }
+    else {
+      false
+    }
+  }
+
+  /// If one execution path is terminated, we remove it and add all `next_states`.
+  /// If `next_states` was added, we return true, otherwise false.
+  fn followed_by(&mut self, mut next_states: StatesSet) -> bool {
+    let one_path_terminated = self.remove_terminated();
+    if one_path_terminated {
+      self.states.append(&mut next_states.states);
+      true
+    }
+    else {
+      false
+    }
+  }
+
+  fn join(&mut self, mut other: StatesSet) {
+    let t1 = self.terminated_index();
+    let t2 = other.terminated_index();
+    if t1.is_some() && t2.is_some() {
+      self.remove_terminated();
+    }
+    self.states.append(&mut other.states);
+  }
+
+  fn next_states(mut self) -> Vec<State> {
+    self.remove_terminated();
+    self.states
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ResidualStmt {
+  Terminated,
+  Paused,
+  Next(Stmt)
 }
 
 pub struct SymbolicExecution {
   session: Session,
   context: Context,
-  visited_states: Vec<HashSet<usize>>,
-  next_instants: VectorStack<SymbolicInstant>
+  visited_states: Vec<State>,
+  next_instants: VectorStack<Stmt>
 }
 
 impl SymbolicExecution {
@@ -59,7 +115,7 @@ impl SymbolicExecution {
   }
 
   pub fn for_each<F>(mut self, f: F) -> Env<Context>
-   where F: Fn(Env<(Context, SymbolicInstant)>) -> Env<Context>
+   where F: Fn(Env<(Context, Stmt)>) -> Env<Context>
   {
     let mut fake = false;
     self.initialize();
@@ -77,10 +133,15 @@ impl SymbolicExecution {
     else { Env::value(self.session, self.context) }
   }
 
-  fn push_instant(&mut self, instant: SymbolicInstant) {
-    if !self.visited_states.iter().any(|s| s == &instant.state) {
-      self.visited_states.push(instant.state.clone());
-      self.next_instants.insert(instant);
+  /// Returns `true` if the state has not been visited before.
+  fn already_visited(&self, state: State) -> bool {
+    self.visited_states.iter().any(|s| s == &state)
+  }
+
+  fn push_instant(&mut self, instant: Option<Stmt>, state: State) {
+    self.visited_states.push(state);
+    if let Some(instant) = instant {
+      self.next_instants.push(instant);
     }
   }
 
@@ -89,12 +150,11 @@ impl SymbolicExecution {
       let process = self.context.find_proc(uid.clone());
       let mut state = HashSet::new();
       state.insert(i);
-      let instant = SymbolicInstant::new(process.body, uid, state);
-      self.push_instant(instant);
+      self.push_instant(Some(process.body), state);
     }
   }
 
-  fn next(&mut self) -> Option<SymbolicInstant> {
+  fn next(&mut self) -> Option<Stmt> {
     let instant = self.next_instants.pop();
     if let Some(instant) = instant.clone() {
       self.compute_residual(instant);
@@ -102,7 +162,176 @@ impl SymbolicExecution {
     instant
   }
 
-  fn compute_residual(&mut self, instant: SymbolicInstant) {
+  fn compute_residual(&mut self, current: Stmt) {
+    let states_set = self.next_states_stmt(current.clone());
+    for state in states_set.next_states() {
+      if !self.already_visited(state.clone()) {
+        let residual = self.reduce_stmt(current.clone(), state.clone());
+        let instant = match residual {
+          ResidualStmt::Terminated => None,
+          ResidualStmt::Paused => None, // It means that the next instant is `nothing`.
+          ResidualStmt::Next(next) => Some(next)
+        };
+        self.push_instant(instant, state);
+      }
+    }
+  }
 
+  fn next_states_stmt(&self, stmt: Stmt) -> StatesSet
+  {
+    use ast::StmtKind::*;
+    match stmt.node {
+      DelayStmt(delay) => self.next_states_delay(delay),
+      Let(stmt) => self.next_states_let(stmt),
+      Seq(branches) => self.next_states_seq(branches),
+      When(cond, then_branch, else_branch) =>
+        self.next_states_when(cond, *then_branch, *else_branch),
+      Space(_)
+    | Prune
+    | Nothing
+    | ExprStmt(_)
+    | Tell(_, _) => StatesSet::terminated_state(),
+      _ => StatesSet::terminated_state(),
+      // Suspend(cond, body) => self.next_states_suspend(cond, *body, model),
+      // Abort(cond, body) => self.next_states_abort(cond, *body, model),
+      // OrPar(branches) => self.next_states_or_par(branches),
+      // AndPar(branches) => self.next_states_and_par(branches),
+      // Loop(body) => self.next_states_loop(*body),
+      // ProcCall(var, process, args) => self.next_states_proc_call(var, process, args),
+      // Universe(body) => self.next_states_universe(*body),
+    }
+  }
+
+  fn next_states_delay(&self, delay: Delay) -> StatesSet
+  {
+    StatesSet::paused_state(delay.state_num)
+  }
+
+  fn next_states_seq(&self, children: Vec<Stmt>) -> StatesSet
+  {
+    let mut states = StatesSet::terminated_state();
+    for child in children {
+      let next = self.next_states_stmt(child);
+      if !states.followed_by(next) {
+        return states;
+      }
+    }
+    states
+  }
+
+  fn next_states_let(&self, let_stmt: LetStmt) -> StatesSet
+  {
+    self.next_states_stmt(*(let_stmt.body))
+  }
+
+  fn next_states_when(&self, _c: Expr, then_branch: Stmt, else_branch: Stmt) -> StatesSet
+  {
+    let mut states_then = self.next_states_stmt(then_branch);
+    let states_else = self.next_states_stmt(else_branch);
+    states_then.join(states_else);
+    states_then
+  }
+
+
+  fn reduce_stmt(&self, stmt: Stmt, state: State) -> ResidualStmt
+  {
+    use ast::StmtKind::*;
+    let span = stmt.span;
+    match stmt.node {
+      DelayStmt(delay) => self.reduce_delay(delay, state),
+      Let(stmt) => self.reduce_let(span, stmt, state),
+      Seq(branches) => self.reduce_seq(branches, state),
+      When(cond, then_branch, else_branch) =>
+        self.reduce_when(cond, *then_branch, *else_branch, state),
+      Space(_)
+    | Prune
+    | Nothing
+    | ExprStmt(_)
+    | Tell(_, _) => ResidualStmt::Terminated,
+      _ => ResidualStmt::Terminated
+      // Suspend(cond, body) => self.reduce_suspend(cond, *body, model, state),
+      // Abort(cond, body) => self.reduce_abort(cond, *body, model, state),
+      // OrPar(branches) => self.reduce_or_par(branches),
+      // AndPar(branches) => self.reduce_and_par(branches),
+      // Loop(body) => self.reduce_loop(*body),
+      // ProcCall(var, process, args) => self.reduce_proc_call(var, process, args),
+      // Universe(body) => self.reduce_universe(*body),
+    }
+  }
+
+  fn reduce_delay(&self, delay: Delay, state: State) -> ResidualStmt
+  {
+    if state.contains(&delay.state_num) {
+      ResidualStmt::Paused
+    }
+    else {
+      ResidualStmt::Terminated
+    }
+  }
+
+  fn reduce_seq(&self, children: Vec<Stmt>, state: State) -> ResidualStmt
+  {
+    let mut next_stmts = vec![];
+    let mut has_paused = false;
+    for child in children {
+      if has_paused {
+        next_stmts.push(child);
+      }
+      else {
+        let next = self.reduce_stmt(child, state.clone());
+        match next {
+          ResidualStmt::Terminated => (),
+          ResidualStmt::Paused => has_paused = true,
+          ResidualStmt::Next(next) => {
+            has_paused = true;
+            next_stmts.push(next);
+          }
+        }
+      }
+    }
+    self.rebuild_seq(next_stmts, has_paused)
+  }
+
+  fn rebuild_seq(&self, next_stmts: Vec<Stmt>, has_paused: bool) -> ResidualStmt {
+    if next_stmts.is_empty() {
+      if has_paused {
+        ResidualStmt::Paused
+      }
+      else {
+        ResidualStmt::Terminated
+      }
+    }
+    else {
+      let sp = mk_sp(next_stmts.first().unwrap().span.lo, next_stmts.last().unwrap().span.hi);
+      ResidualStmt::Next(Stmt::new(sp, StmtKind::Seq(next_stmts)))
+    }
+  }
+
+  fn reduce_let(&self, span: Span, mut let_stmt: LetStmt, state: State) -> ResidualStmt
+  {
+    let next = self.reduce_stmt(*(let_stmt.body), state);
+    match next {
+      ResidualStmt::Next(next) => {
+        let_stmt.body = Box::new(next);
+        ResidualStmt::Next(Stmt::new(span, StmtKind::Let(let_stmt)))
+      }
+      n => n
+    }
+  }
+
+  fn reduce_when(&self, _condition: Expr, then_branch: Stmt, else_branch: Stmt,
+      state: State) -> ResidualStmt
+  {
+    let next_then = self.reduce_stmt(then_branch, state.clone());
+    let next_else = self.reduce_stmt(else_branch, state);
+    if next_then != ResidualStmt::Terminated {
+      next_then
+    }
+    else if next_else != ResidualStmt::Terminated {
+      next_else
+    }
+    else {
+      ResidualStmt::Terminated
+    }
   }
 }

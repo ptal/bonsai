@@ -12,20 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0033, 1, 0)]
-#[error(E0033, 1, 0)]
-
 package test;
 
-public class E0033_5
+public class E0033_6
 {
   single_space LMax a = bot;
 
-  public proc test5() =
-    f(write a, read a)
-
-  public proc test6() =
+  public proc test1() =
+    f(read a);
     pause;
-    f(write a, read a)
+    a <- 1;
   end
 }

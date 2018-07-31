@@ -20,13 +20,12 @@ use session::*;
 use middle::causality::causal_model::*;
 use middle::causality::model_parameters::*;
 use middle::causality::causal_deps::*;
-use middle::causality::symbolic_execution::SymbolicInstant;
 
-pub fn build_causal_model(session: Session, context: Context, instant: SymbolicInstant, params: ModelParameters)
+pub fn build_causal_model(session: Session, context: Context, program: Stmt, params: ModelParameters)
   -> Env<(Context,Vec<CausalModel>)>
 {
   let model = CausalStmt::new(session, context, params);
-  model.compute(instant)
+  model.compute(program)
 }
 
 trait Continuation {
@@ -82,14 +81,14 @@ impl CausalStmt {
     CausalStmt { session, context, deps, params }
   }
 
-  fn compute(self, instant: SymbolicInstant) -> Env<(Context,Vec<CausalModel>)> {
-    let models = self.causal_analysis(instant);
+  fn compute(self, program: Stmt) -> Env<(Context,Vec<CausalModel>)> {
+    let models = self.causal_analysis(program);
     Env::value(self.session, (self.context, models))
   }
 
-  fn causal_analysis(&self, instant: SymbolicInstant) -> Vec<CausalModel> {
+  fn causal_analysis(&self, program: Stmt) -> Vec<CausalModel> {
     let model = CausalModel::new(self.params.clone());
-    let models = self.visit_stmt(instant.program, model, Box::new(IdentityCont));
+    let models = self.visit_stmt(program, model, Box::new(IdentityCont));
     models
   }
 

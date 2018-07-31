@@ -38,8 +38,8 @@ fn execute_symbolically(session: Session, (context, params): (Context, ModelPara
   let symbolic = SymbolicExecution::new(session, context);
   // let params = c.1;
   symbolic.for_each(|env| {
-    env.and_then(|session, (context, instant)|
-          build_causal_model(session, context, instant, params.clone()))
+    env.and_then(|session, (context, stmt)|
+          build_causal_model(session, context, stmt, params.clone()))
        .and_then(solve_causal_model)
     })
 }

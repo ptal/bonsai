@@ -13,19 +13,16 @@
 // limitations under the License.
 
 #[error(E0033, 1, 0)]
-#[error(E0033, 1, 0)]
 
 package test;
 
-public class E0033_5
+public class E0033_8
 {
-  single_space LMax a = bot;
-
-  public proc test5() =
-    f(write a, read a)
-
-  public proc test6() =
-    pause;
-    f(write a, read a)
+  public proc test() =
+    single_space LMax x = new LMax(0);
+    when 1 |= x then
+      nothing;
+    end;
+    readwrite x.inc(); // Error here: maybe you cannot deduce `x` from `1` if you write in `x`.
   end
 }

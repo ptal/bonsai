@@ -17,15 +17,14 @@
 
 package test;
 
-public class E0033_5
+public class E0033_7
 {
-  single_space LMax a = bot;
-
-  public proc test5() =
-    f(write a, read a)
-
-  public proc test6() =
-    pause;
-    f(write a, read a)
+  public proc test() =
+    single_space LMax x = new LMax(0);
+    when x |= 1 then
+      pause;
+      read x.gt(0);
+    end;
+    readwrite x.inc(); // Two errors here: in the first and second instant (depending on the branch of the when taken).
   end
 }
