@@ -107,11 +107,11 @@ impl CausalStmt {
       When(cond, then_branch, else_branch) =>
         self.visit_when(cond, *then_branch, *else_branch, model, continuation),
       ExprStmt(expr) => self.visit_expr_stmt(expr, model, continuation),
+      OrPar(branches) => self.visit_or_par(branches, model, continuation),
+      AndPar(branches) => self.visit_and_par(branches, model, continuation),
       _ => vec![]
       // Suspend(cond, body) => self.visit_suspend(cond, *body, model, continuation),
       // Abort(cond, body) => self.visit_abort(cond, *body, model, continuation),
-      // OrPar(branches) => self.visit_or_par(branches),
-      // AndPar(branches) => self.visit_and_par(branches),
       // Loop(body) => self.visit_loop(*body),
       // ProcCall(var, process, args) => self.visit_proc_call(var, process, args),
       // Universe(body) => self.visit_universe(*body),
@@ -151,8 +151,8 @@ impl CausalStmt {
   fn visit_tell(&self, var: Variable, expr: Expr,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
   {
-    let m1 = self.deps.visit_var(var, false, model);
-    let m2 = self.deps.visit_expr(expr, false, m1);
+    let m1 = self.deps.visit_expr(expr, false, model);
+    let m2 = self.deps.visit_var(var, false, m1);
     continuation.call(self, m2)
   }
 
@@ -172,6 +172,46 @@ impl CausalStmt {
   {
     let m = self.deps.visit_expr(expr, false, model);
     continuation.call(self, m)
+  }
+
+  fn visit_par<F>(&self, children: Vec<Stmt>, model: CausalModel,
+    continuation: Cont, join_termination: F) -> Vec<CausalModel>
+   where F: Clone + Fn(bool, bool) -> bool
+  {
+    // We create the model of every branch without calling the current continuation.
+    let mut models = vec![];
+    for child in children {
+      models.push(self.visit_stmt(child, model.clone(), Box::new(IdentityCont)));
+    }
+    // We merge by Cartesian product the models created by every branch.
+    let first = models.remove(0);
+    let models = models.into_iter().fold(first, |accu, m| {
+      CausalModel::cartesian_product(accu, m, join_termination.clone())
+    });
+    // We call the continuation on models that are instantaneous.
+    let mut result = vec![];
+    for model in models {
+      if model.instantaneous {
+        let mut next = continuation.call(self, model);
+        result.append(&mut next);
+      }
+      else {
+        result.push(model);
+      }
+    }
+    result
+  }
+
+  fn visit_or_par(&self, children: Vec<Stmt>, model: CausalModel,
+    continuation: Cont) -> Vec<CausalModel>
+  {
+    self.visit_par(children, model, continuation, CausalModel::term_or)
+  }
+
+  fn visit_and_par(&self, children: Vec<Stmt>, model: CausalModel,
+    continuation: Cont) -> Vec<CausalModel>
+  {
+    self.visit_par(children, model, continuation, CausalModel::term_and)
   }
 
   // fn visit_suspend(&self, condition: Expr, child: Stmt,
@@ -194,33 +234,6 @@ impl CausalStmt {
   //   let mut m2 = continuation(else_m);
   //   m1.extend(&mut m2);
   //   m1
-  // }
-
-  // fn visit_par(&self, children: Vec<Stmt>, join_termination: F,
-  //   model: CausalModel, continuation: Cont) -> Vec<CausalModel>
-  //  where F: Fn(bool, bool) -> bool
-  // {
-  //   let mut models = vec![];
-  //   for child in children {
-  //     models.push(self.visit_stmt(child, model.clone(), continuation));
-  //   }
-  //   let first = models.remove(0);
-  //   models.into_iter().fold(first, |accu, m| {
-  //     let mut res = vec![];
-  //     for i in 0..accu.len() {
-  //       for j in 0..m.len() {
-  //         res.push(accu[i].product(&m[i], join_termination));
-  //       }
-  //     }
-  //   })
-  // }
-
-  // fn visit_or_par(&self, children: Vec<Stmt>) {
-  //   self.visit_par(children)
-  // }
-
-  // fn visit_and_par(&self, children: Vec<Stmt>) {
-  //   self.visit_par(children)
   // }
 
   // fn visit_loop(&self, child: Stmt) {

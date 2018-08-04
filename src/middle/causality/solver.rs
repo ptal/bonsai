@@ -35,6 +35,8 @@ impl Solver {
   }
 
   pub fn solve_all(mut self) -> Env<Context> {
+    debug!("{} causal models\n", self.models.len());
+    debug!("{} instantaneous causal models\n", self.models.iter().filter(|m| m.instantaneous).count());
     for model in self.models.clone() {
       if let Some(model) = self.prepare_model(model) {
         if !self.solve_model(model) {
@@ -59,9 +61,13 @@ impl Solver {
 
     // Print result.
     match status {
-      Status::Satisfiable => true,
+      Status::Satisfiable => {
+        trace!("{:?}\n\n{:?}", _space.vstore, _space.cstore);
+        true
+      },
       Status::Unsatisfiable => {
         self.err_unsatisfiable_model();
+        trace!("{:?}\n\n{:?}", _space.vstore, _space.cstore);
         false
       }
       Status::EndOfSearch

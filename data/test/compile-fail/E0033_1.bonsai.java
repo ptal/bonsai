@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #[error(E0033, 1, 0)]
+#[error(E0033, 1, 0)]
 
 package test;
 
@@ -23,5 +24,9 @@ public class E0033_1
   public proc test1() =
     f(read a);
     f(write a);
+  end
+
+  public proc test2() =
+    a <- f(readwrite a)
   end
 }

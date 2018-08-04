@@ -220,8 +220,8 @@ grammar! bonsai {
     = .. stmt_kind > make_stmt
 
   stmt_kind
-    = PAR BARBAR? stmt (BARBAR stmt)* END > make_or_par
-    / PAR DIAMOND? stmt (DIAMOND stmt)* END > make_and_par
+    = PAR BARBAR? close_sequence (BARBAR close_sequence)* END > make_and_par
+    / PAR DIAMOND? close_sequence (DIAMOND close_sequence)* END > make_or_par
     / SPACE close_sequence END > make_space
     / PRUNE > make_prune
     / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when

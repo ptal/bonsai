@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,34 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+package test;
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-extern crate syntex_pos;
-extern crate syntex_syntax;
-extern crate syntex_errors;
-extern crate regex;
-extern crate pcp;
-extern crate gcollections;
-extern crate interval;
-extern crate trilean;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-
-mod session;
-mod ast;
-mod visitor;
-mod context;
-mod driver;
-mod front;
-mod middle;
-mod back;
-
-fn main() {
-  env_logger::init();
-  driver::run();
+public class E0033_9
+{
+  public proc test() =
+    single_space LMax x = new LMax(0);
+    single_space LMax y = new LMax(0);
+    when x |= y then
+      par
+      || x <- 2
+      || when y |= 3 then x <- 3 end
+      || when x |= 3 then x <- 4 end
+      || when 4 |= y then x <- 5 end
+      end
+    else
+      par
+      || y <- 3
+      || when 3 |= x then y <- 1 end
+      || when y |= 2 then y <- 1 end
+      || when x |= 1 then y <- 4 end
+      end
+    end
+  end
 }

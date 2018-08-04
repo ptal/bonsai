@@ -26,6 +26,8 @@ extern crate pcp;
 extern crate gcollections;
 extern crate interval;
 extern crate trilean;
+#[macro_use]
+extern crate log;
 
 pub mod session;
 pub mod ast;

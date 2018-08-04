@@ -78,11 +78,24 @@ impl CausalModel {
     self
   }
 
-  pub fn and_inst(a: bool, b: bool) -> bool { a && b }
-  pub fn or_inst(a: bool, b: bool) -> bool { a || b }
+  pub fn cartesian_product<F>(left: Vec<CausalModel>, right: Vec<CausalModel>,
+      join_termination: F) -> Vec<CausalModel>
+    where F: Clone + Fn(bool, bool) -> bool
+  {
+    let mut res = vec![];
+    for s1 in left {
+      for s2 in right.clone() {
+        res.push(s1.clone().join_constraints(s2, join_termination.clone()));
+      }
+    }
+    res
+  }
+
+  pub fn term_and(a: bool, b: bool) -> bool { a && b }
+  pub fn term_or(a: bool, b: bool) -> bool { a || b }
 
   pub fn fold(self, models: Vec<CausalModel>) -> CausalModel {
-    models.into_iter().fold(self, |a, m| a.join_constraints(m, Self::and_inst))
+    models.into_iter().fold(self, |a, m| a.join_constraints(m, Self::term_and))
   }
 
   pub fn add_simultaneous_ops_constraint(&mut self, ops: Vec<usize>) {

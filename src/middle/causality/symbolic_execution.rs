@@ -16,6 +16,7 @@
 
 use context::*;
 use session::*;
+use middle::causality::causal_model::CausalModel;
 use gcollections::VectorStack;
 use gcollections::ops::*;
 use std::collections::HashSet;
@@ -26,8 +27,10 @@ use std::collections::HashSet;
 type State = HashSet<usize>;
 
 /// The set of all states such that one state represents one possible next instant.
+#[derive(Debug)]
 struct StatesSet {
   /// Invariant: `states` is never empty.
+  /// An element in the vector represents the possible paths of execution leading to distinct next instant.
   states: Vec<State>
 }
 
@@ -87,6 +90,36 @@ impl StatesSet {
   fn next_states(mut self) -> Vec<State> {
     self.remove_terminated();
     self.states
+  }
+
+  fn is_instantaneous(&self) -> bool {
+    self.states.len() == 1 && self.states[0].is_empty()
+  }
+
+  fn cartesian_product<F>(self, other: StatesSet, term_join: F) -> Self
+    where F: Fn(bool, bool) -> bool
+  {
+    let mut set = Self::terminated_state();
+    for s1 in self.states {
+      for s2 in other.states.clone() {
+        let is_terminated = term_join(s1.is_empty(), s2.is_empty());
+        let union =
+          if is_terminated {
+            HashSet::new()
+          }
+          else {
+            s1.union(&s2).cloned().collect()
+          };
+        if !set.contains(&union) {
+          set.states.push(union);
+        }
+      }
+    }
+    set
+  }
+
+  fn contains(&self, state: &State) -> bool {
+    self.states.iter().any(|s| s == state)
   }
 }
 
@@ -155,9 +188,12 @@ impl SymbolicExecution {
   }
 
   fn next(&mut self) -> Option<Stmt> {
+    trace!("current number of next instants: {}", self.next_instants.len());
     let instant = self.next_instants.pop();
     if let Some(instant) = instant.clone() {
       self.compute_residual(instant);
+      trace!("after residual: {}", self.next_instants.len());
+
     }
     instant
   }
@@ -186,6 +222,8 @@ impl SymbolicExecution {
       Seq(branches) => self.next_states_seq(branches),
       When(cond, then_branch, else_branch) =>
         self.next_states_when(cond, *then_branch, *else_branch),
+      OrPar(branches) => self.next_states_par(branches, CausalModel::term_or),
+      AndPar(branches) => self.next_states_par(branches, CausalModel::term_and),
       Space(_)
     | Prune
     | Nothing
@@ -194,8 +232,6 @@ impl SymbolicExecution {
       _ => StatesSet::terminated_state(),
       // Suspend(cond, body) => self.next_states_suspend(cond, *body, model),
       // Abort(cond, body) => self.next_states_abort(cond, *body, model),
-      // OrPar(branches) => self.next_states_or_par(branches),
-      // AndPar(branches) => self.next_states_and_par(branches),
       // Loop(body) => self.next_states_loop(*body),
       // ProcCall(var, process, args) => self.next_states_proc_call(var, process, args),
       // Universe(body) => self.next_states_universe(*body),
@@ -232,6 +268,18 @@ impl SymbolicExecution {
     states_then
   }
 
+  fn next_states_par<F>(&self, children: Vec<Stmt>, term_join: F) -> StatesSet
+    where F: Clone + Fn(bool, bool) -> bool
+  {
+    let mut next_states: Vec<_> = children.into_iter()
+      .map(|child| self.next_states_stmt(child))
+      .collect();
+    let mut next = next_states.remove(0);
+    for states_set in next_states {
+      next = next.cartesian_product(states_set, term_join.clone());
+    }
+    next
+  }
 
   fn reduce_stmt(&self, stmt: Stmt, state: State) -> ResidualStmt
   {
@@ -243,6 +291,8 @@ impl SymbolicExecution {
       Seq(branches) => self.reduce_seq(branches, state),
       When(cond, then_branch, else_branch) =>
         self.reduce_when(cond, *then_branch, *else_branch, state),
+      OrPar(branches) => self.reduce_or_par(span, branches, state),
+      AndPar(branches) => self.reduce_and_par(span, branches, state),
       Space(_)
     | Prune
     | Nothing
@@ -251,8 +301,6 @@ impl SymbolicExecution {
       _ => ResidualStmt::Terminated
       // Suspend(cond, body) => self.reduce_suspend(cond, *body, model, state),
       // Abort(cond, body) => self.reduce_abort(cond, *body, model, state),
-      // OrPar(branches) => self.reduce_or_par(branches),
-      // AndPar(branches) => self.reduce_and_par(branches),
       // Loop(body) => self.reduce_loop(*body),
       // ProcCall(var, process, args) => self.reduce_proc_call(var, process, args),
       // Universe(body) => self.reduce_universe(*body),
@@ -332,6 +380,39 @@ impl SymbolicExecution {
     }
     else {
       ResidualStmt::Terminated
+    }
+  }
+
+  fn reduce_or_par(&self, span: Span, children: Vec<Stmt>, state: State) -> ResidualStmt {
+    self.reduce_par(span, children, state, |next| StmtKind::OrPar(next))
+  }
+
+  fn reduce_and_par(&self, span: Span, children: Vec<Stmt>, state: State) -> ResidualStmt {
+    self.reduce_par(span, children, state, |next| StmtKind::AndPar(next))
+  }
+
+  fn reduce_par<F>(&self, span: Span, children: Vec<Stmt>, state: State, build_par: F) -> ResidualStmt
+    where F: Fn(Vec<Stmt>) -> StmtKind
+  {
+    let reduced: Vec<_> = children.into_iter()
+      .map(|c| self.reduce_stmt(c, state.clone()))
+      .filter(|r| r != &ResidualStmt::Terminated)
+      .collect();
+    if reduced.is_empty() {
+      ResidualStmt::Terminated
+    }
+    else {
+      let next: Vec<_> = reduced.into_iter()
+        .filter_map(|r| if let ResidualStmt::Next(n) = r { Some(n) } else { None })
+        .collect();
+      if next.is_empty() {
+        ResidualStmt::Paused
+      }
+      else {
+        ResidualStmt::Next(
+          Stmt::new(span, build_par(next))
+        )
+      }
     }
   }
 }

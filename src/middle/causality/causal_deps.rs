@@ -94,7 +94,7 @@ impl CausalDeps {
       else { (false, true) };
     let m1 = self.visit_expr(rel.left, l, model.clone());
     let m2 = self.visit_expr(rel.right, r, model);
-    m1.join_constraints(m2, CausalModel::and_inst)
+    m1.join_constraints(m2, CausalModel::term_and)
   }
 
   pub fn visit_var(&self, var: Variable, is_monotonic: bool, mut model: CausalModel) -> CausalModel {

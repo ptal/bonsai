@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,34 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(plugin, box_syntax)]
-#![plugin(oak)]
+// Example 4.5, Section 4.5.5 in the dissertation (Talbot, 2018).
 
-extern crate oak_runtime;
-extern crate clap;
-extern crate partial;
-extern crate syntex_pos;
-extern crate syntex_syntax;
-extern crate syntex_errors;
-extern crate regex;
-extern crate pcp;
-extern crate gcollections;
-extern crate interval;
-extern crate trilean;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
+package test;
 
-mod session;
-mod ast;
-mod visitor;
-mod context;
-mod driver;
-mod front;
-mod middle;
-mod back;
-
-fn main() {
-  env_logger::init();
-  driver::run();
+public class E0033_example4_5
+{
+  public proc test() =
+    single_time LMax x = new LMax(0);
+    single_time LMax y = new LMax(0);
+    par
+    || x <- 2
+    || when y |= x then y <- 3; pause end
+    end;
+    x <- 3;
+  end
 }
+
