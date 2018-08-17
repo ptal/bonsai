@@ -143,7 +143,7 @@ impl CausalStmt {
   {
     let model = match let_stmt.binding.expr {
       None => model,
-      Some(expr) => self.deps.visit_expr(expr, false, model)
+      Some(expr) => self.deps.visit_expr(expr, None, model)
     };
     self.visit_stmt(*(let_stmt.body), model, continuation)
   }
@@ -151,17 +151,17 @@ impl CausalStmt {
   fn visit_tell(&self, var: Variable, expr: Expr,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
   {
-    let m1 = self.deps.visit_expr(expr, false, model);
-    let m2 = self.deps.visit_var(var, false, m1);
+    let m1 = self.deps.visit_expr(expr, None, model);
+    let m2 = self.deps.visit_var(var, None, m1);
     continuation.call(self, m2)
   }
 
   fn visit_when(&self, condition: Expr, then_branch: Stmt, else_branch: Stmt,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
   {
-    let then_m = self.deps.visit_expr(condition.clone(), true, model.clone());
-    let else_m = self.deps.visit_expr(condition, false, model);
+    let then_m = self.deps.visit_expr(condition.clone(), Some(true), model.clone());
     let mut m1 = self.visit_stmt(then_branch, then_m, continuation.bclone());
+    let else_m = self.deps.visit_expr(condition, Some(false), model);
     let mut m2 = self.visit_stmt(else_branch, else_m, continuation);
     m1.append(&mut m2);
     m1
@@ -170,7 +170,7 @@ impl CausalStmt {
   fn visit_expr_stmt(&self, expr: Expr,
       model: CausalModel, continuation: Cont) -> Vec<CausalModel>
   {
-    let m = self.deps.visit_expr(expr, false, model);
+    let m = self.deps.visit_expr(expr, None, model);
     continuation.call(self, m)
   }
 

@@ -25,7 +25,11 @@ impl CausalDeps {
     CausalDeps { }
   }
 
-  pub fn visit_expr(&self, expr: Expr, is_monotonic: bool, model: CausalModel) -> CausalModel {
+  /// `is_monotonic` is:
+  ///    * `None` if `expr` does not appear in a condition (such as in `when expr then P end`).
+  ///    * `Some(true)` if the condition is constrained to be monotonic.
+  ///    * `Some(false)` if the condition is constrained to be anti-monotonic.
+  pub fn visit_expr(&self, expr: Expr, is_monotonic: Option<bool>, model: CausalModel) -> CausalModel {
     use ast::ExprKind::*;
     match expr.node {
       Number(_)
@@ -46,15 +50,13 @@ impl CausalDeps {
   /// Arguments of a function must not be sequentially ordered: it is possible to execute them in any order.
   /// For example: `f(read x, write x)` must fail because we cannot sequentially order the write after the read.
   /// Constraining operations to be simultaneous enforces that these operations are not sequentially ordered.
-  fn visit_exprs_simultaneously(&self, exprs: Vec<Expr>, is_monotonic: bool, mut model: CausalModel) -> CausalModel {
+  fn visit_exprs_simultaneously(&self, exprs: Vec<Expr>, is_monotonic: Option<bool>, mut model: CausalModel) -> CausalModel {
     let mut op_models = vec![];
     let mut models = vec![];
     for expr in exprs {
       let is_var = expr.is_var();
       let m = self.visit_expr(expr, is_monotonic, model.clone());
-      if is_var {
-        op_models.push(m);
-      }
+      if is_var { op_models.push(m); }
       else { models.push(m); }
     }
     model = model.fold(models);
@@ -68,13 +70,13 @@ impl CausalDeps {
 
   /// We restrict ourselves to binary operations causal with a left-to-right order of evaluation.
   /// This is to simplify the runtime.
-  fn visit_bin_op(&self, left: Expr, right: Expr, is_monotonic: bool, model: CausalModel) -> CausalModel {
+  fn visit_bin_op(&self, left: Expr, right: Expr, is_monotonic: Option<bool>, model: CausalModel) -> CausalModel {
     let m1 = self.visit_expr(left, is_monotonic, model);
     self.visit_expr(right, is_monotonic, m1)
   }
 
-  fn visit_method_call(&self, call: MethodCall, is_monotonic: bool, model: CausalModel) -> CausalModel {
-    assert_eq!(is_monotonic, false,
+  fn visit_method_call(&self, call: MethodCall, is_monotonic: Option<bool>, model: CausalModel) -> CausalModel {
+    assert!(is_monotonic == Some(false) || is_monotonic == None,
       "visit_method_call: method can only be called in a non-monotonic context.\n\
       This should be checked in `infer_permission.rs` (E0027).");
     let mut args = call.args;
@@ -88,18 +90,26 @@ impl CausalDeps {
   /// The sub-expressions of the entailment are quite limited:
   /// By the analysis E0026 and E0027 host functions, write and readwrite are forbidden.
   /// Therefore, there is no need to generate sequential constraints between the left and right sides.
-  fn visit_entailment(&self, rel: EntailmentRel, is_monotonic: bool, model: CausalModel) -> CausalModel {
+  fn visit_entailment(&self, rel: EntailmentRel, is_monotonic: Option<bool>, model: CausalModel) -> CausalModel {
     let (l, r) =
-      if is_monotonic { (true, false) }
-      else { (false, true) };
+      match is_monotonic {
+        None => (None, None),
+        Some(true) => (Some(true), Some(false)),
+        Some(false) => (Some(false), Some(true))
+      };
     let m1 = self.visit_expr(rel.left, l, model.clone());
     let m2 = self.visit_expr(rel.right, r, model);
     m1.join_constraints(m2, CausalModel::term_and)
   }
 
-  pub fn visit_var(&self, var: Variable, is_monotonic: bool, mut model: CausalModel) -> CausalModel {
-    if is_monotonic {
-      return model;
+  pub fn visit_var(&self, var: Variable, is_monotonic: Option<bool>, mut model: CausalModel) -> CausalModel {
+    debug!("visit var {}, monotonic: {:?}", var, is_monotonic);
+    model.params.activate_op(var.op_no);
+    if let Some(true) = is_monotonic {
+      model.params.store_monotonic_read(var.op_no);
+    }
+    if var.permission.unwrap() != Permission::Read {
+      model.params.register_relaxed_op(var.op_no);
     }
     model.add_after_latest_constraint(var.op_no);
     model.instantaneous = true;
@@ -111,4 +121,3 @@ impl CausalDeps {
     model
   }
 }
-

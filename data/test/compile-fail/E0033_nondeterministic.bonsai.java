@@ -12,28 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0033, 1, 0)]
+// Corrected version of the nondeterministic example Section 4.5.1 in the dissertation (Talbot, 2018).
+
 #[error(E0033, 1, 0)]
 #[error(E0033, 1, 0)]
 
 package test;
 
-public class E0033_1
+public class E0033_nondeterministic
 {
-  single_space LMax a = bot;
-
-  public proc test1() =
-    f(read a);
-    f(write a);
+  public proc test() =
+    single_time LMax x = new LMax(2);
+    single_time LMax y = new LMax(2);
+    par
+    || when x |= y then x <- 4 end
+    || when x |= 2 then y <- 3 end
+    end
   end
 
   public proc test2() =
-    a <- f(readwrite a)
-  end
-
-  public proc test3() =
-    single_space Trilean r = bot;
-    r <- a |= 2; // The result of `a |= 2` might change on the next instruction.
-    a <- 4; // It is forbidden to write after `a |= 2` outside of a conditional statement.
+    single_time LMax x = new LMax(1);
+    single_time LMax y = new LMax(2);
+    par
+    || when x |= y then x <- 4 else y <- 4 end
+    || when y |= 4 then x <- 4 end
+    end
   end
 }

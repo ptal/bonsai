@@ -667,6 +667,17 @@ impl Hash for Variable {
   }
 }
 
+impl Display for Variable {
+  fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+    match self.permission {
+      Some(p) => { fmt.write_fmt(format_args!("{}", p))?; }
+      None => (),
+    };
+    fmt.write_fmt(format_args!("({}) {}({})",
+      self.op_no, self.path, self.last_uid()))
+  }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
   /// A spacetime variable, either as a module's field or local to a process.

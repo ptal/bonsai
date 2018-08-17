@@ -14,26 +14,28 @@
 
 #[error(E0033, 1, 0)]
 #[error(E0033, 1, 0)]
-#[error(E0033, 1, 0)]
 
 package test;
 
-public class E0033_1
-{
-  single_space LMax a = bot;
+/// If we do a more precise causality analysis, taking into account that both entailment are equal, these two examples should succeed.
 
-  public proc test1() =
-    f(read a);
-    f(write a);
+public class E0033_9
+{
+  public proc test() =
+    single_time LMax x = new LMax(0);
+    single_time LMax y = new LMax(0);
+    par
+    || when x |= y then x <- 1 end
+    || when x |= y then x <- 2 else y <- 3 end
+    end
   end
 
   public proc test2() =
-    a <- f(readwrite a)
-  end
-
-  public proc test3() =
-    single_space Trilean r = bot;
-    r <- a |= 2; // The result of `a |= 2` might change on the next instruction.
-    a <- 4; // It is forbidden to write after `a |= 2` outside of a conditional statement.
+    single_time LMax x = new LMax(0);
+    single_time LMax y = new LMax(0);
+    par
+    || when x |= y then nothing else y <- 2 end
+    || when x |= y then x <- 2 else y <- 3 end
+    end
   end
 }

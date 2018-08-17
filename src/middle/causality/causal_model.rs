@@ -30,7 +30,7 @@ pub struct CausalModel {
   pub latest_ops: Vec<usize>,
   pub instantaneous: bool,
   pub order_of_op: Vec<Var<VStore>>,
-  pub params: ModelParameters
+  pub params: ModelParameters,
 }
 
 impl CausalModel {
@@ -107,7 +107,6 @@ impl CausalModel {
   }
 
   pub fn add_after_latest_constraint(&mut self, after_op: usize) {
-    self.params.activate_op(after_op);
     for before_op in self.latest_ops.clone() {
       self.add_sequential_constraint(before_op, after_op);
     }

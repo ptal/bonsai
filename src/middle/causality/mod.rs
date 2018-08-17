@@ -43,4 +43,3 @@ fn execute_symbolically(session: Session, (context, params): (Context, ModelPara
        .and_then(solve_causal_model)
     })
 }
-
