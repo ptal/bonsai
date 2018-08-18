@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Given a process P, we iterate over all the possible execution paths of a spacetime program.
+/// Given a process P, we iterate over all the instansts of a spacetime program, and all the possible execution paths of these instants.
 
 use context::*;
 use session::*;
 use middle::causality::causal_model::CausalModel;
+use middle::ir::compiler::{Instant, AllInstants};
+use middle::ir::scheduling::*;
 use gcollections::VectorStack;
 use gcollections::ops::*;
 use std::collections::HashSet;
@@ -24,7 +26,7 @@ use std::collections::HashSet;
 /// A state is the set of all delay statements that must be resumed in the next instant.
 /// Therefore, `usize` are only pushed by parallel statements.
 /// An empty `HashSet` represents a terminated execution path.
-type State = HashSet<usize>;
+pub type State = HashSet<usize>;
 
 /// The set of all states such that one state represents one possible next instant.
 #[derive(Debug)]
@@ -134,7 +136,8 @@ pub struct SymbolicExecution {
   session: Session,
   context: Context,
   visited_states: Vec<State>,
-  next_instants: VectorStack<Stmt>
+  next_instants: VectorStack<Instant>,
+  all_instants: AllInstants
 }
 
 impl SymbolicExecution {
@@ -143,27 +146,33 @@ impl SymbolicExecution {
       session: session,
       context: context,
       visited_states: vec![],
-      next_instants: VectorStack::empty()
+      next_instants: VectorStack::empty(),
+      all_instants: vec![]
     }
   }
 
-  pub fn for_each<F>(mut self, f: F) -> Env<Context>
-   where F: Fn(Env<(Context, Stmt)>) -> Env<Context>
+  pub fn for_each<F>(mut self, f: F) -> Env<(Context, AllInstants)>
+   where F: Fn(Env<(Context, Stmt)>) -> Env<(Context, Vec<Scheduling>)>
   {
     let mut fake = false;
     self.initialize();
-    while let Some(instant) = self.next() {
-      let env = f(Env::value(self.session, (self.context, instant)));
-      let (session, context) = env.decompose();
-      if context.is_value() || context.is_fake() {
-        fake = fake || context.is_fake();
-        self.context = context.unwrap_all();
-        self.session = session;
+    while let Some(mut instant) = self.next() {
+      let env = f(Env::value(self.session, (self.context, instant.program.clone())));
+      let (session, data) = env.decompose();
+      fake = fake || data.is_fake();
+      match data {
+        Partial::Value((context, schedule_paths))
+      | Partial::Fake((context, schedule_paths)) => {
+          instant.schedule_paths = schedule_paths;
+          self.all_instants.push(instant);
+          self.context = context;
+          self.session = session;
+        }
+        _ => { return Env::nothing(session) }
       }
-      else { return Env::nothing(session) }
     }
-    if fake { Env::fake(self.session, self.context) }
-    else { Env::value(self.session, self.context) }
+    if fake { Env::fake(self.session, (self.context, self.all_instants)) }
+    else { Env::value(self.session, (self.context, self.all_instants))}
   }
 
   /// Returns `true` if the state has not been visited before.
@@ -171,11 +180,11 @@ impl SymbolicExecution {
     self.visited_states.iter().any(|s| s == &state)
   }
 
-  fn push_instant(&mut self, instant: Option<Stmt>, state: State) {
-    self.visited_states.push(state);
-    if let Some(instant) = instant {
-      self.next_instants.push(instant);
-    }
+  fn push_instant(&mut self, next_program: Option<Stmt>, state: State) {
+    self.visited_states.push(state.clone());
+    let nothing = Stmt::new(DUMMY_SP, StmtKind::Nothing);
+    let instant = Instant::init(state, next_program.clone().unwrap_or(nothing));
+    self.next_instants.push(instant);
   }
 
   fn initialize(&mut self) {
@@ -187,17 +196,18 @@ impl SymbolicExecution {
     }
   }
 
-  fn next(&mut self) -> Option<Stmt> {
+  fn next(&mut self) -> Option<Instant> {
     trace!("current number of next instants: {}", self.next_instants.len());
     let instant = self.next_instants.pop();
     if let Some(instant) = instant.clone() {
-      self.compute_residual(instant);
+      self.compute_residual(instant.program.clone());
       trace!("after residual: {}", self.next_instants.len());
-
     }
     instant
   }
 
+  /// We first compute all the distinct set of locations states in which `current` could stop.
+  /// Then, we each possible set of locations, we compute its residual statement.
   fn compute_residual(&mut self, current: Stmt) {
     let states_set = self.next_states_stmt(current.clone());
     for state in states_set.next_states() {

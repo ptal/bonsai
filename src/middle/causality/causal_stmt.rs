@@ -24,8 +24,8 @@ use middle::causality::causal_deps::*;
 pub fn build_causal_model(session: Session, context: Context, program: Stmt, params: ModelParameters)
   -> Env<(Context,Vec<CausalModel>)>
 {
-  let model = CausalStmt::new(session, context, params);
-  model.compute(program)
+  let causal_stmt = CausalStmt::new(session, context, params);
+  causal_stmt.compute(program)
 }
 
 trait Continuation {

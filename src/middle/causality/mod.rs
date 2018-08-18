@@ -15,10 +15,10 @@
 mod indexing;
 mod causal_stmt;
 mod causal_deps;
-mod causal_model;
+pub mod causal_model;
 mod model_parameters;
 mod solver;
-mod symbolic_execution;
+pub mod symbolic_execution;
 
 use context::*;
 use session::*;
@@ -27,16 +27,16 @@ use middle::causality::solver::*;
 use middle::causality::causal_stmt::*;
 use middle::causality::symbolic_execution::*;
 use middle::causality::model_parameters::*;
+use middle::ir::compiler::AllInstants;
 
-pub fn causality_analysis(session: Session, context: Context) -> Env<Context> {
+pub fn causality_analysis(session: Session, context: Context) -> Env<(Context, AllInstants)> {
   Env::value(session, context)
     .and_then(index_ops_and_delay)
     .and_then(execute_symbolically)
 }
 
-fn execute_symbolically(session: Session, (context, params): (Context, ModelParameters)) -> Env<Context> {
+fn execute_symbolically(session: Session, (context, params): (Context, ModelParameters)) -> Env<(Context, AllInstants)> {
   let symbolic = SymbolicExecution::new(session, context);
-  // let params = c.1;
   symbolic.for_each(|env| {
     env.and_then(|session, (context, stmt)|
           build_causal_model(session, context, stmt, params.clone()))

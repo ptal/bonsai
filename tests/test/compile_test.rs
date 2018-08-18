@@ -16,6 +16,7 @@ use test::*;
 
 use libbonsai::ast::*;
 use libbonsai::context::*;
+use libbonsai::middle::ir::guarded_command::IR;
 
 use std::path::{PathBuf};
 
@@ -25,7 +26,7 @@ use ExpectedResult;
 pub struct CompileTest<'a>
 {
   display: &'a mut Display,
-  result: Partial<Context>,
+  result: Partial<(Context, IR)>,
   expect: ExpectedResult,
   expected_diagnostics: Vec<CompilerTest>,
   obtained_diagnostics: Vec<CompilerTest>,
@@ -36,7 +37,7 @@ pub struct CompileTest<'a>
 impl<'a> CompileTest<'a>
 {
   pub fn new(display: &'a mut Display,
-    result: Partial<Context>, expect: ExpectedResult,
+    result: Partial<(Context, IR)>, expect: ExpectedResult,
     expected_diagnostics: Vec<CompilerTest>,
     obtained_diagnostics: Vec<CompilerTest>,
     test_path: PathBuf,
@@ -49,7 +50,7 @@ impl<'a> CompileTest<'a>
   }
 
   /// Returns the context if the compilation succeeded as expected.
-  pub fn diagnostic(mut self) -> Option<Context> {
+  pub fn diagnostic(mut self) -> Option<(Context, IR)> {
     let file_name = self.file_name();
     if self.compilation_status(file_name.clone()) {
       self.compare_diagnostics(file_name)
@@ -59,7 +60,7 @@ impl<'a> CompileTest<'a>
     }
   }
 
-  pub fn context_to_option(self) -> Option<Context> {
+  pub fn context_to_option(self) -> Option<(Context, IR)> {
     match self.result {
       Partial::Value(x) => Some(x),
       _ => None
@@ -81,7 +82,7 @@ impl<'a> CompileTest<'a>
     }
   }
 
-  fn compare_diagnostics(mut self, file_name: String) -> Option<Context> {
+  fn compare_diagnostics(mut self, file_name: String) -> Option<(Context, IR)> {
     self.obtained_diagnostics.sort();
     self.expected_diagnostics.sort();
     if &self.obtained_diagnostics != &self.expected_diagnostics {

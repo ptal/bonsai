@@ -16,6 +16,7 @@ use libbonsai::session::*;
 use libbonsai::driver::*;
 use libbonsai::context::*;
 use libbonsai::driver::module_file::ModuleFile;
+use libbonsai::middle::ir::guarded_command::IR;
 
 use syntex_syntax::codemap::{CodeMap};
 use std::rc::Rc;
@@ -117,12 +118,13 @@ impl Engine
   ///   (1) Compile it (back phase)
   ///   (2) Execute it in a sandbox ("data/test/sandbox")
   ///   (3) Compare the output result with the expected regex result.
-  fn run_file(&mut self, mut session: Session, mut context: Context, filepath: PathBuf) {
+  fn run_file(&mut self, mut session: Session, (mut context, ir): (Context, IR), filepath: PathBuf) {
     self.maven.delete_source_files();
     for test in session.execution_tests.clone() {
       self.maven.delete_source_files();
       session.config.configure_execution_test(&test);
-      let env = run_back(session, context).ensure("[Test] Could not generate the Bonsai code.");
+      let env = run_back(session, (context, ir.clone()))
+        .ensure("[Test] Could not generate the Bonsai code.");
       let (s, c) = env.decompose();
       session = s;
       context = c.unwrap();

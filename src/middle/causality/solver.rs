@@ -15,10 +15,11 @@
 use session::*;
 use context::*;
 use middle::causality::causal_model::*;
+use middle::ir::scheduling::*;
 use pcp::search::*;
 use pcp::kernel::*;
 
-pub fn solve_causal_model(session: Session, c: (Context, Vec<CausalModel>)) -> Env<Context> {
+pub fn solve_causal_model(session: Session, c: (Context, Vec<CausalModel>)) -> Env<(Context, Vec<Scheduling>)> {
   let solver = Solver::new(session, c.0, c.1);
   solver.solve_all()
 }
@@ -34,41 +35,43 @@ impl Solver {
     Solver { session, context, models }
   }
 
-  pub fn solve_all(mut self) -> Env<Context> {
+  pub fn solve_all(mut self) -> Env<(Context, Vec<Scheduling>)> {
     debug!("{} causal models\n", self.models.len());
     debug!("{} instantaneous causal models\n", self.models.iter().filter(|m| m.instantaneous).count());
+    let mut schedule_paths = vec![];
     for model in self.models.clone() {
       if let Some(model) = self.prepare_model(model) {
-        if !self.solve_model(model) {
-          break;
+        match self.solve_model(model) {
+          Some(schedule) => schedule_paths.push(schedule),
+          None => break,
         }
       }
     }
     if self.session.has_errors() {
-      Env::fake(self.session, self.context)
+      Env::fake(self.session, (self.context, schedule_paths))
     } else {
-      Env::value(self.session, self.context)
+      Env::value(self.session, (self.context, schedule_paths))
     }
   }
 
-  fn solve_model(&mut self, model: CausalModel) -> bool {
+  fn solve_model(&mut self, model: CausalModel) -> Option<Scheduling> {
     // Search step.
     let space = model.clone().space;
     let mut search = one_solution_engine();
     search.start(&space);
     let (frozen_space, status) = search.enter(space);
-    let _space = frozen_space.unfreeze();
+    let space = frozen_space.unfreeze();
 
     // Print result.
     match status {
       Status::Satisfiable => {
-        trace!("{:?}\n\n{:?}", _space.vstore, _space.cstore);
-        true
+        trace!("{:?}\n\n{:?}", space.vstore, space.cstore);
+        Some(Scheduling::new(model, space))
       },
       Status::Unsatisfiable => {
         self.err_unsatisfiable_model();
-        trace!("{:?}\n\n{:?}", _space.vstore, _space.cstore);
-        false
+        trace!("{:?}\n\n{:?}", space.vstore, space.cstore);
+        None
       }
       Status::EndOfSearch
     | Status::Unknown(_) => unreachable!(
