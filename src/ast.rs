@@ -304,7 +304,9 @@ pub enum StmtKind {
   ProcCall(Option<Variable>, Ident, Vec<Variable>),
   ExprStmt(Expr),
   Universe(Box<Stmt>),
-  Nothing
+  Nothing,
+  // Meta statement not appearing in the spacetime syntax.
+  LocalDrop(VarPath)
 }
 
 impl StmtKind {

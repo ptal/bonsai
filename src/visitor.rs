@@ -107,6 +107,8 @@ pub trait Visitor<H>
     self.visit_stmt(child)
   }
 
+  fn visit_drop(&mut self, _var_path: VarPath) {}
+
   fn visit_binding(&mut self, binding: Binding) {
     walk_binding(self, binding)
   }
@@ -194,7 +196,8 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     ExprStmt(expr) => visitor.visit_expr_stmt(expr),
     ProcCall(var, process, args) => visitor.visit_proc_call(var, process, args),
     Universe(body) => visitor.visit_universe(*body),
-    Nothing => visitor.visit_nothing()
+    Nothing => visitor.visit_nothing(),
+    LocalDrop(var_path) => visitor.visit_drop(var_path),
   }
 }
 
@@ -357,6 +360,8 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
+  fn visit_drop(&mut self, _var_path: &mut VarPath) {}
+
   fn visit_binding(&mut self, binding: &mut Binding) {
     walk_binding_mut(self, binding);
   }
@@ -444,7 +449,8 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut ProcCall(ref mut var, ref process, ref mut args) => visitor.visit_proc_call(var, process.clone(), args),
     &mut ExprStmt(ref mut expr) => visitor.visit_expr_stmt(expr),
     &mut Universe(ref mut body) => visitor.visit_universe(&mut **body),
-    &mut Nothing => visitor.visit_nothing()
+    &mut Nothing => visitor.visit_nothing(),
+    &mut LocalDrop(ref mut var_path) => visitor.visit_drop(var_path),
   }
 }
 

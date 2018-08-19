@@ -236,6 +236,7 @@ impl SymbolicExecution {
       AndPar(branches) => self.next_states_par(branches, CausalModel::term_and),
       Space(_)
     | Prune
+    | LocalDrop(_)
     | Nothing
     | ExprStmt(_)
     | Tell(_, _) => StatesSet::terminated_state(),
@@ -305,6 +306,7 @@ impl SymbolicExecution {
       AndPar(branches) => self.reduce_and_par(span, branches, state),
       Space(_)
     | Prune
+    | LocalDrop(_)
     | Nothing
     | ExprStmt(_)
     | Tell(_, _) => ResidualStmt::Terminated,

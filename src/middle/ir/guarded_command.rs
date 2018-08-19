@@ -35,9 +35,9 @@ pub struct GuardedCommand {
 pub enum Action {
   Call(MethodCall),
   Init(Binding),
-  Drop(Variable),
+  LocalDrop(VarPath),
   Tell(Variable, Expr),
   Delay(Variable, DelayKind),
   Push(Variable),
-  Prune(Variable),
+  Prune(VarPath),
 }
