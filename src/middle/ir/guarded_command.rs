@@ -13,15 +13,18 @@
 // limitations under the License.
 
 use context::*;
+use std::collections::HashMap;
+
+pub type GuardedProgram = Vec<GuardedCommand>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IR {
-  pub guarded_commands: Vec<GuardedCommand>
+  pub processes: HashMap<ProcessUID, GuardedProgram>,
 }
 
 impl IR {
   pub fn new() -> Self {
-    IR { guarded_commands: vec![] }
+    IR { processes: HashMap::new() }
   }
 }
 
@@ -37,7 +40,7 @@ pub enum Action {
   Init(Binding),
   LocalDrop(VarPath),
   Tell(Variable, Expr),
-  Delay(Variable, DelayKind),
-  Push(Variable),
+  Delay(VarPath, DelayKind),
+  Push(VarPath),
   Prune(VarPath),
 }

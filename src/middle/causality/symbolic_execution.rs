@@ -21,11 +21,11 @@ use middle::ir::compiler::{Instant, AllInstants};
 use middle::ir::scheduling::*;
 use gcollections::VectorStack;
 use gcollections::ops::*;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 /// A state is the set of all delay statements that must be resumed in the next instant.
 /// Therefore, `usize` are only pushed by parallel statements.
-/// An empty `HashSet` represents a terminated execution path.
+/// An empty `HashSet` represents a terminated execution path or the first instant of a process.
 pub type State = HashSet<usize>;
 
 /// The set of all states such that one state represents one possible next instant.
@@ -137,11 +137,12 @@ pub struct SymbolicExecution {
   context: Context,
   visited_states: Vec<State>,
   next_instants: VectorStack<Instant>,
-  all_instants: AllInstants
+  all_instants: Vec<Instant>,
 }
 
-impl SymbolicExecution {
-  pub fn new(session: Session, context: Context) -> Self {
+impl SymbolicExecution
+{
+  fn new(session: Session, context: Context) -> Self {
     SymbolicExecution {
       session: session,
       context: context,
@@ -151,11 +152,41 @@ impl SymbolicExecution {
     }
   }
 
-  pub fn for_each<F>(mut self, f: F) -> Env<(Context, AllInstants)>
+  pub fn for_each_instant<F>(mut session: Session, mut context: Context, f: F) -> Env<(Context, AllInstants)>
+   where F: Clone + Fn(Env<(Context, Stmt)>) -> Env<(Context, Vec<Scheduling>)>
+  {
+    let mut all_instants = HashMap::new();
+    let mut fake = false;
+    for uid in context.entry_points.clone() {
+      let mut this = SymbolicExecution::new(session, context);
+      this.push_process(uid.clone());
+      let env = this.for_each(f.clone());
+      let (s, data) = env.decompose();
+      fake = fake || data.is_fake();
+      match data {
+        Partial::Value((c, instants))
+      | Partial::Fake((c, instants)) => {
+          all_instants.insert(uid, instants);
+          context = c;
+          session = s;
+        }
+        _ => { return Env::nothing(s) }
+      }
+    }
+    if fake { Env::fake(session, (context, all_instants)) }
+    else { Env::value(session, (context, all_instants))}
+  }
+
+  fn push_process(&mut self, uid: ProcessUID) {
+    let process = self.context.find_proc(uid.clone());
+    let state = HashSet::new();
+    self.push_instant(Some(process.body), state);
+  }
+
+  fn for_each<F>(mut self, f: F) -> Env<(Context, Vec<Instant>)>
    where F: Fn(Env<(Context, Stmt)>) -> Env<(Context, Vec<Scheduling>)>
   {
     let mut fake = false;
-    self.initialize();
     while let Some(mut instant) = self.next() {
       let env = f(Env::value(self.session, (self.context, instant.program.clone())));
       let (session, data) = env.decompose();
@@ -185,15 +216,6 @@ impl SymbolicExecution {
     let nothing = Stmt::new(DUMMY_SP, StmtKind::Nothing);
     let instant = Instant::init(state, next_program.clone().unwrap_or(nothing));
     self.next_instants.push(instant);
-  }
-
-  fn initialize(&mut self) {
-    for (i, uid) in self.context.entry_points.clone().into_iter().enumerate() {
-      let process = self.context.find_proc(uid.clone());
-      let mut state = HashSet::new();
-      state.insert(i);
-      self.push_instant(Some(process.body), state);
-    }
   }
 
   fn next(&mut self) -> Option<Instant> {

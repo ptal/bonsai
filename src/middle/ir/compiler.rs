@@ -17,8 +17,10 @@ use session::*;
 use middle::causality::symbolic_execution::State;
 use middle::ir::guarded_command::*;
 use middle::ir::scheduling::*;
+use std::cmp;
+use std::collections::HashMap;
 
-pub type AllInstants = Vec<Instant>;
+pub type AllInstants = HashMap<ProcessUID, Vec<Instant>>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Instant {
@@ -42,15 +44,38 @@ pub struct Compiler {
   session: Session,
   context: Context,
   instants: AllInstants,
-  ir: IR
+  ir: IR,
+  location_names: Vec<Ident>,
 }
 
 impl Compiler {
   pub fn new(session: Session, context: Context, instants: AllInstants) -> Self {
-    Compiler { session, context, instants, ir: IR::new() }
+    Compiler {
+      session, context, instants,
+      ir: IR::new(),
+      location_names: vec![]
+    }
   }
 
-  pub fn compile(self) -> Env<(Context, IR)> {
+  pub fn compile(mut self) -> Env<(Context, IR)> {
+    // self.initialize_locations();
+    // let instants = self.instants;
+    // self.instants = vec![];
+    // for instant in instants {
+    //   self.compile_instant(instant);
+    // }
     Env::value(self.session, (self.context, self.ir))
   }
+
+  // fn initialize_locations(&mut self) {
+  //   let max_loc = self.instants.iter()
+  //     .flat_map(|i| i.locations.iter())
+  //     .fold(0, cmp::max);
+  //   for loc in 0..max_loc+1
+  //   self.ir.
+  // }
+
+  // fn compile_instant(&mut self, instant: Instant) -> Vec<GuardedProgram> {
+
+  // }
 }

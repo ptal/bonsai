@@ -18,7 +18,6 @@
 ///      We also create a `reversed index lookup` in `ModelParameters` where we can search a variable from an operation number.
 ///   2. Indexing every pause-like statements (`pause`,`pause up`,`stop`,`suspend`) with an integer.
 ///      This is useful to represent an instant with a compact state (instead of the full AST).
-///      The first n indexes are reserved to the entry points of the program.
 
 use context::*;
 use session::*;
@@ -39,11 +38,10 @@ struct Indexing {
 
 impl Indexing {
   pub fn new(session: Session, context: Context) -> Self {
-    let entry_points_indexes = context.entry_points.len();
     Indexing {
       session, context,
       params: ModelParameters::new(),
-      state_num: entry_points_indexes
+      state_num: 0
     }
   }
 
@@ -56,7 +54,7 @@ impl Indexing {
 
   fn gen_state(&mut self) -> usize {
     self.state_num += 1;
-    self.state_num
+    self.state_num - 1
   }
 }
 

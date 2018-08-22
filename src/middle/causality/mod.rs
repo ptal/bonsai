@@ -36,8 +36,7 @@ pub fn causality_analysis(session: Session, context: Context) -> Env<(Context, A
 }
 
 fn execute_symbolically(session: Session, (context, params): (Context, ModelParameters)) -> Env<(Context, AllInstants)> {
-  let symbolic = SymbolicExecution::new(session, context);
-  symbolic.for_each(|env| {
+  SymbolicExecution::for_each_instant(session, context, |env| {
     env.and_then(|session, (context, stmt)|
           build_causal_model(session, context, stmt, params.clone()))
        .and_then(solve_causal_model)
