@@ -17,7 +17,7 @@ name = "bonsai"
 doc = false
 
 [dependencies]
-oak = "^0.5.8"
+oak = "^0.5.9"
 oak_runtime = "^0.5.5"
 partial = "^0.4.0"
 clap = "^2"

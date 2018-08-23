@@ -15,6 +15,10 @@
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 grammar! bonsai {
+
+  /// Convention: `_os` means that the rule is not parsing trailing space (os = open space).
+  ///             This is required to avoid reporting error with trailing space included.
+
   // #![debug_api]
   use std::str::FromStr;
   use ast::*;
@@ -63,8 +67,8 @@ grammar! bonsai {
   header = test_annotation* java_package java_import*
 
   java_import
-    = .. IMPORT fully_qualified_name SEMI_COLON > make_single_type_import
-    / .. IMPORT fully_qualified_name DOT STAR SEMI_COLON > make_all_type_import
+    = (.. IMPORT fully_qualified_name) SEMI_COLON > make_single_type_import
+    / (.. IMPORT fully_qualified_name DOT STAR) SEMI_COLON > make_all_type_import
 
   fn make_single_type_import(span: Span, fqn: FQN) -> JImport {
     JImport::new(span, fqn, false)
@@ -98,12 +102,12 @@ grammar! bonsai {
 
   item
     = module_field
-    / .. java_visibility? PROC identifier java_param_list EQ open_sequence > make_process_item
+    / (.. java_visibility? PROC identifier java_param_list) EQ open_sequence > make_process_item
     / java_field
     / java_method
     / java_constructor
 
-  module_field = .. java_visibility? (.. REF)? bonsai_binding SEMI_COLON > make_module_field
+  module_field = (.. java_visibility? (.. REF)? bonsai_binding) SEMI_COLON > make_module_field
 
   fn make_module_field(span: Span, visibility: Option<JVisibility>,
     is_ref: Option<Span>, binding: Binding) -> Item
@@ -125,7 +129,7 @@ grammar! bonsai {
     = .. java_visibility identifier java_param_list java_block kw_tail > make_java_constructor
 
   java_field
-    = .. (FINAL->())? java_visibility? (STATIC->())? java_binding SEMI_COLON > make_java_field
+    = (.. (FINAL->())? java_visibility? (STATIC->())? java_binding) SEMI_COLON > make_java_field
 
   fn make_java_field(span: Span, is_final: Option<()>, visibility: Option<JVisibility>,
     is_static: Option<()>, binding: Binding) -> Item
@@ -167,7 +171,7 @@ grammar! bonsai {
     = LPAREN jparameter (COMMA jparameter)* RPAREN > make_java_param_list
     / LPAREN RPAREN > empty_param_list
 
-  jparameter = .. java_ty identifier > make_jparameter
+  jparameter = (.. java_ty identifier_os) spacing > make_jparameter
 
   fn make_java_param_list(first: JParameter, rest: Vec<JParameter>) -> JParameters
   {
@@ -178,18 +182,6 @@ grammar! bonsai {
 
   fn make_jparameter(span: Span, java_ty: JType, name: Ident) -> JParameter {
     JParameter::new(span, java_ty, name)
-  }
-
-  list_ident
-    = identifier (COMMA identifier)* > make_list_ident
-    / "" > empty_ident_list
-
-  fn make_list_ident(first: Ident, rest: Vec<Ident>) -> Vec<Ident> {
-    extend_front(first, rest)
-  }
-
-  fn empty_ident_list() -> Vec<Ident> {
-    vec![]
   }
 
   java_block = "{" java_inside_block "}" > make_java_block
@@ -204,12 +196,12 @@ grammar! bonsai {
   // An open sequence is a sequence in a process such as `proc f = s1; s2 end`.
   // We need a keyword `end` to be disambiguate between variable declaration and class attribute.
   open_sequence
-    = .. stmt (SEMI_COLON stmt)+ SEMI_COLON? END > make_seq
+    = (.. stmt (SEMI_COLON stmt)+ SEMI_COLON? END_OS) spacing > make_seq
     / stmt SEMI_COLON? END?
 
   // Sequences occurring inside a process do not need this `end` delimiter.
   close_sequence
-    = .. stmt (SEMI_COLON stmt)+ SEMI_COLON? > make_seq
+    = (.. stmt (SEMI_COLON stmt)+) SEMI_COLON? > make_seq
     / stmt SEMI_COLON?
 
   fn make_seq(span: Span, first: Stmt, rest: Vec<Stmt>) -> Stmt {
@@ -217,24 +209,24 @@ grammar! bonsai {
   }
 
   stmt
-    = .. stmt_kind > make_stmt
+    = (.. stmt_kind_os) spacing > make_stmt
 
-  stmt_kind
-    = PAR BARBAR? close_sequence (BARBAR close_sequence)* END > make_and_par
-    / PAR DIAMOND? close_sequence (DIAMOND close_sequence)* END > make_or_par
-    / SPACE close_sequence END > make_space
-    / PRUNE > make_prune
-    / WHEN expr THEN close_sequence (ELSE close_sequence)? END > make_when
-    / SUSPEND WHEN expr IN close_sequence END > make_suspend
-    / ABORT WHEN expr IN close_sequence END > make_abort
-    / PAUSEUP > make_pause_up
-    / STOP > make_stop
-    / PAUSE > make_pause
-    / NOTHING > make_nothing
-    / LOOP close_sequence END > make_loop
-    / UNIVERSE close_sequence END > make_universe
-    / RUN proc_call > make_proc_call
-    / binding > make_let_stmt
+  stmt_kind_os
+    = PAR BARBAR? close_sequence (BARBAR close_sequence)* END_OS > make_and_par
+    / PAR DIAMOND? close_sequence (DIAMOND close_sequence)* END_OS > make_or_par
+    / SPACE close_sequence END_OS > make_space
+    / PRUNE_OS > make_prune
+    / WHEN expr THEN close_sequence (ELSE close_sequence)? END_OS > make_when
+    / SUSPEND WHEN expr IN close_sequence END_OS > make_suspend
+    / ABORT WHEN expr IN close_sequence END_OS > make_abort
+    / PAUSEUP_OS > make_pause_up
+    / STOP_OS > make_stop
+    / PAUSE_OS > make_pause
+    / NOTHING_OS > make_nothing
+    / LOOP close_sequence END_OS > make_loop
+    / UNIVERSE close_sequence END_OS > make_universe
+    / RUN proc_call_os > make_proc_call
+    / binding_os > make_let_stmt
     / variable LEFT_ARROW expr > make_tell
     / expr > make_expr_stmt
 
@@ -262,12 +254,14 @@ grammar! bonsai {
     StmtKind::Let(LetStmt::imperative(binding))
   }
 
-  binding
-    = bonsai_binding
-    / java_binding
+  binding_os
+    = bonsai_binding_os
+    / java_binding_os
 
-  bonsai_binding = .. kind java_ty identifier (EQ expr)? > make_bonsai_binding
-  java_binding = .. java_ty identifier (EQ expr)? > make_java_binding
+  bonsai_binding_os = .. kind java_ty identifier_os (spacing EQ expr)? > make_bonsai_binding
+  java_binding_os = .. java_ty identifier_os (spacing EQ expr)? > make_java_binding
+  bonsai_binding = bonsai_binding_os spacing
+  java_binding = java_binding_os spacing
 
   fn make_bonsai_binding(span: Span, kind: Kind,
     ty: JType, name: Ident, expr: Option<Expr>) -> Binding
@@ -335,7 +329,7 @@ grammar! bonsai {
     StmtKind::Universe(Box::new(body))
   }
 
-  proc_call = (variable DOT)? identifier LPAREN list_var RPAREN
+  proc_call_os = (variable DOT)? identifier LPAREN list_var RPAREN_OS
 
   list_var
     = variable (COMMA variable)* > make_list_var
@@ -460,7 +454,7 @@ grammar! bonsai {
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
 
-  new_instance_expr = .. NEW java_ty LPAREN list_expr RPAREN > make_new_object_instance
+  new_instance_expr = (.. NEW java_ty LPAREN list_expr RPAREN_OS) spacing > make_new_object_instance
 
   fn make_new_object_instance(span: Span, class_ty: JType, args: Vec<Expr>) -> NewObjectInstance {
     NewObjectInstance::new(span, class_ty, args)
@@ -468,15 +462,15 @@ grammar! bonsai {
 
   fn make_var_expr(variable: Variable) -> ExprKind { ExprKind::Var(variable) }
 
-  var_path = .. identifier (DOT identifier !LPAREN)* > make_var_path
+  var_path_os = .. identifier_os (spacing DOT identifier_os !(spacing LPAREN))* > make_var_path
 
   fn make_var_path(span: Span, first: Ident, rest: Vec<Ident>) -> VarPath {
     VarPath::new(span, extend_front(first, rest))
   }
 
   variable
-    = .. PRE+ var_path !LPAREN > make_stream_variable
-    / .. permission? var_path !LPAREN > make_variable
+    = (.. PRE+ var_path_os !(spacing LPAREN)) spacing > make_stream_variable
+    / (.. permission? var_path_os !(spacing LPAREN)) spacing > make_variable
 
   fn make_stream_variable(span: Span, past: Vec<()>, path: VarPath) -> Variable {
     Variable::stream(span, path, past.len())
@@ -496,10 +490,10 @@ grammar! bonsai {
   fn make_readwrite_permission() -> Permission { Permission::ReadWrite }
 
   method_call
-    = .. (THIS DOT)? fn_call > make_static_method_call
-    / .. variable DOT fn_call > make_method_call
+    = (.. (THIS DOT)? fn_call_os) spacing > make_static_method_call
+    / (.. variable DOT fn_call_os) spacing > make_method_call
 
-  fn_call = identifier LPAREN list_expr RPAREN
+  fn_call_os = identifier LPAREN list_expr RPAREN_OS
 
   fn make_static_method_call(span: Span, method: Ident, args: Vec<Expr>) -> MethodCall {
     MethodCall::new(span, None, method, args)
@@ -534,13 +528,15 @@ grammar! bonsai {
   fn java_private() -> JVisibility { JVisibility::Private }
   fn java_protected() -> JVisibility { JVisibility::Protected }
 
-  identifier = .. string_identifier > to_ident
+  identifier = identifier_os spacing
+  identifier_os = .. string_identifier_os > to_ident
 
   fn to_ident(span: Span, value: String) -> Ident {
     Ident::new(span, value)
   }
 
-  string_identifier = !digit !(keyword !ident_char) ident_char+ spacing > to_string
+  string_identifier = string_identifier_os spacing
+  string_identifier_os = !digit !(keyword !ident_char) ident_char+ > to_string
   ident_char = ["a-zA-Z0-9_"]
 
   number = digits spacing > make_number
@@ -571,12 +567,20 @@ grammar! bonsai {
     / "or" / "and" / "not"
     / "run" / "true" / "false" / "unknown" / "universe"
     / "suspend" / "abort" / java_kw
-  kw_tail = !ident_char spacing
+  kw_tail = kw_tail_os spacing
+  kw_tail_os = !ident_char
+
+  END_OS = "end" kw_tail_os
+  PRUNE_OS = "prune" kw_tail_os
+  STOP_OS = "stop" kw_tail_os
+  PAUSE_OS = "pause" kw_tail_os
+  PAUSEUP_OS = "pause up" kw_tail_os
+  NOTHING_OS = "nothing" kw_tail_os
+  RPAREN_OS = ")" kw_tail_os
 
   PROC = "proc" kw_tail
   PAR = "par" kw_tail
   SPACE = "space" kw_tail
-  PRUNE = "prune" kw_tail
   END = "end" kw_tail
   PRE = "pre" kw_tail -> ()
   WHEN = "when" kw_tail
@@ -585,9 +589,6 @@ grammar! bonsai {
   SUSPEND = "suspend" kw_tail
   ABORT = "abort" kw_tail
   LOOP = "loop" kw_tail
-  STOP = "stop" kw_tail
-  PAUSE = "pause" kw_tail
-  PAUSEUP = "pause up" kw_tail
   IN = "in" kw_tail
   WORLD_LINE = "world_line" kw_tail
   SINGLE_TIME = "single_time" kw_tail
@@ -600,7 +601,6 @@ grammar! bonsai {
   KTRUE = "true" kw_tail
   KFALSE = "false" kw_tail
   KUNKNOWN = "unknown" kw_tail
-  NOTHING = "nothing" kw_tail
   UNIVERSE = "universe" kw_tail
   READ = "read" kw_tail
   WRITE = "write" kw_tail
