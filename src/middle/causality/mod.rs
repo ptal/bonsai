@@ -27,14 +27,15 @@ use middle::causality::solver::*;
 use middle::causality::causal_stmt::*;
 use middle::causality::symbolic_execution::*;
 use middle::causality::model_parameters::*;
+use middle::ir::compiler::AllInstants;
 
-pub fn causality_analysis(session: Session, context: Context) -> Env<Context> {
+pub fn causality_analysis(session: Session, context: Context) -> Env<(Context, AllInstants)> {
   Env::value(session, context)
     .and_then(index_ops_and_delay)
     .and_then(execute_symbolically)
 }
 
-fn execute_symbolically(session: Session, (context, params): (Context, ModelParameters)) -> Env<Context> {
+fn execute_symbolically(session: Session, (context, params): (Context, ModelParameters)) -> Env<(Context, AllInstants)> {
   SymbolicExecution::for_each_instant(session, context, |env| {
     env.and_then(|session, (context, stmt)|
           build_causal_model(session, context, stmt, params.clone()))

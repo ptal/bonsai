@@ -24,6 +24,7 @@ mod causality;
 mod recursive_call;
 mod search_tree_wf;
 mod add_local_drop;
+pub mod ir;
 
 use context::*;
 use session::*;
@@ -39,8 +40,9 @@ use middle::causality::*;
 use middle::recursive_call::*;
 use middle::search_tree_wf::*;
 use middle::add_local_drop::*;
+use middle::ir::*;
 
-pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
+pub fn analyse_bonsai(env: Env<Context>) -> Env<(Context, IR)> {
   env
     .and_then(duplicate)
     .and_then(undeclared)
@@ -54,4 +56,5 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_next(search_tree_wf)
     .and_next(where_is_the_drop)
     .and_next(causality_analysis)
+    .and_next(compile_to_guarded_commands)
 }
