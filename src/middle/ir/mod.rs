@@ -22,6 +22,6 @@ pub mod compiler;
 pub mod scheduling;
 
 pub fn compile_to_guarded_commands(session: Session, (context, instants): (Context, AllInstants)) -> Env<(Context, IR)> {
-  let compiler = Compiler::new(session, context, instants);
-  compiler.compile()
+  let compiler = Compiler::new(session, context, &instants);
+  compiler.compile(instants)
 }

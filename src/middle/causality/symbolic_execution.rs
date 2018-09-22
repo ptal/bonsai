@@ -192,9 +192,9 @@ impl SymbolicExecution
       let (session, data) = env.decompose();
       fake = fake || data.is_fake();
       match data {
-        Partial::Value((context, schedule_paths))
-      | Partial::Fake((context, schedule_paths)) => {
-          instant.schedule_paths = schedule_paths;
+        Partial::Value((context, path_schedules))
+      | Partial::Fake((context, path_schedules)) => {
+          instant.path_schedules = path_schedules;
           self.all_instants.push(instant);
           self.context = context;
           self.session = session;
