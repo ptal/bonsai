@@ -17,11 +17,9 @@
 use context::*;
 use session::*;
 use middle::causality::causal_model::CausalModel;
-use middle::ir::compiler::{Instant, AllInstants};
-use middle::ir::scheduling::*;
 use gcollections::VectorStack;
 use gcollections::ops::*;
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashSet};
 
 /// A state is the set of all delay statements that must be resumed in the next instant.
 /// Therefore, `usize` are only pushed by parallel statements.
@@ -125,6 +123,20 @@ impl StatesSet {
   }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Instant {
+  pub locations: State,
+  pub program: Stmt
+}
+
+impl Instant
+{
+  pub fn new(locations: State, program: Stmt) -> Self {
+    Instant { locations, program }
+  }
+}
+
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ResidualStmt {
   Terminated,
@@ -136,8 +148,7 @@ pub struct SymbolicExecution {
   session: Session,
   context: Context,
   visited_states: Vec<State>,
-  next_instants: VectorStack<Instant>,
-  all_instants: Vec<Instant>,
+  next_instants: VectorStack<Instant>
 }
 
 impl SymbolicExecution
@@ -147,15 +158,13 @@ impl SymbolicExecution
       session: session,
       context: context,
       visited_states: vec![],
-      next_instants: VectorStack::empty(),
-      all_instants: vec![]
+      next_instants: VectorStack::empty()
     }
   }
 
-  pub fn for_each_instant<F>(mut session: Session, mut context: Context, f: F) -> Env<(Context, AllInstants)>
-   where F: Clone + Fn(Env<(Context, Stmt)>) -> Env<(Context, Vec<Scheduling>)>
+  pub fn for_each_instant<F>(mut session: Session, mut context: Context, f: F) -> Env<Context>
+   where F: Clone + Fn(Env<(Context, Stmt)>) -> Env<Context>
   {
-    let mut all_instants = HashMap::new();
     let mut fake = false;
     for uid in context.entry_points.clone() {
       let mut this = SymbolicExecution::new(session, context);
@@ -164,17 +173,16 @@ impl SymbolicExecution
       let (s, data) = env.decompose();
       fake = fake || data.is_fake();
       match data {
-        Partial::Value((c, instants))
-      | Partial::Fake((c, instants)) => {
-          all_instants.insert(uid, instants);
+        Partial::Value(c)
+      | Partial::Fake(c) => {
           context = c;
           session = s;
         }
         _ => { return Env::nothing(s) }
       }
     }
-    if fake { Env::fake(session, (context, all_instants)) }
-    else { Env::value(session, (context, all_instants))}
+    if fake { Env::fake(session, context) }
+    else { Env::value(session, context)}
   }
 
   fn push_process(&mut self, uid: ProcessUID) {
@@ -183,27 +191,25 @@ impl SymbolicExecution
     self.push_instant(Some(process.body), state);
   }
 
-  fn for_each<F>(mut self, f: F) -> Env<(Context, Vec<Instant>)>
-   where F: Fn(Env<(Context, Stmt)>) -> Env<(Context, Vec<Scheduling>)>
+  fn for_each<F>(mut self, f: F) -> Env<Context>
+   where F: Fn(Env<(Context, Stmt)>) -> Env<Context>
   {
     let mut fake = false;
-    while let Some(mut instant) = self.next() {
+    while let Some(instant) = self.next() {
       let env = f(Env::value(self.session, (self.context, instant.program.clone())));
       let (session, data) = env.decompose();
       fake = fake || data.is_fake();
       match data {
-        Partial::Value((context, path_schedules))
-      | Partial::Fake((context, path_schedules)) => {
-          instant.path_schedules = path_schedules;
-          self.all_instants.push(instant);
+        Partial::Value(context)
+      | Partial::Fake(context) => {
           self.context = context;
           self.session = session;
         }
         _ => { return Env::nothing(session) }
       }
     }
-    if fake { Env::fake(self.session, (self.context, self.all_instants)) }
-    else { Env::value(self.session, (self.context, self.all_instants))}
+    if fake { Env::fake(self.session, self.context) }
+    else { Env::value(self.session, self.context)}
   }
 
   /// Returns `true` if the state has not been visited before.
@@ -214,7 +220,7 @@ impl SymbolicExecution
   fn push_instant(&mut self, next_program: Option<Stmt>, state: State) {
     self.visited_states.push(state.clone());
     let nothing = Stmt::new(DUMMY_SP, StmtKind::Nothing);
-    let instant = Instant::init(state, next_program.clone().unwrap_or(nothing));
+    let instant = Instant::new(state, next_program.clone().unwrap_or(nothing));
     self.next_instants.push(instant);
   }
 

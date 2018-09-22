@@ -25,7 +25,6 @@ use middle;
 use back;
 use context::Context;
 use ast::{JModule, JCrate, TestAnnotation};
-use middle::ir::guarded_command::IR;
 
 static ABORT_MSG: &'static str = "stop due to compilation errors";
 
@@ -36,7 +35,7 @@ pub fn run() {
     .expect(ABORT_MSG);
 }
 
-pub fn front_mid_run<'a>(session: Session) -> Env<(Context, IR)> {
+pub fn front_mid_run<'a>(session: Session) -> Env<Context> {
   let env = run_front(session)
     .map(|jcrate| Context::new(jcrate))
     .ensure(ABORT_MSG);
@@ -64,11 +63,11 @@ fn run_front_module(env: Env<JCrate>, file: ModuleFile) -> Env<JCrate> {
   })
 }
 
-fn run_middle<'a>(env: Env<Context>) -> Env<(Context, IR)> {
+fn run_middle<'a>(env: Env<Context>) -> Env<Context> {
   middle::analyse_bonsai(env)
 }
 
-pub fn run_back(session: Session, (context, _ir): (Context, IR)) -> Env<Context> {
+pub fn run_back(session: Session, context: Context) -> Env<Context> {
   assert_eq!(session.has_errors(), false);
   context.ast.modules.clone()
     .into_iter()

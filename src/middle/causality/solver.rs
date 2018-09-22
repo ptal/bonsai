@@ -15,11 +15,10 @@
 use session::*;
 use context::*;
 use middle::causality::causal_model::*;
-use middle::ir::scheduling::*;
 use pcp::search::*;
 use pcp::kernel::*;
 
-pub fn solve_causal_model(session: Session, c: (Context, Vec<CausalModel>)) -> Env<(Context, Vec<Scheduling>)> {
+pub fn solve_causal_model(session: Session, c: (Context, Vec<CausalModel>)) -> Env<Context> {
   let solver = Solver::new(session, c.0, c.1);
   solver.solve_all()
 }
@@ -35,26 +34,24 @@ impl Solver {
     Solver { session, context, models }
   }
 
-  pub fn solve_all(mut self) -> Env<(Context, Vec<Scheduling>)> {
+  pub fn solve_all(mut self) -> Env<Context> {
     debug!("{} causal models\n", self.models.len());
     debug!("{} instantaneous causal models\n", self.models.iter().filter(|m| m.instantaneous).count());
-    let mut schedule_paths = vec![];
     for model in self.models.clone() {
       if let Some(model) = self.prepare_model(model) {
-        match self.solve_model(model) {
-          Some(schedule) => schedule_paths.push(schedule),
-          None => break,
+        if !self.solve_model(model) {
+          break
         }
       }
     }
     if self.session.has_errors() {
-      Env::fake(self.session, (self.context, schedule_paths))
+      Env::fake(self.session, self.context)
     } else {
-      Env::value(self.session, (self.context, schedule_paths))
+      Env::value(self.session, self.context)
     }
   }
 
-  fn solve_model(&mut self, model: CausalModel) -> Option<Scheduling> {
+  fn solve_model(&mut self, model: CausalModel) -> bool {
     // Search step.
     let space = model.clone().space;
     let mut search = one_solution_engine();
@@ -66,12 +63,12 @@ impl Solver {
     match status {
       Status::Satisfiable => {
         trace!("{:?}\n\n{:?}", space.vstore, space.cstore);
-        Some(Scheduling::new(model, space))
+        true
       },
       Status::Unsatisfiable => {
         self.err_unsatisfiable_model();
         trace!("{:?}\n\n{:?}", space.vstore, space.cstore);
-        None
+        false
       }
       Status::EndOfSearch
     | Status::Unknown(_) => unreachable!(
