@@ -14,21 +14,33 @@
 
 package bonsai.runtime.synchronous;
 
-import bonsai.runtime.synchronous.interfaces.*;
+import java.util.*;
+import bonsai.runtime.synchronous.statements.*;
 
-public abstract class Instruction implements Program
-{
-  private Program parent;
+public class ExprResult {
+  private Optional<Object> result;
 
-  public Instruction() {
-    parent = null;
+  public ExprResult(Object result) {
+    this.result = Optional.of(result);
   }
 
-  public void setParent(Program parent) {
-    this.parent = parent;
+  public ExprResult() {
+    this.result = Optional.empty();
   }
 
-  public void wakeUp(Program from) {
-    parent.wakeUp(from);
+  public boolean isSuspended() {
+    return !result.isPresent();
+  }
+
+  public Object unwrap() {
+    checkResultNotEmpty();
+    return result.get();
+  }
+
+  public void checkResultNotEmpty() {
+    if(isSuspended()) {
+      throw new NoSuchElementException(
+        "Try to access the result of an expression but it was suspended, and did not produce any result yet.");
+    }
   }
 }

@@ -21,30 +21,34 @@ import bonsai.runtime.synchronous.*;
 public class StreamVar extends Variable
 {
   protected Stream stream;
-  protected Function<SpaceEnvironment, Object> initValue;
+  protected Function<Environment, Object> initValue;
 
-  public StreamVar(Object ref, String name, String uid,
+  public StreamVar(Object ref, String name,
     int streamSize,
-    Function<SpaceEnvironment, Object> initValue)
+    Function<Environment, Object> initValue)
   {
-    this(name, uid, initValue,
+    this(name, initValue,
       new Stream(ref, name, streamSize));
   }
 
-  private StreamVar(String name, String uid,
-    Function<SpaceEnvironment, Object> initValue, Stream stream)
+  private StreamVar(String name,
+    Function<Environment, Object> initValue, Stream stream)
   {
-    super(name, uid);
+    super(name);
     this.stream = stream;
     this.initValue = initValue;
   }
 
-  public void reset(SpaceEnvironment env) {
+  public void reset(Environment env) {
     Object value = initValue.apply(env);
     stream.reset(value);
   }
 
-  public Object value(int time) {
+  public Object value() {
+    return pre(0);
+  }
+
+  public Object pre(int time) {
     return stream.pre(time);
   }
 

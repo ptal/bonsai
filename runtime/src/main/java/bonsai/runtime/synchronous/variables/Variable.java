@@ -14,23 +14,69 @@
 
 package bonsai.runtime.synchronous.variables;
 
-/// NOTE: Variable must be immutable because it is not copied in the class containing it.
-public class Variable
+import bonsai.runtime.synchronous.*;
+
+// A variable is a tuple `(name, rw, refsCounter)` where `refsCounter` is the number of `space` processes that have captured this variable.
+public abstract class Variable
 {
   private String name;
-  private String uid;
+  private Integer uid;
+  private RWCounter rw;
+  private int refsCounter;
 
-  public Variable(String name, String uid)
+  public Variable(String name)
   {
     this.name = name;
-    this.uid = uid;
+    this.uid = 0;
+    this.rw = new RWCounter(0,0,0);
+    this.refsCounter = 1;
   }
 
   public String name() {
     return name;
   }
 
-  public String uid() {
+  public Integer uid() {
     return uid;
   }
+
+  public void assignUID(Integer uid) {
+    this.uid = uid;
+  }
+
+  public int refs() {
+    return refsCounter;
+  }
+
+  public void decreaseRefs() {
+    refsCounter -= 1;
+  }
+
+  public RWCounter rw() {
+    return rw;
+  }
+
+  public void meetReadWrite(Environment env) {
+    rw.readwrite -= 1;
+    if (rw.readwrite == 0 && rw.read != 0) {
+      Event event = Event.makeCanRead(this);
+      env.schedule(event);
+    }
+  }
+
+  public void meetWrite(Environment env) {
+    rw.write -= 1;
+    if (rw.write == 0) {
+      Event event;
+      if (rw.readwrite == 0) {
+        event = Event.makeCanRead(this);
+      }
+      else {
+        event = Event.makeCanReadWrite(this);
+      }
+      env.schedule(event);
+    }
+  }
+
+  public abstract Object value();
 }

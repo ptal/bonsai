@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,30 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous.variables;
+package bonsai.runtime.synchronous;
 
-import java.util.function.*;
-import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.interfaces.*;
 
-public class SingleTimeVar extends Variable
+public abstract class ASTNode implements Schedulable
 {
-  private Object ref;
-  private Function<Environment, Object> initValue;
+  protected Schedulable parent;
 
-  private SingleTimeVar(String name,
-    Function<Environment, Object> initValue)
-  {
-    super(name);
-    this.ref = null;
-    this.initValue = initValue;
+  public ASTNode() {
+    parent = null;
   }
 
-  public Object value() {
-    return ref;
+  public void setParent(Schedulable parent) {
+    this.parent = parent;
   }
 
-  public void next(Environment env) {
-    // TODO triggers refUpdaters.
-    ref = initValue.apply(env);
+  public void schedule(Schedulable from) {
+    parent.schedule(from);
   }
 }

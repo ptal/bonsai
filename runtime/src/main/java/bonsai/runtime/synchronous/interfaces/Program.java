@@ -17,10 +17,7 @@ package bonsai.runtime.synchronous.interfaces;
 import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
 
-public interface Program extends Copy<Program>
+public interface Program extends Copy<Program>, Schedulable
 {
-  Result execute(SpaceEnvironment env);
-  void countReadWrite(SpaceEnvironment env);
-  void setParent(Program parent);
-  void wakeUp(Program from);
+  CompletionCode execute(Environment env);
 }

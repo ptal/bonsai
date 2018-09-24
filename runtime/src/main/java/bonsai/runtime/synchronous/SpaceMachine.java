@@ -45,7 +45,7 @@ import bonsai.runtime.synchronous.interfaces.*;
 public class SpaceMachine<Queue extends Queueing<Future>>
 {
   private Program body;
-  private SpaceEnvironment env;
+  private Environment env;
   private boolean firstInstant;
   private boolean readyToStartInstant;
 
@@ -63,7 +63,7 @@ public class SpaceMachine<Queue extends Queueing<Future>>
   }
 
   public SpaceMachine(Program body, Queue queue) {
-    this.env = new SpaceEnvironment(queue);
+    this.env = new Environment(queue);
     debug = false;
     numReactions = 0;
     readyToStartInstant = false;
@@ -94,9 +94,8 @@ public class SpaceMachine<Queue extends Queueing<Future>>
   }
 
   private CompletionCode react() {
-    Result result = microStep();
-    env.pushBranches(result.branches());
-    CompletionCode code = result.code();
+    CompletionCode code = microStep();
+    env.pushBranches();
     readyToStartInstant = false;
     switch(code) {
       case MICRO_STEP:
@@ -135,15 +134,15 @@ public class SpaceMachine<Queue extends Queueing<Future>>
     }
   }
 
-  private Result microStep() {
+  private CompletionCode microStep() {
     numReactions++;
     log_debug_info("Start of the instant");
-    Result result = new Result(CompletionCode.MICRO_STEP);
-    while(result.code() == CompletionCode.MICRO_STEP) {
+    CompletionCode result = CompletionCode.MICRO_STEP;
+    while(result == CompletionCode.MICRO_STEP) {
       result = body.execute(env);
-      switch(result.code()) {
+      switch(result) {
         case MICRO_STEP:
-          body.countReadWrite(env);
+          // body.countReadWrite(env);
           break;
         default: break;
       }
@@ -154,31 +153,31 @@ public class SpaceMachine<Queue extends Queueing<Future>>
   // We execute a branch process with the `single_time` variables associated to its `future`.
   // The branch process must terminate immediately, and must not create branches.
   private void branchMicroStep(Future future) {
-    future.swapVarsST(env);
-    Program branch = future.branch();
-    CompletionCode code = CompletionCode.MICRO_STEP;
-    while(code == CompletionCode.MICRO_STEP) {
-      Result result = branch.execute(env);
-      checkEmptyBranches(result);
-      code = result.code();
-      switch (code) {
-        case MICRO_STEP:
-          branch.countReadWrite(env);
-          break;
-        default: break;
-      }
-    }
-    future.swapVarsST(env);
-    if (code != CompletionCode.TERMINATE) {
-      throw new RuntimeException(
-        "A branch process must terminate immediately (code obtained: " + code + ")");
-    }
+    // future.swapVarsST(env);
+    // Program branch = future.branch();
+    // CompletionCode code = CompletionCode.MICRO_STEP;
+    // while(code == CompletionCode.MICRO_STEP) {
+    //   CompletionCode result = branch.execute(env);
+    //   checkEmptyBranches(result);
+    //   code = result.code();
+    //   switch (code) {
+    //     case MICRO_STEP:
+    //       branch.countReadWrite(env);
+    //       break;
+    //     default: break;
+    //   }
+    // }
+    // future.swapVarsST(env);
+    // if (code != CompletionCode.TERMINATE) {
+    //   throw new RuntimeException(
+    //     "A branch process must terminate immediately (code obtained: " + code + ")");
+    // }
   }
 
-  private void checkEmptyBranches(Result result) {
-    if (!result.branches().isEmpty()) {
-      throw new RuntimeException(
-        "A branch process must not create new branches (code obtained: " + result.code() + ")");
-    }
-  }
+  // private void checkEmptyBranches(Result result) {
+  //   if (!result.branches().isEmpty()) {
+  //     throw new RuntimeException(
+  //       "A branch process must not create new branches (code obtained: " + result.code() + ")");
+  //   }
+  // }
 }

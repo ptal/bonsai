@@ -22,7 +22,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
 
-public class SpaceStmt extends Instruction
+public class SpaceStmt extends ASTNode implements Program
 {
   private ArrayList<String> singleTimeClosure;
   private Program branch;
@@ -39,11 +39,13 @@ public class SpaceStmt extends Instruction
       branch.copy());
   }
 
-  public Result execute(SpaceEnvironment env) {
-    return new Result(CompletionCode.TERMINATE, this);
+  public CompletionCode execute(Environment env) {
+    // TODO activate the branch location in the environment.
+    return CompletionCode.TERMINATE;
   }
 
-  public void countReadWrite(SpaceEnvironment env) {}
+  public void joinRWCounter(Environment env) {}
+  public void meetRWCounter(Environment env) {}
 
   public ArrayList<String> singleTimeClosure() {
     return singleTimeClosure;

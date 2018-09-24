@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,28 +14,22 @@
 
 package bonsai.runtime.synchronous.variables;
 
-import java.util.function.*;
-import bonsai.runtime.synchronous.*;
+public class RWCounter {
+  public int write;
+  public int readwrite;
+  public int read;
 
-public class SingleTimeVar extends Variable
-{
-  private Object ref;
-  private Function<Environment, Object> initValue;
-
-  private SingleTimeVar(String name,
-    Function<Environment, Object> initValue)
-  {
-    super(name);
-    this.ref = null;
-    this.initValue = initValue;
+  public RWCounter(int write, int readwrite, int read) {
+    this.write = write;
+    this.readwrite = readwrite;
+    this.read = read;
   }
 
-  public Object value() {
-    return ref;
+  public boolean isReadable() {
+    return this.write == 0 && this.readwrite == 0;
   }
 
-  public void next(Environment env) {
-    // TODO triggers refUpdaters.
-    ref = initValue.apply(env);
+  public boolean isReadWritable() {
+    return this.write == 0;
   }
 }

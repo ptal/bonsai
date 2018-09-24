@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,29 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous.variables;
+#[error(E0033, 1, 0)]
 
-import java.util.function.*;
-import bonsai.runtime.synchronous.*;
+package test;
 
-public class ModuleVar extends Variable
+public class E0033_10
 {
-  private Object ref;
-  private Function<Environment, Object> initValue;
-
-  public ModuleVar(String name,
-    Function<Environment, Object> initValue)
-  {
-    super(name);
-    this.ref = null;
-    this.initValue = initValue;
-  }
-
-  public Object value() {
-    return ref;
-  }
-
-  public void reset(Environment env) {
-    ref = initValue.apply(env);
-  }
+  public proc test() =
+    single_time LMax x = new LMax(0);
+    par
+    // The result of x |= 3 depends on `f(readwrite x)`, but it can only be scheduled after `g(write x)`
+    || f(readwrite x)
+    || when x |= 3 then g(write x) end
+    end
+  end
 }
