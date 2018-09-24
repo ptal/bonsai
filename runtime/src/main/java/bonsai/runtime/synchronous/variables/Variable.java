@@ -52,8 +52,28 @@ public abstract class Variable
     refsCounter -= 1;
   }
 
-  public RWCounter rw() {
-    return rw;
+  public boolean isReadable() {
+    return rw.isReadable();
+  }
+
+  public boolean isReadWritable() {
+    return rw.isReadWritable();
+  }
+
+  public void joinRead(Environment env) {
+    rw.read += 1;
+  }
+
+  public void joinReadWrite(Environment env) {
+    rw.readwrite += 1;
+  }
+
+  public void joinWrite(Environment env) {
+    rw.write += 1;
+  }
+
+  public void meetRead(Environment env) {
+    rw.read -= 1;
   }
 
   public void meetReadWrite(Environment env) {

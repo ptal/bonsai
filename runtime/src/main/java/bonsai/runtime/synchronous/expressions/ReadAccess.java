@@ -36,7 +36,7 @@ public class ReadAccess extends ASTNode implements Expression
 
   public ExprResult execute(Environment env) {
     Variable var = env.lookUpVar(name);
-    if (var.rw().isReadable()) {
+    if (var.isReadable()) {
       return new ExprResult(var.value());
     }
     else {
@@ -55,10 +55,11 @@ public class ReadAccess extends ASTNode implements Expression
 
   public void joinRWCounter(Environment env) {
     Variable var = env.lookUpVar(name);
-    var.rw().read += 1;
+    var.joinRead(env);
   }
+
   public void meetRWCounter(Environment env) {
     Variable var = env.lookUpVar(name);
-    var.rw().read -= 1;
+    var.meetRead(env);
   }
 }

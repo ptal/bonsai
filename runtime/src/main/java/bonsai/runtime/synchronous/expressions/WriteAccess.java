@@ -40,10 +40,11 @@ public class WriteAccess extends ASTNode implements Expression
 
   public void joinRWCounter(Environment env) {
     Variable var = env.lookUpVar(name);
-    var.rw().write += 1;
+    var.joinWrite(env);
   }
+
   public void meetRWCounter(Environment env) {
     Variable var = env.lookUpVar(name);
-    var.rw().write -= 1;
+    var.meetWrite(env);
   }
 }
