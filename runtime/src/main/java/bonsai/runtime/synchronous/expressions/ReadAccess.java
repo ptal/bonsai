@@ -48,7 +48,7 @@ public class ReadAccess extends ASTNode implements Expression
   void subscribe(Environment env, Variable var) {
     if (!hasSubscribed) {
       hasSubscribed = true;
-      Event event = Event.makeCanRead(var);
+      Event event = new Event(var.uid(), Event.CAN_READ);
       env.subscribe(event, this);
     }
   }

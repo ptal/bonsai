@@ -14,6 +14,7 @@
 
 package bonsai.runtime.synchronous.variables;
 
+// A counter (w, rw, r) of variables accesses.
 public class RWCounter {
   public int write;
   public int readwrite;
@@ -31,5 +32,19 @@ public class RWCounter {
 
   public boolean isReadWritable() {
     return this.write == 0;
+  }
+
+  public boolean equals(Object other) {
+    if (other == null) {
+      return false;
+    }
+    else if (other.getClass() != this.getClass()) {
+      return false;
+    }
+    else {
+      RWCounter rw = (RWCounter) other;
+      return
+        rw.write == write && rw.readwrite == readwrite && rw.read == read;
+    }
   }
 }

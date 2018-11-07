@@ -14,32 +14,26 @@
 
 package bonsai.runtime.synchronous;
 
-import bonsai.runtime.synchronous.variables.Variable;
-
-enum EventKind {
-  CAN_READ,
-  CAN_READWRITE
-}
+import bonsai.runtime.synchronous.variables.*;
 
 public class Event {
-  private EventKind kind;
-  private Integer uid;
+  private int uid;
+  private int kind;
 
-  public Event(EventKind kind, Integer uid) {
+  public static int ANY = 0;
+  public static int CAN_READ = 1;
+  public static int CAN_READWRITE = 2;
+
+  public Event(int uid, int kind) {
+    if (kind != ANY && kind != CAN_READ && kind != CAN_READWRITE) {
+      throw new RuntimeException("Event constructor: unknown event `kind` (value: " + kind + ")");
+    }
     this.kind = kind;
     this.uid = uid;
   }
 
-  public static Event makeCanRead(Variable var) {
-    return new Event(EventKind.CAN_READ, var.uid());
-  }
-
-  public static Event makeCanReadWrite(Variable var) {
-    return new Event(EventKind.CAN_READWRITE, var.uid());
-  }
-
   public int hashCode() {
-    return uid + ((kind == EventKind.CAN_READ) ? 0: 1000000);
+    return uid + 100000*kind;
   }
 
   public boolean equals(Object obj) {

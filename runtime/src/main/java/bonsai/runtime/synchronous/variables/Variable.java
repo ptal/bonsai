@@ -78,24 +78,35 @@ public abstract class Variable
 
   public void meetReadWrite(Environment env) {
     rw.readwrite -= 1;
+    anyEvent(env);
     if (rw.readwrite == 0 && rw.read != 0) {
-      Event event = Event.makeCanRead(this);
-      env.schedule(event);
+      canReadEvent(env);
     }
   }
 
   public void meetWrite(Environment env) {
     rw.write -= 1;
+    anyEvent(env);
     if (rw.write == 0) {
-      Event event;
       if (rw.readwrite == 0) {
-        event = Event.makeCanRead(this);
+        canReadEvent(env);
       }
       else {
-        event = Event.makeCanReadWrite(this);
+        canReadWriteEvent(env);
       }
-      env.schedule(event);
     }
+  }
+
+  private void canReadEvent(Environment env) {
+    env.schedule(new Event(uid(), Event.CAN_READ));
+  }
+
+  private void canReadWriteEvent(Environment env) {
+    env.schedule(new Event(uid(), Event.CAN_READWRITE));
+  }
+
+  private void anyEvent(Environment env) {
+    env.schedule(new Event(uid(), Event.ANY));
   }
 
   public abstract Object value();
