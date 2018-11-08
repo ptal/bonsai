@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,33 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.env;
 
 import java.util.*;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.statements.SpaceStmt;
 
-public class Scheduler
+public class Layer
 {
-  private HashMap<Event, ArrayList<Schedulable>> waitingQueue;
+  private Space space;
+  private Scheduler scheduler;
 
-  public Scheduler() {
-    waitingQueue = new HashMap();
+  public Layer()
+  {
+    space = new Space();
+    scheduler = new Scheduler();
+  }
+
+  public Variable lookUpVar(String uid) {
+    return space.lookUpVar(uid);
   }
 
   public void subscribe(Event event, Schedulable program) {
-    waitingQueue
-      .computeIfAbsent(event, k -> new ArrayList<>())
-      .add(program);
+    scheduler.subscribe(event, program);
   }
 
   public void schedule(Event event) {
-    ArrayList<Schedulable> programs = waitingQueue.get(event);
-    for (Schedulable s: programs) {
-      s.schedule(null);
-    }
-    programs.clear();
+    scheduler.schedule(event);
   }
+
+  public void unstuck() {}
 }

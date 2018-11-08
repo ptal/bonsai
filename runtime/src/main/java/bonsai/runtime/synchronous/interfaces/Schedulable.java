@@ -15,11 +15,15 @@
 package bonsai.runtime.synchronous.interfaces;
 
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 
 public interface Schedulable
 {
-  void joinRWCounter(Environment env);
-  void meetRWCounter(Environment env);
+  // We analyse the current program to prove that a write on `uid` still can happen.
+  // We suppose the conditions currently suspended on `uid` to be `false` (if `inSurface` is `true`).
+  // `inSurface` is `true` if the statement analysed is currently suspended.
+  CanResult canWriteOn(String uid, boolean inSurface);
+  void meetRWCounter(Layer env);
   void setParent(Schedulable parent);
   void schedule(Schedulable from);
 }

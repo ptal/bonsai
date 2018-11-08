@@ -18,24 +18,26 @@ import java.util.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.variables.*;
 
 public class ReadAccess extends ASTNode implements Expression
 {
-  private String name;
+  private String uid;
   private boolean hasSubscribed;
 
-  public ReadAccess(String name) {
-    this.name = name;
+  public ReadAccess(String uid) {
+    this.uid = uid;
     this.hasSubscribed = false;
   }
 
-  public ReadAccess copy() {
-    return new ReadAccess(name);
+  public void prepareInstant(Layer env) {
+    Variable var = env.lookUpVar(uid);
+    var.joinRead(env);
   }
 
-  public ExprResult execute(Environment env) {
-    Variable var = env.lookUpVar(name);
+  public ExprResult execute(Layer env) {
+    Variable var = env.lookUpVar(uid);
     if (var.isReadable()) {
       return new ExprResult(var.value());
     }
@@ -45,7 +47,7 @@ public class ReadAccess extends ASTNode implements Expression
     }
   }
 
-  void subscribe(Environment env, Variable var) {
+  void subscribe(Layer env, Variable var) {
     if (!hasSubscribed) {
       hasSubscribed = true;
       Event event = new Event(var.uid(), Event.CAN_READ);
@@ -53,13 +55,12 @@ public class ReadAccess extends ASTNode implements Expression
     }
   }
 
-  public void joinRWCounter(Environment env) {
-    Variable var = env.lookUpVar(name);
-    var.joinRead(env);
+  public CanResult canWriteOn(String uid, boolean inSurface) {
+    return new CanResult(true,false);
   }
 
-  public void meetRWCounter(Environment env) {
-    Variable var = env.lookUpVar(name);
+  public void meetRWCounter(Layer env) {
+    Variable var = env.lookUpVar(uid);
     var.meetRead(env);
   }
 }

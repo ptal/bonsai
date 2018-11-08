@@ -16,9 +16,10 @@ package bonsai.runtime.synchronous.interfaces;
 
 import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 
-public interface Expression extends Copy<Expression>, Schedulable
+public interface Expression extends Schedulable, Prepare
 {
   /// Idempotent: if called two times in a row, it must return the same result.
-  ExprResult execute(Environment env);
+  ExprResult execute(Layer env);
 }

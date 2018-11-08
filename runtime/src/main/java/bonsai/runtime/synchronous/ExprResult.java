@@ -15,9 +15,9 @@
 package bonsai.runtime.synchronous;
 
 import java.util.*;
-import bonsai.runtime.synchronous.statements.*;
 
 public class ExprResult {
+  /* result is empty if the expression is suspended. */
   private Optional<Object> result;
 
   public ExprResult(Object result) {

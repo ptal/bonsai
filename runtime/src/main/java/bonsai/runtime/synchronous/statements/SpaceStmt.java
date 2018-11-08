@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// `Space` represents the spacetime statement `space b1 || ... || bn end`.
-/// The fields `branches` is the code of the branches `{b1,...,bn}` and `singleTimeClosure` contains the variables annotated with `single_time` captured in any of these branches.
+/// `Space` represents the spacetime statement `space b end`.
+/// The fields `branch` is the code of the branch `b` and `singleTimeClosure` contains the UIDs of the `single_time` variables captured in this branch.
 
 package bonsai.runtime.synchronous.statements;
 
@@ -21,34 +21,44 @@ import java.util.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 
 public class SpaceStmt extends ASTNode implements Program
 {
-  private ArrayList<String> singleTimeClosure;
+  private ArrayList<String> capturedUIDs;
   private Program branch;
 
-  public SpaceStmt(ArrayList<String> singleTimeClosure, Program branch) {
+  public SpaceStmt(ArrayList<String> capturedUIDs, Program branch) {
     super();
-    this.singleTimeClosure = singleTimeClosure;
+    this.capturedUIDs = capturedUIDs;
     this.branch = branch;
   }
 
-  public SpaceStmt copy() {
-    return new SpaceStmt(
-      (ArrayList<String>) singleTimeClosure.clone(),
-      branch.copy());
+  void throwSubError(String method) {
+    throw new RuntimeException("SpaceStmt." + method +
+      ": should be executed before the sub-layer if it is reachable.");
+  }
+  public void prepareInstantSub(Environment env, int layerIndex) {
+    throwSubError("prepareInstantSub");
+  }
+  public CompletionCode executeSub(Environment env, int layerIndex) {
+    throwSubError("executeSub");
+    return null;
   }
 
-  public CompletionCode execute(Environment env) {
-    // TODO activate the branch location in the environment.
+  public void prepareInstant(Layer env) {}
+  public CompletionCode execute(Layer env) {
     return CompletionCode.TERMINATE;
   }
 
-  public void joinRWCounter(Environment env) {}
-  public void meetRWCounter(Environment env) {}
+  public CanResult canWriteOn(String uid, boolean inSurface) {
+    return new CanResult(true, false);
+  }
 
-  public ArrayList<String> singleTimeClosure() {
-    return singleTimeClosure;
+  public void meetRWCounter(Layer env) {}
+
+  public ArrayList<String> capturedUIDs() {
+    return capturedUIDs;
   }
 
   public Program branch() {

@@ -18,33 +18,34 @@ import java.util.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.variables.*;
 
 public class WriteAccess extends ASTNode implements Expression
 {
-  private String name;
+  private String uid;
 
-  public WriteAccess(String name) {
-    this.name = name;
+  public WriteAccess(String uid) {
+    this.uid = uid;
   }
 
-  public WriteAccess copy() {
-    return new WriteAccess(name);
-  }
-
-  // A write access is always possible.
-  public ExprResult execute(Environment env) {
-    Variable var = env.lookUpVar(name);
-    return new ExprResult(var.value());
-  }
-
-  public void joinRWCounter(Environment env) {
-    Variable var = env.lookUpVar(name);
+  public void prepareInstant(Layer env) {
+    Variable var = env.lookUpVar(uid);
     var.joinWrite(env);
   }
 
-  public void meetRWCounter(Environment env) {
-    Variable var = env.lookUpVar(name);
+  // A write access is always possible.
+  public ExprResult execute(Layer env) {
+    Variable var = env.lookUpVar(uid);
+    return new ExprResult(var.value());
+  }
+
+  public CanResult canWriteOn(String uid, boolean inSurface) {
+    return new CanResult(true, uid == this.uid);
+  }
+
+  public void meetRWCounter(Layer env) {
+    Variable var = env.lookUpVar(uid);
     var.meetWrite(env);
   }
 }

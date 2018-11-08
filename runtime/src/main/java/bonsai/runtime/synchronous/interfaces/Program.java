@@ -14,10 +14,12 @@
 
 package bonsai.runtime.synchronous.interfaces;
 
-import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 
-public interface Program extends Copy<Program>, Schedulable
+public interface Program extends Prepare, Schedulable
 {
-  CompletionCode execute(Environment env);
+  void prepareInstantSub(Environment env, int layerIndex);
+  CompletionCode executeSub(Environment env, int layerIndex);
+  CompletionCode execute(Layer env);
 }

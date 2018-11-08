@@ -1,4 +1,4 @@
-// Copyright 2016 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,31 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.env;
 
 import java.util.*;
+import java.util.function.*;
 import bonsai.runtime.core.*;
+import bonsai.runtime.synchronous.variables.*;
 import bonsai.runtime.synchronous.interfaces.*;
-import bonsai.runtime.synchronous.env.*;
 
-public class SpaceMachine
+public class Scheduler
 {
-  private Program body;
-  private Environment env;
+  private HashMap<Event, ArrayList<Schedulable>> waitingQueue;
 
-  public SpaceMachine(Program body) {
-    this.body = body;
-    this.env = new Environment();
+  public Scheduler() {
+    waitingQueue = new HashMap();
   }
 
-  public void prepare() {
-    body.prepareInstantSub(env, 0);
+  public void subscribe(Event event, Schedulable program) {
+    waitingQueue
+      .computeIfAbsent(event, k -> new ArrayList<>())
+      .add(program);
   }
 
-  // Returns `true` if the program is paused (through a `stop` or `pause up` statement).
-  // If the program is terminated, it returns `false`.
-  public boolean execute() {
-    CompletionCode code = body.executeSub(env, 0);
-    return code != CompletionCode.TERMINATE;
+  public void schedule(Event event) {
+    ArrayList<Schedulable> programs = waitingQueue.get(event);
+    for (Schedulable s: programs) {
+      s.schedule(null);
+    }
+    programs.clear();
   }
 }

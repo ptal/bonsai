@@ -16,6 +16,7 @@ package bonsai.runtime.synchronous;
 
 public enum CompletionCode {
   MICRO_STEP,
+  STUCK,
   PAUSE,
   PAUSE_UP,
   STOP,
@@ -24,6 +25,7 @@ public enum CompletionCode {
   public String toString() {
     switch(this) {
       case MICRO_STEP: return "program running inside an instant (this is an internal state)";
+      case STUCK: return "program stucks inside an instant (this is an internal state)";
       case PAUSE: return "pause";
       case PAUSE_UP: return "pause up";
       case STOP: return "stop";

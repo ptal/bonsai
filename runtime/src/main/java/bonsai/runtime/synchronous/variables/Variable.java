@@ -14,42 +14,31 @@
 
 package bonsai.runtime.synchronous.variables;
 
-import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.env.*;
 
-// A variable is a tuple `(name, rw, refsCounter)` where `refsCounter` is the number of `space` processes that have captured this variable.
 public abstract class Variable
 {
-  private String name;
-  private Integer uid;
+  private String uid;
   private RWCounter rw;
-  private int refsCounter;
+  private boolean inScope;
 
-  public Variable(String name)
+  public Variable(String uid)
   {
-    this.name = name;
-    this.uid = 0;
+    this.uid = uid;
     this.rw = new RWCounter(0,0,0);
-    this.refsCounter = 1;
+    this.inScope = true;
   }
 
-  public String name() {
-    return name;
-  }
-
-  public Integer uid() {
+  public String uid() {
     return uid;
   }
 
-  public void assignUID(Integer uid) {
-    this.uid = uid;
+  public void exitFromScope() {
+    inScope = false;
   }
 
-  public int refs() {
-    return refsCounter;
-  }
-
-  public void decreaseRefs() {
-    refsCounter -= 1;
+  public boolean isInScope() {
+    return inScope;
   }
 
   public boolean isReadable() {
@@ -60,23 +49,23 @@ public abstract class Variable
     return rw.isReadWritable();
   }
 
-  public void joinRead(Environment env) {
+  public void joinRead(Layer env) {
     rw.read += 1;
   }
 
-  public void joinReadWrite(Environment env) {
+  public void joinReadWrite(Layer env) {
     rw.readwrite += 1;
   }
 
-  public void joinWrite(Environment env) {
+  public void joinWrite(Layer env) {
     rw.write += 1;
   }
 
-  public void meetRead(Environment env) {
+  public void meetRead(Layer env) {
     rw.read -= 1;
   }
 
-  public void meetReadWrite(Environment env) {
+  public void meetReadWrite(Layer env) {
     rw.readwrite -= 1;
     anyEvent(env);
     if (rw.readwrite == 0 && rw.read != 0) {
@@ -84,7 +73,7 @@ public abstract class Variable
     }
   }
 
-  public void meetWrite(Environment env) {
+  public void meetWrite(Layer env) {
     rw.write -= 1;
     anyEvent(env);
     if (rw.write == 0) {
@@ -97,15 +86,15 @@ public abstract class Variable
     }
   }
 
-  private void canReadEvent(Environment env) {
+  private void canReadEvent(Layer env) {
     env.schedule(new Event(uid(), Event.CAN_READ));
   }
 
-  private void canReadWriteEvent(Environment env) {
+  private void canReadWriteEvent(Layer env) {
     env.schedule(new Event(uid(), Event.CAN_READWRITE));
   }
 
-  private void anyEvent(Environment env) {
+  private void anyEvent(Layer env) {
     env.schedule(new Event(uid(), Event.ANY));
   }
 

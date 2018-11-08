@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.env;
 
 import bonsai.runtime.synchronous.variables.*;
 
+// The event `kind` is waited (or generated) on the variable with UID `uid`.
 public class Event {
-  private int uid;
+  private String uid;
   private int kind;
 
   public static int ANY = 0;
   public static int CAN_READ = 1;
   public static int CAN_READWRITE = 2;
 
-  public Event(int uid, int kind) {
+  public Event(String uid, int kind) {
     if (kind != ANY && kind != CAN_READ && kind != CAN_READWRITE) {
       throw new RuntimeException("Event constructor: unknown event `kind` (value: " + kind + ")");
     }
@@ -33,7 +34,7 @@ public class Event {
   }
 
   public int hashCode() {
-    return uid + 100000*kind;
+    return uid.hashCode() + 100000*kind;
   }
 
   public boolean equals(Object obj) {
@@ -45,7 +46,7 @@ public class Event {
     }
     else {
       Event e = (Event) obj;
-      return kind == e.kind && uid == e.uid;
+      return kind == e.kind && uid.equals(e.uid);
     }
   }
 }
