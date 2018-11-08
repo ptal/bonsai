@@ -44,5 +44,12 @@ public class Layer
     scheduler.schedule(event);
   }
 
-  public void unstuck() {}
+  // See Scheduler.processWasScheduled
+  public boolean processWasScheduled() {
+    return scheduler.processWasScheduled();
+  }
+
+  public boolean unblock(Program body) {
+    return false;
+  }
 }

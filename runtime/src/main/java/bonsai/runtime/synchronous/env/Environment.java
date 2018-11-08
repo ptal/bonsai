@@ -24,36 +24,53 @@ import bonsai.runtime.synchronous.statements.SpaceStmt;
 
 public class Environment
 {
+  public static int OUTERMOST_LAYER = -1;
   private ArrayList<Layer> layers;
-  private int currentLayer;
+  private int targetLayer;
 
-  public Environment()
+  public Environment(int numLayers)
   {
-    layers = new ArrayList();
-    currentLayer = 0;
+    layers = new ArrayList(numLayers);
+    for(int i=0; i < numLayers; i++) {
+      layers.add(new Layer());
+    }
+    targetLayer = OUTERMOST_LAYER;
   }
 
-  public CompletionCode traverseLayer(int layerIndex,
+  public void incTargetLayer() {
+    targetLayer += 1;
+  }
+  public void decTargetLayer() {
+    targetLayer -= 1;
+  }
+  public Layer targetLayer() {
+    return layers.get(targetLayer);
+  }
+
+  public CompletionCode traverseLayer(int currentLayer,
    Function<Layer, CompletionCode> execute,
-   BiFunction<Environment, Integer, CompletionCode> subExecute) {
-    layerIndex += 1;
-    if (layerIndex == currentLayer) {
-      return execute.apply(layers.get(layerIndex));
+   BiFunction<Environment, Integer, CompletionCode> executeSub) {
+    currentLayer += 1;
+    if (currentLayer == targetLayer) {
+      return execute.apply(layers.get(currentLayer));
+    }
+    else if (currentLayer < targetLayer) {
+      return executeSub.apply(this, currentLayer);
     }
     else {
-      return subExecute.apply(this, layerIndex);
+      return CompletionCode.PAUSE_DOWN;
     }
   }
 
-  public void traverseLayerPrepare(int layerIndex,
+  public void traverseLayerPrepare(int currentLayer,
    Consumer<Layer> prepare,
-   BiConsumer<Environment, Integer> subPrepare) {
-    layerIndex += 1;
-    if (layerIndex == currentLayer) {
-      prepare.accept(layers.get(layerIndex));
+   BiConsumer<Environment, Integer> prepareSub) {
+    currentLayer += 1;
+    if (currentLayer == targetLayer) {
+      prepare.accept(layers.get(currentLayer));
     }
-    else {
-      subPrepare.accept(this, layerIndex);
+    else if(currentLayer < targetLayer) {
+      prepareSub.accept(this, currentLayer);
     }
   }
 }

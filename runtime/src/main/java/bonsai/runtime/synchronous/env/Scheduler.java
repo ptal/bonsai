@@ -23,22 +23,37 @@ import bonsai.runtime.synchronous.interfaces.*;
 public class Scheduler
 {
   private HashMap<Event, ArrayList<Schedulable>> waitingQueue;
+  private boolean scheduledProcess;
 
   public Scheduler() {
     waitingQueue = new HashMap();
+    scheduledProcess = false;
   }
 
-  public void subscribe(Event event, Schedulable program) {
+  public void subscribe(Event event, Schedulable process) {
     waitingQueue
       .computeIfAbsent(event, k -> new ArrayList<>())
-      .add(program);
+      .add(process);
   }
 
   public void schedule(Event event) {
-    ArrayList<Schedulable> programs = waitingQueue.get(event);
-    for (Schedulable s: programs) {
-      s.schedule(null);
+    ArrayList<Schedulable> processes = waitingQueue.get(event);
+    if (processes != null) {
+      for (Schedulable s: processes) {
+        s.schedule(null);
+        scheduledProcess = true;
+      }
     }
-    programs.clear();
+    processes.clear();
+  }
+
+  // Return true if a process has been scheduled since the last call to this method.
+  public boolean processWasScheduled() {
+    if (scheduledProcess) {
+      scheduledProcess = false;
+      return true;
+    } else {
+      return false;
+    }
   }
 }

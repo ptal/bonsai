@@ -38,8 +38,8 @@ public class SpaceStmt extends ASTNode implements Program
     throw new RuntimeException("SpaceStmt." + method +
       ": should be executed before the sub-layer if it is reachable.");
   }
-  public void prepareInstantSub(Environment env, int layerIndex) {
-    throwSubError("prepareInstantSub");
+  public void prepareSubInstant(Environment env, int layerIndex) {
+    throwSubError("prepareSubInstant");
   }
   public CompletionCode executeSub(Environment env, int layerIndex) {
     throwSubError("executeSub");

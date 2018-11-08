@@ -30,34 +30,23 @@ public class QFUniverse extends ASTNode
     this.body = body;
   }
 
-  public void prepareInstantSub(Environment env, int layerIndex) {
-    env.traverseLayerPrepare(layerIndex, this::prepareInstant, body::prepareInstantSub);
+  public void prepareSubInstant(Environment env, int layerIndex) {
+    env.traverseLayerPrepare(layerIndex, this::prepareInstant, body::prepareSubInstant);
   }
 
   public CompletionCode executeSub(Environment env, int layerIndex) {
     return env.traverseLayer(layerIndex, this::execute, body::executeSub);
   }
 
-  public void prepareInstant(Layer env) {
-    body.prepareInstant(env);
+  public void prepareInstant(Layer layer) {
+    body.prepareInstant(layer);
   }
 
-  public CompletionCode execute(Layer env) {
-    CompletionCode status = CompletionCode.PAUSE;
-    while (status == CompletionCode.PAUSE) {
-      body.prepareInstant(env);
-      while (status == CompletionCode.MICRO_STEP) {
-        status = body.execute(env);
-        if (status == CompletionCode.STUCK) {
-          env.unstuck();
-          status = CompletionCode.MICRO_STEP;
-        }
-      }
-    }
-    return status;
+  public CompletionCode execute(Layer layer) {
+    return body.execute(layer);
   }
 
-  public void meetRWCounter(Layer env) {}
+  public void meetRWCounter(Layer layer) {}
 
   public CanResult canWriteOn(String uid, boolean inSurface) {
     return null;

@@ -19,7 +19,7 @@ import bonsai.runtime.synchronous.env.*;
 
 public interface Program extends Prepare, Schedulable
 {
-  void prepareInstantSub(Environment env, int layerIndex);
+  void prepareSubInstant(Environment env, int layerIndex);
   CompletionCode executeSub(Environment env, int layerIndex);
   CompletionCode execute(Layer env);
 }

@@ -15,8 +15,8 @@
 package bonsai.runtime.synchronous;
 
 public enum CompletionCode {
-  MICRO_STEP,
-  STUCK,
+  WAIT,
+  PAUSE_DOWN,
   PAUSE,
   PAUSE_UP,
   STOP,
@@ -24,12 +24,20 @@ public enum CompletionCode {
 
   public String toString() {
     switch(this) {
-      case MICRO_STEP: return "program running inside an instant (this is an internal state)";
-      case STUCK: return "program stucks inside an instant (this is an internal state)";
+      case WAIT: return "program waiting an event inside an instant (this is an internal state)";
+      case PAUSE_DOWN: return "program waiting to execute a sublayer (this is an internal state)";
       case PAUSE: return "pause";
       case PAUSE_UP: return "pause up";
       case STOP: return "stop";
       default: return "program termination";
+    }
+  }
+
+  public boolean isInternal() {
+    switch(this) {
+      case WAIT:
+      case PAUSE_DOWN: return true;
+      default: return false;
     }
   }
 }
