@@ -40,4 +40,13 @@ public enum CompletionCode {
       default: return false;
     }
   }
+
+  public boolean isLayerTerminated() {
+    switch(this) {
+      case PAUSE_UP:
+      case STOP:
+      case TERMINATE: return true;
+      default: return false;
+    }
+  }
 }

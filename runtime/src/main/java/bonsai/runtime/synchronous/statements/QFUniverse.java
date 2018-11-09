@@ -20,27 +20,34 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class QFUniverse extends ASTNode
+public class QFUniverse extends ASTNode implements Program
 {
   private Program body;
+  private CompletionCode result;
 
   public QFUniverse(Program body) {
     super();
     this.body = body;
+    result = CompletionCode.PAUSE_DOWN;
   }
 
   public void prepareSubInstant(Environment env, int layerIndex) {
-    env.traverseLayerPrepare(layerIndex, body::prepareInstant, body::prepareSubInstant);
+    env.traverseLayerPrepare(layerIndex, this::prepareInstant, body::prepareSubInstant);
   }
 
   public CompletionCode executeSub(Environment env, int layerIndex) {
-    return env.traverseLayer(layerIndex, body::execute, body::executeSub);
+    return env.traverseLayer(layerIndex, this::execute, body::executeSub);
   }
 
-  public void prepareInstant(Layer layer) {}
+  public void prepareInstant(Layer layer) {
+    result = CompletionCode.PAUSE_DOWN;
+  }
 
   public CompletionCode execute(Layer layer) {
-    return CompletionCode.PAUSE_DOWN;
+    if (!result.isLayerTerminated()) {
+      result = body.execute(layer);
+    }
+    return result;
   }
 
   public void meetRWCounter(Layer layer) {}

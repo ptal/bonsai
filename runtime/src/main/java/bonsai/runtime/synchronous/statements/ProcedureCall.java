@@ -21,7 +21,7 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class ProcedureCall extends NAryCall
+public class ProcedureCall extends NAryCall implements Program
 {
   private CompletionCode result;
   private Consumer<ArrayList<Object>> procedure;
