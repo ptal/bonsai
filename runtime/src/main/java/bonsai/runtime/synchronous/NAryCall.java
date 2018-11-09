@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous.expressions;
+package bonsai.runtime.synchronous;
 
 import java.util.*;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.env.*;
 
 public abstract class NAryCall extends ASTNode

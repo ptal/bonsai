@@ -36,7 +36,7 @@ We provide a [manual installation procedure](manual-installation.md) in case the
 
 ### Update
 
-Update the compiler and runtime (without updating SugarCubes and Choco libraries):
+Update the compiler and runtime (without the external libraries such as Choco):
 
 ```sh
 .\update.sh
@@ -47,7 +47,6 @@ Update the compiler and runtime (without updating SugarCubes and Choco libraries
 ```sh
 cargo uninstall bonsai
 # Remove runtime in the Maven local database
-rm ~/.m2/repository/inria
 rm ~/.m2/repository/bonsai
 ```
 

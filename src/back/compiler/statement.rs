@@ -59,9 +59,10 @@ impl<'a> StatementCompiler<'a>
   fn compile(&mut self, stmt: Stmt) {
     use ast::StmtKind::*;
     match stmt.node {
-      Seq(branches) => self.sequence(branches),
-      OrPar(branches) => self.or_parallel(branches),
-      AndPar(branches) => self.and_parallel(branches),
+      Nothing => self.nothing(),
+      // Seq(branches) => self.sequence(branches),
+      // OrPar(branches) => self.or_parallel(branches),
+      // AndPar(branches) => self.and_parallel(branches),
       // Space(branches) => self.space(branches),
       // Let(body) => self.let_decl(body),
       // When(entailment, body) => self.when(entailment, body),
@@ -77,40 +78,43 @@ impl<'a> StatementCompiler<'a>
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // Tell(var, expr) => self.tell(var, expr),
       // Universe(body) => self.universe(body),
-      // Nothing => self.nothing()
       _ => ()
     }
   }
 
-  fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
-  {
-    if branches.len() == 1 {
-      self.compile(branches.pop().unwrap());
-    }
-    else {
-      let mid = branches.len() / 2;
-      let right = branches.split_off(mid);
-      self.fmt.push_line(&format!("SC.{}(", op_name));
-      self.fmt.indent();
-      self.nary_operator(op_name, branches);
-      self.fmt.terminate_line(",");
-      self.nary_operator(op_name, right);
-      self.fmt.push(")");
-      self.fmt.unindent();
-    }
+  fn nothing(&mut self) {
+    self.fmt.push("new Nothing()");
   }
 
-  fn sequence(&mut self, branches: Vec<Stmt>) {
-    self.nary_operator("seq", branches);
-  }
+  // fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
+  // {
+  //   if branches.len() == 1 {
+  //     self.compile(branches.pop().unwrap());
+  //   }
+  //   else {
+  //     let mid = branches.len() / 2;
+  //     let right = branches.split_off(mid);
+  //     self.fmt.push_line(&format!("SC.{}(", op_name));
+  //     self.fmt.indent();
+  //     self.nary_operator(op_name, branches);
+  //     self.fmt.terminate_line(",");
+  //     self.nary_operator(op_name, right);
+  //     self.fmt.push(")");
+  //     self.fmt.unindent();
+  //   }
+  // }
 
-  fn or_parallel(&mut self, branches: Vec<Stmt>) {
-    self.nary_operator("or_par", branches);
-  }
+  // fn sequence(&mut self, branches: Vec<Stmt>) {
+  //   self.nary_operator("seq", branches);
+  // }
 
-  fn and_parallel(&mut self, branches: Vec<Stmt>) {
-    self.nary_operator("and_par", branches);
-  }
+  // fn or_parallel(&mut self, branches: Vec<Stmt>) {
+  //   self.nary_operator("or_par", branches);
+  // }
+
+  // fn and_parallel(&mut self, branches: Vec<Stmt>) {
+  //   self.nary_operator("and_par", branches);
+  // }
 
   // fn space(&mut self, branches: Vec<Stmt>) {
   //   let branches_len = branches.len();
@@ -263,10 +267,6 @@ impl<'a> StatementCompiler<'a>
 
   // fn stop(&mut self) {
   //   self.fmt.push("new BStop()");
-  // }
-
-  // fn nothing(&mut self) {
-  //   self.fmt.push("SC.NOTHING");
   // }
 
   // fn loop_stmt(&mut self, body: Box<Stmt>) {

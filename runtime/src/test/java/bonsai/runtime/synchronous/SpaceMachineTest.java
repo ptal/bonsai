@@ -15,6 +15,8 @@
 package bonsai.runtime.synchronous;
 
 import java.util.*;
+import java.util.function.*;
+import bonsai.runtime.lattices.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.statements.*;
 import bonsai.runtime.synchronous.interfaces.*;
@@ -34,22 +36,49 @@ public class SpaceMachineTest
     }
   }
 
-  public Program createNestedQFUniverse(int remaining) {
+  public Program createNestedQFUniverse(Program code, int remaining) {
     if (remaining == 0) {
-      return new Nothing();
+      return code;
     }
     else {
-      return new QFUniverse(createNestedQFUniverse(remaining-1));
+      return createNestedQFUniverse(new QFUniverse(code), remaining-1);
     }
   }
 
   @Test
   public void testNothingQFUniverse() {
-    for(int numLayers=1; numLayers < 4; numLayers++) {
+    for(int numLayers=0; numLayers < 4; numLayers++) {
       currentTest = "universe^"+numLayers+" nothing end";
-      Program process = createNestedQFUniverse(numLayers);
-      SpaceMachine machine = new SpaceMachine(process, numLayers);
+      Program process = createNestedQFUniverse(new Nothing(), numLayers);
+      SpaceMachine machine = new SpaceMachine(process, numLayers, true);
       assertTerminated(machine);
     }
   }
+
+  @Test
+  public void testProcedureQFUniverse() {
+    for(int numLayers=0; numLayers < 4; numLayers++) {
+      currentTest = "universe^"+numLayers+" f() end";
+      LMax numCall = new LMax(0);
+      Consumer<ArrayList<Object>> f = (args) -> numCall.inc();
+      ProcedureCall procedure = new ProcedureCall(new ArrayList(), f);
+      Program process = createNestedQFUniverse(procedure, numLayers);
+      SpaceMachine machine = new SpaceMachine(process, numLayers, true);
+      assertTerminated(machine);
+      assertThat(currentTest, numCall, equalTo(new LMax(1)));
+    }
+  }
+
+  // @Test throw CausalException
+  // public void testNonCausalProgram() {
+  //   currentTest = "universe f(read x, write x) end";
+  //   LMax numCall = new LMax(0);
+  //   Consumer<ArrayList<Object>> f = (args) -> fail(currentTest+": function f should not be called");
+  //   List<Access> args = List.of(new ReadAccess("x"), new WriteAccess("x"));
+  //   ProcedureCall procedure = new ProcedureCall(args, f);
+  //   Program process = createNestedQFUniverse(procedure, numLayers);
+  //   SpaceMachine machine = new SpaceMachine(process, numLayers, true);
+  //   assertTerminated(machine);
+  //   assertThat(currentTest, numCall, equalTo(new LMax(1)));
+  // }
 }

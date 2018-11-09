@@ -23,10 +23,12 @@ public class SpaceMachine
 {
   private Program body;
   private Environment env;
+  private boolean debug;
 
-  public SpaceMachine(Program body, int numLayers) {
-    this.body = body;
-    this.env = new Environment(numLayers);
+  public SpaceMachine(Program body, int numLayers, boolean debug) {
+    this.body = new QFUniverse(body);
+    this.env = new Environment(numLayers+1);
+    this.debug = debug;
   }
 
   // Returns `true` if the program is paused (through a `stop` or `pause up` statement).

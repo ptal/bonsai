@@ -26,15 +26,10 @@ cd libstd # (inside the bonsai repository)
 
 ## Installing the Bonsai runtime
 
-The Bonsai runtime has two dependencies: [SugarCubes](http://jeanferdysusini.free.fr/index.php?action=SC) for synchronous and reactive programming and [Choco](http://www.choco-solver.org) for constraint programming.
-
-1. Installing SugarCubes in the local Maven database:
-  ```sh
-  curl http://jeanferdysusini.free.fr/v4.0/SugarCubesv4.0.0a5.jar > /tmp/SugarCubesv4.0.0a5.jar
-  mvn install:install-file -DgroupId=inria.meije.rc -DartifactId=SugarCubes -Dversion=4.0.0a5 -Dpackaging=jar -Dfile=/tmp/SugarCubesv4.0.0a5.jar
-  ```
-2. Installing Bonsai runtime in the local Maven database:
-  ```sh
-  cd runtime/ # (inside the bonsai repository)
-  ./install.sh
-  ```
+The Bonsai runtime has a dependency on [Choco](http://www.choco-solver.org) for constraint programming.
+Choco will be downloaded automatically from the Maven central repository.
+However, we need to install the Bonsai runtime in the local Maven database:
+```sh
+cd runtime/ # (inside the bonsai repository)
+./install.sh
+```

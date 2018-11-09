@@ -54,6 +54,14 @@ impl<'a> ModuleCompiler<'a>
     for import in &jclass.imports {
       self.fmt.push_line(&format!("import {};", import));
     }
+    self.runtime_imports();
+  }
+
+  fn runtime_imports(&mut self) {
+    self.fmt.push_line("import bonsai.runtime.synchronous.*;");
+    self.fmt.push_line("import bonsai.runtime.synchronous.env.*;");
+    self.fmt.push_line("import bonsai.runtime.synchronous.statements.*;");
+    self.fmt.push_line("import bonsai.runtime.synchronous.interfaces.*;");
   }
 
   fn class(&mut self, module: JModule) {
@@ -116,11 +124,10 @@ impl<'a> ModuleCompiler<'a>
     if let Some(main_expr) = main_expr {
       self.fmt.push_line("public static void main(String[] args)");
       self.fmt.open_block();
-      let machine_method = if self.session.config().debug { "createDebug" } else { "create" };
       self.fmt.push_block(format!("\
         Program program = {};\n\
-        SpaceMachine machine = SpaceMachine.{}(program);\n\
-        machine.execute();", main_expr, machine_method));
+        SpaceMachine machine = new SpaceMachine(program,1,{});\n\
+        machine.execute();", main_expr, self.session.config().debug));
       self.fmt.close_block();
       self.fmt.newline();
     }
@@ -182,7 +189,7 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn runtime_init_method(&mut self, module: &JModule) {
-    self.fmt.push_line("public void __init(SpaceEnvironment senv)");
+    self.fmt.push_line("public void __init(Layer senv)");
     self.fmt.open_block();
     self.fmt.push_line("__num_instances++;");
     self.fmt.push_line("__object_instance = __num_instances;");
@@ -201,7 +208,7 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn runtime_destroy_method(&mut self, module: &JModule) {
-    self.fmt.push_line("public void __destroy(SpaceEnvironment senv)");
+    self.fmt.push_line("public void __destroy(Layer senv)");
     self.fmt.open_block();
     for field in module.fields.clone() {
       let binding = field.binding;
