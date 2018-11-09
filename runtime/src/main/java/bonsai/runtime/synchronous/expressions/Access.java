@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.expressions;
 
-public class CanResult {
-  public boolean canTerminate;
-  public boolean canWrite;
-  public CanResult(boolean canTerminate, boolean canWrite) {
-    this.canTerminate = canTerminate;
-    this.canWrite = canWrite;
-  }
+import java.util.*;
+import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.*;
 
-  public CanResult and_term(CanResult other) {
-    return new CanResult(
-      this.canTerminate && other.canTerminate,
-      this.canWrite || other.canWrite
-    );
+public abstract class Access extends ASTNode implements Expression
+{
+  protected String uid;
+
+  public Access(String uid) {
+    this.uid = uid;
   }
 }

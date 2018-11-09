@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous.statements;
+package bonsai.runtime.synchronous.expressions;
 
 import java.util.*;
 import bonsai.runtime.core.*;
@@ -21,13 +21,12 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.variables.*;
 
-public class ReadWriteAccess extends ASTNode implements Expression
+public class ReadWriteAccess extends Access
 {
-  private String uid;
   private boolean hasSubscribed;
 
   public ReadWriteAccess(String uid) {
-    this.uid = uid;
+    super(uid);
     this.hasSubscribed = false;
   }
 

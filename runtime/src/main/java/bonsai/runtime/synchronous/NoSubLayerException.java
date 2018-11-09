@@ -14,18 +14,11 @@
 
 package bonsai.runtime.synchronous;
 
-public class CanResult {
-  public boolean canTerminate;
-  public boolean canWrite;
-  public CanResult(boolean canTerminate, boolean canWrite) {
-    this.canTerminate = canTerminate;
-    this.canWrite = canWrite;
-  }
+import java.util.*;
 
-  public CanResult and_term(CanResult other) {
-    return new CanResult(
-      this.canTerminate && other.canTerminate,
-      this.canWrite || other.canWrite
-    );
+public class NoSubLayerException extends RuntimeException {
+  public NoSubLayerException(String from) {
+    super("[BUG] " + from + ": does not have an active sub-layer and is currently suspended "+
+      "or not yet executed in its current layer.");
   }
 }

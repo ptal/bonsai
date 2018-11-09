@@ -12,40 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.expressions;
 
 import java.util.*;
+import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class QFUniverse extends ASTNode
+public class ProcedureCall extends NAryCall
 {
-  private Program body;
+  private CompletionCode result;
+  private Consumer<ArrayList<Object>> procedure;
 
-  public QFUniverse(Program body) {
-    super();
-    this.body = body;
+  public ProcedureCall(List<Access> args, Consumer<ArrayList<Object>> procedure) {
+    super(args);
+    this.result = CompletionCode.WAIT;
+    this.procedure = procedure;
   }
 
   public void prepareSubInstant(Environment env, int layerIndex) {
-    env.traverseLayerPrepare(layerIndex, body::prepareInstant, body::prepareSubInstant);
+    throw new NoSubLayerException("ProcedureCall.prepareSubInstant");
   }
-
   public CompletionCode executeSub(Environment env, int layerIndex) {
-    return env.traverseLayer(layerIndex, body::execute, body::executeSub);
+    throw new NoSubLayerException("ProcedureCall.executeSub");
   }
 
-  public void prepareInstant(Layer layer) {}
+  public void prepareInstant(Layer layer) {
+    result = CompletionCode.WAIT;
+    super.prepareInstant(layer);
+  }
 
   public CompletionCode execute(Layer layer) {
-    return CompletionCode.PAUSE_DOWN;
-  }
-
-  public void meetRWCounter(Layer layer) {}
-
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    return null;
+    if (result == CompletionCode.WAIT) {
+      boolean ready = super.executeArgs(layer);
+      if (ready) {
+        procedure.accept(argsEval);
+        result = CompletionCode.TERMINATE;
+      }
+    }
+    return result;
   }
 }
