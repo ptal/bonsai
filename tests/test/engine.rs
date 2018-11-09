@@ -60,8 +60,8 @@ impl Engine
       test_path.join(Path::new("compile-pass")), CompileSuccess, false);
     self.test_directory(format!("Compile and Fail tests"),
       test_path.join(Path::new("compile-fail")), CompileFail, false);
-    // self.test_directory(format!("Compile and Run tests"),
-    //   test_path.join(Path::new("run-pass")), CompileSuccess, true);
+    self.test_directory(format!("Compile and Run tests"),
+      test_path.join(Path::new("run-pass")), CompileSuccess, true);
     self.display.stats();
     self.display.panic_if_failure();
   }

@@ -31,9 +31,10 @@ grammar! bonsai {
 
   test_annotation = HASH LBRACKET (execution_test_attr / compiler_test_attr) RBRACKET
 
+  execution_test_attr = ("run" spacing) LPAREN string_identifier_os DOT string_identifier COMMA string_literal RPAREN > make_execution_test
+
   compiler_test_attr = string_identifier LPAREN string_identifier COMMA number COMMA number RPAREN > make_compiler_test
 
-  execution_test_attr = "run" LPAREN expr COMMA string_literal RPAREN > make_execution_test
 
   fn make_compiler_test(level: String, code: String,
    line: u64, column: u64) -> TestAnnotation
@@ -41,9 +42,9 @@ grammar! bonsai {
     TestAnnotation::Compiler(CompilerTest::new(level, code, line as usize, column as usize))
   }
 
-  fn make_execution_test(expr: Expr, regex: String) -> TestAnnotation
+  fn make_execution_test(class_name: String, process_name: String, regex: String) -> TestAnnotation
   {
-    TestAnnotation::Execution(ExecutionTest::new(expr, regex))
+    TestAnnotation::Execution(ExecutionTest::new(class_name, process_name, regex))
   }
 
   fn make_java_program(span: Span, pre_header: String, tests: Vec<TestAnnotation>,

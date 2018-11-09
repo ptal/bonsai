@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use driver::module_file::ModuleFile;
+use driver::config::MainMethod;
 use std::fmt::{Display, Error, Formatter};
 use std::cmp::{Ordering, PartialEq};
 use std::ops::Deref;
@@ -84,20 +85,18 @@ impl Display for CompilerTest
   }
 }
 
-/// Given a test specification `#[run(expr, regex)]`, execute `expr` and try to match its output with `regex`.
+/// Given a test specification `#[run(process, regex)]`, execute the process `process` and check its printed output with `regex`.
 #[derive(Clone, Debug)]
 pub struct ExecutionTest {
-  pub input_expr: Expr,
+  pub process: MainMethod,
   pub output_regex: Regex
 }
 
 impl ExecutionTest {
-  pub fn new(expr: Expr, regex: String) -> Self {
-    let compiled_regex = Regex::new(&regex).unwrap();
+  pub fn new(class_name: String, process_name: String, regex: String) -> Self {
+    let output_regex = Regex::new(&regex).unwrap();
     ExecutionTest {
-      input_expr: expr,
-      output_regex: compiled_regex
-    }
+      process: MainMethod::new(class_name, process_name), output_regex }
   }
 }
 

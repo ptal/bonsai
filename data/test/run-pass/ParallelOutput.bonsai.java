@@ -13,13 +13,15 @@
 // limitations under the License.
 
 // When optimization or re-ordering of the parallel branches occurs, the regex should become "123|132|213|231|321|312".
-#[run(new ParallelOutput().test(), "123")]
+// #[run(test, "123")]
 
 package test;
 
+import java.lang.System;
+
 public class ParallelOutput
 {
-  proc test() =
+  public proc test() =
     par
     || System.out.print("1")
     || System.out.print("2")

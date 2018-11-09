@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// #[run(test, "123")]
+#[run(NothingT.test, "")]
 
 package test;
 
-import java.lang.System;
+import java.util.*;
 
-public class SequentialOutput
+public class NothingT
 {
-  public proc test() =
-    System.out.print("1");
-    System.out.print("2");
-    System.out.print("3");
-  end
+  public proc test() = nothing
 }

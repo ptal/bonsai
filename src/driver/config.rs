@@ -16,7 +16,7 @@
 
 use std::path::PathBuf;
 use clap::{App, Error, ErrorKind};
-use ast::{Expr, ExecutionTest};
+use ast::{ExecutionTest};
 
 pub struct Config
 {
@@ -28,15 +28,18 @@ pub struct Config
   pub testing_mode: bool
 }
 
-#[derive(Clone)]
-pub enum MainMethod
+#[derive(Clone,Debug)]
+pub struct MainMethod
 {
-  CommandArg { class: String, method: String },
-  TestMode(Expr)
+  pub class: String,
+  pub method: String,
 }
 
 impl MainMethod
 {
+  pub fn new(class: String, method: String) -> Self {
+    MainMethod { class, method }
+  }
   pub fn command_arg(class_method: &str) -> Self {
     let class_method_split: Vec<&str> = class_method.split('.').collect();
     if class_method_split.len() != 2 {
@@ -46,14 +49,10 @@ impl MainMethod
         ErrorKind::InvalidValue).exit();
     }
 
-    MainMethod::CommandArg {
-      class: String::from(class_method_split[0]),
-      method: String::from(class_method_split[1])
-    }
-  }
-
-  pub fn test_mode(expr: Expr) -> Self {
-    MainMethod::TestMode(expr)
+    MainMethod::new(
+      String::from(class_method_split[0]),
+      String::from(class_method_split[1])
+    )
   }
 }
 
@@ -110,7 +109,7 @@ impl Config
 
   #[allow(dead_code)]
   pub fn configure_execution_test(&mut self, test: &ExecutionTest) {
-    self.main_method = Some(MainMethod::TestMode(test.input_expr.clone()));
+    self.main_method = Some(test.process.clone());
   }
 
   fn default_output(input: &PathBuf) -> PathBuf {

@@ -111,13 +111,8 @@ impl<'a> ModuleCompiler<'a>
 
   fn main_method(&mut self, class_name: Ident) {
     let main_expr = match self.session.config().main_method.clone() {
-      Some(MainMethod::CommandArg { ref class, ref method }) if *class == *class_name => {
+      Some(MainMethod { ref class, ref method }) if *class == *class_name => {
         Some(format!("new {}().{}()", class, method))
-      }
-      Some(MainMethod::TestMode(expr)) => {
-        let mut fmt = CodeFormatter::new();
-        compile_expression(self.session, self.context, &mut fmt, expr);
-        Some(fmt.unwrap())
       },
       _ => None
     };
