@@ -23,34 +23,24 @@ import bonsai.runtime.synchronous.variables.*;
 
 public class ReadWriteAccess extends Access
 {
-  private boolean hasSubscribed;
-
   public ReadWriteAccess(String uid) {
     super(uid);
-    this.hasSubscribed = false;
   }
 
-  public void prepareInstant(Layer env) {
-    Variable var = env.lookUpVar(uid);
-    var.joinReadWrite(env);
+  public void prepareInstant(Layer layer) {
+    super.prepareInstant(layer);
+    Variable var = layer.lookUpVar(uid);
+    var.joinReadWrite(layer);
   }
 
-  public ExprResult execute(Layer env) {
-    Variable var = env.lookUpVar(uid);
+  public ExprResult execute(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
     if (var.isReadWritable()) {
       return new ExprResult(var.value());
     }
     else {
-      subscribe(env, var);
+      subscribe(layer, Event.CAN_READWRITE);
       return new ExprResult();
-    }
-  }
-
-  private void subscribe(Layer env, Variable var) {
-    if (!hasSubscribed) {
-      hasSubscribed = true;
-      Event event = new Event(var.uid(), Event.CAN_READWRITE);
-      env.subscribe(event, this);
     }
   }
 
@@ -58,8 +48,8 @@ public class ReadWriteAccess extends Access
     return new CanResult(true, uid == this.uid);
   }
 
-  public void meetRWCounter(Layer env) {
-    Variable var = env.lookUpVar(uid);
-    var.meetReadWrite(env);
+  public void meetRWCounter(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
+    var.meetReadWrite(layer);
   }
 }

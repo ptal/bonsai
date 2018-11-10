@@ -30,27 +30,20 @@ public class ReadAccess extends Access
     this.hasSubscribed = false;
   }
 
-  public void prepareInstant(Layer env) {
-    Variable var = env.lookUpVar(uid);
-    var.joinRead(env);
+  public void prepareInstant(Layer layer) {
+    super.prepareInstant(layer);
+    Variable var = layer.lookUpVar(uid);
+    var.joinRead(layer);
   }
 
-  public ExprResult execute(Layer env) {
-    Variable var = env.lookUpVar(uid);
+  public ExprResult execute(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
     if (var.isReadable()) {
       return new ExprResult(var.value());
     }
     else {
-      subscribe(env, var);
+      subscribe(layer, Event.CAN_READ);
       return new ExprResult();
-    }
-  }
-
-  void subscribe(Layer env, Variable var) {
-    if (!hasSubscribed) {
-      hasSubscribed = true;
-      Event event = new Event(var.uid(), Event.CAN_READ);
-      env.subscribe(event, this);
     }
   }
 
@@ -58,8 +51,8 @@ public class ReadAccess extends Access
     return new CanResult(true,false);
   }
 
-  public void meetRWCounter(Layer env) {
-    Variable var = env.lookUpVar(uid);
-    var.meetRead(env);
+  public void meetRWCounter(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
+    var.meetRead(layer);
   }
 }

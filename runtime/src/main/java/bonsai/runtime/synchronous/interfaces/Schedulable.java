@@ -25,5 +25,7 @@ public interface Schedulable
   CanResult canWriteOn(String uid, boolean inSurface);
   void meetRWCounter(Layer env);
   void setParent(Schedulable parent);
+  // `schedule` can be called even if the current process is terminated.
+  // see Scheduler.schedule.
   void schedule(Schedulable from);
 }

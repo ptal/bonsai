@@ -27,14 +27,15 @@ public class WriteAccess extends Access
     super(uid);
   }
 
-  public void prepareInstant(Layer env) {
-    Variable var = env.lookUpVar(uid);
-    var.joinWrite(env);
+  public void prepareInstant(Layer layer) {
+    super.prepareInstant(layer);
+    Variable var = layer.lookUpVar(uid);
+    var.joinWrite(layer);
   }
 
   // A write access is always possible.
-  public ExprResult execute(Layer env) {
-    Variable var = env.lookUpVar(uid);
+  public ExprResult execute(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
     return new ExprResult(var.value());
   }
 
@@ -42,8 +43,8 @@ public class WriteAccess extends Access
     return new CanResult(true, uid == this.uid);
   }
 
-  public void meetRWCounter(Layer env) {
-    Variable var = env.lookUpVar(uid);
-    var.meetWrite(env);
+  public void meetRWCounter(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
+    var.meetWrite(layer);
   }
 }

@@ -22,22 +22,23 @@ import bonsai.runtime.synchronous.interfaces.*;
 
 public class Scheduler
 {
-  private HashMap<Event, ArrayList<Schedulable>> waitingQueue;
+  private HashMap<Event, ArrayList<Schedulable>> waitingList;
   private boolean scheduledProcess;
 
   public Scheduler() {
-    waitingQueue = new HashMap();
+    waitingList = new HashMap();
     scheduledProcess = false;
   }
 
   public void subscribe(Event event, Schedulable process) {
-    waitingQueue
+    waitingList
       .computeIfAbsent(event, k -> new ArrayList<>())
       .add(process);
   }
 
+  // When `schedule` is called, the processes registered on this event are removed from the `waitingList`;
   public void schedule(Event event) {
-    ArrayList<Schedulable> processes = waitingQueue.get(event);
+    ArrayList<Schedulable> processes = waitingList.get(event);
     if (processes != null) {
       for (Schedulable s: processes) {
         s.schedule(null);

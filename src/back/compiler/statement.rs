@@ -60,6 +60,7 @@ impl<'a> StatementCompiler<'a>
     use ast::StmtKind::*;
     match stmt.node {
       Nothing => self.nothing(),
+      FnCall(java_call) => self.java_call(java_call),
       // Seq(branches) => self.sequence(branches),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
@@ -73,7 +74,6 @@ impl<'a> StatementCompiler<'a>
       // Trap(name, body) => self.trap(name, body),
       // Exit(name) => self.exit(name),
       // Loop(body) => self.loop_stmt(body),
-      // FnCall(java_call) => self.java_call(java_call),
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // Tell(var, expr) => self.tell(var, expr),
@@ -84,6 +84,12 @@ impl<'a> StatementCompiler<'a>
 
   fn nothing(&mut self) {
     self.fmt.push("new Nothing()");
+  }
+
+  fn java_call(&mut self, java_call: Expr) {
+    self.fmt.push("new ClosureAtom(");
+    compile_closure(self.session, self.context, self.fmt, java_call, false);
+    self.fmt.push(")");
   }
 
   // fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
@@ -274,12 +280,6 @@ impl<'a> StatementCompiler<'a>
   //   self.fmt.indent();
   //   self.compile(*body);
   //   self.fmt.unindent();
-  //   self.fmt.push(")");
-  // }
-
-  // fn java_call(&mut self, java_call: Expr) {
-  //   self.fmt.push("new ClosureAtom(");
-  //   compile_closure(self.session, self.context, self.fmt, java_call, false);
   //   self.fmt.push(")");
   // }
 

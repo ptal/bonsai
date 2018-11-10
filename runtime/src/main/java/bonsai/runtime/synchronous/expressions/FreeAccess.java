@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,29 +15,30 @@
 package bonsai.runtime.synchronous.expressions;
 
 import java.util.*;
+import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
+import bonsai.runtime.synchronous.variables.*;
 
-public abstract class Access extends ASTNode implements Expression
+public class FreeAccess extends Access
 {
-  protected String uid;
-  private boolean hasSubscribed;
-
-  public Access(String uid) {
-    this.uid = uid;
-    hasSubscribed = false;
+  public FreeAccess(String uid) {
+    super(uid);
   }
 
-  public void prepareInstant(Layer layer) {
-    hasSubscribed = false;
+  public ExprResult execute(Layer layer) {
+    throw new RuntimeException("BUG: Must call executeFree on FreeAccess.");
   }
 
-  protected void subscribe(Layer layer, int eventKind) {
-    if (!hasSubscribed) {
-      hasSubscribed = true;
-      Event event = new Event(uid, eventKind);
-      layer.subscribe(event, this);
-    }
+  public Variable executeFree(Layer layer) {
+    subscribe(layer, Event.ANY);
+    return layer.lookUpVar(uid);
   }
+
+  public CanResult canWriteOn(String uid, boolean inSurface) {
+    return new CanResult(true,false);
+  }
+
+  public void meetRWCounter(Layer layer) {}
 }

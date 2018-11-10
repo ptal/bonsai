@@ -30,6 +30,10 @@ public class ES implements Lattice {
     value = k;
   }
 
+  public Kleene unwrap() {
+    return value;
+  }
+
   public ES bottom() {
     return new ES(Kleene.UNKNOWN);
   }
