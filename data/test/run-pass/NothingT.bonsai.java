@@ -13,12 +13,21 @@
 // limitations under the License.
 
 #[run(NothingT.test, "")]
+#[run(NothingT.printOne, "1")]
+#[run(NothingT.printFew, "1234")]
+#[run(NothingT.printFew2, "1+")]
+#[run(NothingT.print41, "41")]
 
 package test;
 
+import java.lang.System;
 import java.util.*;
 
 public class NothingT
 {
   public proc test() = nothing
+  public proc printOne() = System.out.println("1")
+  public proc printFew() = System.out.println("1234")
+  public proc printFew2() = System.out.println("1111111")
+  public proc print41() = System.out.println(41)
 }

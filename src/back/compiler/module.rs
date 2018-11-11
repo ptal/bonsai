@@ -58,6 +58,8 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn runtime_imports(&mut self) {
+    self.fmt.push_line("import bonsai.runtime.core.*;");
+    self.fmt.push_line("import bonsai.runtime.lattices.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.env.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.statements.*;");

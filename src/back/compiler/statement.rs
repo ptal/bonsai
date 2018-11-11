@@ -15,7 +15,7 @@
 use context::*;
 use session::*;
 use back::code_formatter::*;
-// use std::collections::{HashSet};
+use back::compiler::expression::*;
 
 pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, stmt: Stmt) {
   StatementCompiler::new(session, context, fmt).compile(stmt)
@@ -60,7 +60,7 @@ impl<'a> StatementCompiler<'a>
     use ast::StmtKind::*;
     match stmt.node {
       Nothing => self.nothing(),
-      FnCall(java_call) => self.java_call(java_call),
+      ExprStmt(expr) => self.procedure(expr),
       // Seq(branches) => self.sequence(branches),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
@@ -78,7 +78,7 @@ impl<'a> StatementCompiler<'a>
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // Tell(var, expr) => self.tell(var, expr),
       // Universe(body) => self.universe(body),
-      _ => ()
+      _ => unimplemented!("statement unimplemented.")
     }
   }
 
@@ -86,9 +86,9 @@ impl<'a> StatementCompiler<'a>
     self.fmt.push("new Nothing()");
   }
 
-  fn java_call(&mut self, java_call: Expr) {
-    self.fmt.push("new ClosureAtom(");
-    compile_closure(self.session, self.context, self.fmt, java_call, false);
+  fn procedure(&mut self, expr: Expr) {
+    self.fmt.push("new ProcedureCall(");
+    compile_closure(self.session, self.context, self.fmt, expr, false);
     self.fmt.push(")");
   }
 
