@@ -225,7 +225,7 @@ grammar! bonsai {
     / PAUSE_OS > make_pause
     / NOTHING_OS > make_nothing
     / LOOP close_sequence END_OS > make_loop
-    / UNIVERSE close_sequence END_OS > make_universe
+    / UNIVERSE close_sequence END_OS > make_qf_universe
     / RUN proc_call_os > make_proc_call
     / binding_os > make_let_stmt
     / variable LEFT_ARROW expr > make_tell
@@ -326,8 +326,8 @@ grammar! bonsai {
     StmtKind::ProcCall(var, process, args)
   }
 
-  fn make_universe(body: Stmt) -> StmtKind {
-    StmtKind::Universe(Box::new(body))
+  fn make_qf_universe(body: Stmt) -> StmtKind {
+    StmtKind::QFUniverse(Box::new(body))
   }
 
   proc_call_os = (variable DOT)? identifier LPAREN list_var RPAREN_OS

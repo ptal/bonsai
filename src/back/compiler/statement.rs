@@ -37,30 +37,12 @@ impl<'a> StatementCompiler<'a>
     }
   }
 
-  // Seq(Vec<Stmt>),
-  // Par(Vec<Stmt>),
-  // Space(Vec<Stmt>),
-  // Let(LetStmt),
-  // When(EntailmentRel, Box<Stmt>),
-  // Suspend(EntailmentRel, Box<Stmt>),
-  // Tell(Variable, Expr),
-  // Pause,
-  // PauseUp,
-  // Stop,
-  // Trap(Ident, Box<Stmt>),
-  // Exit(Ident),
-  // Loop(Box<Stmt>),
-  // ProcCall(Option<Variable>, Ident),
-  // ExprStmt(Expr),
-  // Universe(Box<Stmt>),
-  // Nothing
-
-
   fn compile(&mut self, stmt: Stmt) {
     use ast::StmtKind::*;
     match stmt.node {
       Nothing => self.nothing(),
       ExprStmt(expr) => self.procedure(expr),
+      QFUniverse(body) => self.qf_universe(body),
       // Seq(branches) => self.sequence(branches),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
@@ -77,7 +59,6 @@ impl<'a> StatementCompiler<'a>
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // Tell(var, expr) => self.tell(var, expr),
-      // Universe(body) => self.universe(body),
       _ => unimplemented!("statement unimplemented.")
     }
   }
@@ -89,6 +70,14 @@ impl<'a> StatementCompiler<'a>
   fn procedure(&mut self, expr: Expr) {
     self.fmt.push("new ProcedureCall(");
     compile_closure(self.session, self.context, self.fmt, expr, false);
+    self.fmt.push(")");
+  }
+
+  fn qf_universe(&mut self, body: Box<Stmt>) {
+    self.fmt.push_line(&"new QFUniverse(");
+    self.fmt.indent();
+    self.compile(*body);
+    self.fmt.unindent();
     self.fmt.push(")");
   }
 
@@ -277,26 +266,6 @@ impl<'a> StatementCompiler<'a>
 
   // fn loop_stmt(&mut self, body: Box<Stmt>) {
   //   self.fmt.push_line("SC.loop(");
-  //   self.fmt.indent();
-  //   self.compile(*body);
-  //   self.fmt.unindent();
-  //   self.fmt.push(")");
-  // }
-
-  // fn trap(&mut self, name: Ident, body: Box<Stmt>) {
-  //   self.fmt.push_line(&format!("SC.until(\"{}\",", name));
-  //   self.fmt.indent();
-  //   self.compile(*body);
-  //   self.fmt.unindent();
-  //   self.fmt.push(")");
-  // }
-
-  // fn exit(&mut self, name: Ident) {
-  //   self.fmt.push(&format!("SC.generate(\"{}\")", name));
-  // }
-
-  // fn universe(&mut self, body: Box<Stmt>) {
-  //   self.fmt.push_line(&format!("new Universe({},", session.config().debug));
   //   self.fmt.indent();
   //   self.compile(*body);
   //   self.fmt.unindent();

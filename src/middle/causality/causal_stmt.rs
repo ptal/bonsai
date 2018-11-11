@@ -115,7 +115,7 @@ impl CausalStmt {
       // Abort(cond, body) => self.visit_abort(cond, *body, model, continuation),
       // Loop(body) => self.visit_loop(*body),
       // ProcCall(var, process, args) => self.visit_proc_call(var, process, args),
-      // Universe(body) => self.visit_universe(*body),
+      // QFUniverse(body) => self.visit_qf_universe(*body),
     }
   }
 

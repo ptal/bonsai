@@ -103,7 +103,7 @@ pub trait Visitor<H>
 
   fn visit_nothing(&mut self) {}
 
-  fn visit_universe(&mut self, child: Stmt) {
+  fn visit_qf_universe(&mut self, child: Stmt) {
     self.visit_stmt(child)
   }
 
@@ -195,7 +195,7 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     Loop(body) => visitor.visit_loop(*body),
     ExprStmt(expr) => visitor.visit_expr_stmt(expr),
     ProcCall(var, process, args) => visitor.visit_proc_call(var, process, args),
-    Universe(body) => visitor.visit_universe(*body),
+    QFUniverse(body) => visitor.visit_qf_universe(*body),
     Nothing => visitor.visit_nothing(),
     LocalDrop(var_path) => visitor.visit_drop(var_path),
   }
@@ -356,7 +356,7 @@ pub trait VisitorMut<H>
 
   fn visit_nothing(&mut self) {}
 
-  fn visit_universe(&mut self, child: &mut Stmt) {
+  fn visit_qf_universe(&mut self, child: &mut Stmt) {
     self.visit_stmt(child)
   }
 
@@ -448,7 +448,7 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut Loop(ref mut body) => visitor.visit_loop(&mut **body),
     &mut ProcCall(ref mut var, ref process, ref mut args) => visitor.visit_proc_call(var, process.clone(), args),
     &mut ExprStmt(ref mut expr) => visitor.visit_expr_stmt(expr),
-    &mut Universe(ref mut body) => visitor.visit_universe(&mut **body),
+    &mut QFUniverse(ref mut body) => visitor.visit_qf_universe(&mut **body),
     &mut Nothing => visitor.visit_nothing(),
     &mut LocalDrop(ref mut var_path) => visitor.visit_drop(var_path),
   }

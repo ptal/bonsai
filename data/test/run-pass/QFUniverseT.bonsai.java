@@ -12,22 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[run(NothingT.printNothing, "")]
-#[run(NothingT.printOne, "1")]
-#[run(NothingT.printFew, "1234")]
-#[run(NothingT.printFew2, "1+")]
-#[run(NothingT.print41, "41")]
+#[run(QFUniverseT.printNothing, "")]
+#[run(QFUniverseT.printOne, "1")]
+#[run(QFUniverseT.printTwo, "2")]
 
 package test;
 
 import java.lang.System;
 import java.util.*;
 
-public class NothingT
+public class QFUniverseT
 {
-  public proc printNothing() = nothing
-  public proc printOne() = System.out.println("1")
-  public proc printFew() = System.out.println("1234")
-  public proc printFew2() = System.out.println("1111111")
-  public proc print41() = System.out.println(41)
+  public proc printNothing() = universe nothing end
+  public proc printOne() = universe System.out.println("1") end
+  public proc printTwo() = universe universe System.out.println("2") end end
 }

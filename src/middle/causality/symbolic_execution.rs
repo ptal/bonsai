@@ -273,7 +273,7 @@ impl SymbolicExecution
       // Abort(cond, body) => self.next_states_abort(cond, *body, model),
       // Loop(body) => self.next_states_loop(*body),
       // ProcCall(var, process, args) => self.next_states_proc_call(var, process, args),
-      // Universe(body) => self.next_states_universe(*body),
+      // QFUniverse(body) => self.next_states_qf_universe(*body),
     }
   }
 
@@ -343,7 +343,7 @@ impl SymbolicExecution
       // Abort(cond, body) => self.reduce_abort(cond, *body, model, state),
       // Loop(body) => self.reduce_loop(*body),
       // ProcCall(var, process, args) => self.reduce_proc_call(var, process, args),
-      // Universe(body) => self.reduce_universe(*body),
+      // QFUniverse(body) => self.reduce_qf_universe(*body),
     }
   }
 
