@@ -14,31 +14,68 @@
 
 package bonsai.runtime.synchronous.variables;
 
+import java.util.*;
+import java.util.function.*;
+import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
-public abstract class Variable
+public class Variable
 {
   private String uid;
   private RWCounter rw;
-  private boolean inScope;
+  private Object value;
+  private ArrayList<Consumer<Object>> refUpdaters;
 
   public Variable(String uid)
   {
     this.uid = uid;
     this.rw = new RWCounter(0,0,0);
-    this.inScope = true;
+    this.value = null;
+    this.refUpdaters = new ArrayList();
+  }
+
+  public Object value() {
+    return value;
+  }
+
+  // This method must be called each time `value` is allocated to a new reference.
+  public void updateRefValue(Object value) {
+    this.value = value;
+    for (Consumer<Object> updater : refUpdaters) {
+      updater.accept(this.value);
+    }
   }
 
   public String uid() {
     return uid;
   }
 
-  public void exitFromScope() {
-    inScope = false;
+  // We enter the scope of the current variable, or the scope of a `ref` field referencing this variable.
+  public void enterScope(Object refValue, Consumer<Object> refUpdater) {
+    if (this.value == null) {
+      if (!refUpdaters.isEmpty()) {
+        throw new RuntimeException("[BUG] The current value in `Variable` is `null` but some refUpdater are registered " +
+          "(uid: " + uid + ").");
+      }
+      this.value = refValue;
+    }
+    else {
+      if (this.value != refValue) {
+        throw new BonsaiInterfaceException("A reference field (annotated with `ref`) " +
+          "was initialized in the Java constructor with a different value (or `null`) than the one passed to the constructor.\n" +
+          "UID of the field: `" + uid + "`.\n" +
+          "Solution: Initialize the `ref` field in the constructor with the same object than the source object.");
+      }
+    }
+    refUpdaters.add(refUpdater);
+  }
+
+  public void exitScope() {
+    refUpdaters.remove(refUpdaters.size() - 1);
   }
 
   public boolean isInScope() {
-    return inScope;
+    return refUpdaters.size() > 0;
   }
 
   public boolean isReadable() {
@@ -97,6 +134,4 @@ public abstract class Variable
   private void anyEvent(Layer env) {
     env.schedule(new Event(uid(), Event.ANY));
   }
-
-  public abstract Object value();
 }

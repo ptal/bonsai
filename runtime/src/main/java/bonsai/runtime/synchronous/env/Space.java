@@ -15,6 +15,7 @@
 package bonsai.runtime.synchronous.env;
 
 import java.util.*;
+import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
 
@@ -42,23 +43,28 @@ public class Space
     }
   }
 
-  public void enterScope(Variable var) {
-    if (var == null) {
-      throw new RuntimeException("Space.enterScope: null `var` parameter.");
+  public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {
+    if (uid == null) {
+      throw new RuntimeException("Space.enterScope: null `uid` parameter.");
     }
-    memory.put(var.uid(), var);
+    Variable var = memory.computeIfAbsent(uid, k -> new Variable(k));
+    var.enterScope(defaultValue, refUpdater);
   }
 
   public void exitScope(String uid) {
     if (uid == null) {
       throw new RuntimeException("Space.exitScope: null `uid` parameter.");
     }
-    Variable removed = memory.remove(uid);
-    if (removed == null) {
+    Variable v = memory.get(uid);
+    if (v == null) {
       throw new RuntimeException(
         "Space.exitScope: The variable with UID `" + uid + "` is in scope, but " +
         "it is not in `memory`.");
     }
-    removed.exitFromScope();
+    v.exitScope();
+    // If all the refs to this variable exit.
+    if(!v.isInScope()) {
+      memory.remove(uid);
+    }
   }
 }
