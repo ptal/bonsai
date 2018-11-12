@@ -41,8 +41,8 @@ public class SpaceMachine
   CompletionCode executeLayer() {
     env.incTargetLayer();
     CompletionCode status = CompletionCode.PAUSE;
+    body.prepareSub(env, Environment.OUTERMOST_LAYER);
     while (status == CompletionCode.PAUSE) {
-      body.prepareSub(env, Environment.OUTERMOST_LAYER);
       // We execute as much as we can of the current instant.
       status = executeInstant();
       // If we are blocked but a sub-layer can be activated, we proceed.

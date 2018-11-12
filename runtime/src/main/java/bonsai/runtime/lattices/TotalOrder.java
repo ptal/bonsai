@@ -87,6 +87,14 @@ public abstract class TotalOrder<T>
   }
 
   public String toString() {
-    return value.toString();
+    if (this.equals(this.bottom())) {
+      return "bot";
+    }
+    else if (this.equals(this.top())) {
+      return "top";
+    }
+    else {
+      return value.toString();
+    }
   }
 }

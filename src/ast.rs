@@ -366,6 +366,10 @@ impl LetStmt {
   pub fn imperative(binding: Binding) -> Self {
     LetStmt::local(binding.span, binding, Box::new(Stmt::new(DUMMY_SP, StmtKind::Nothing)))
   }
+
+  pub fn kind(&self) -> Kind {
+    self.binding.kind
+  }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -707,7 +711,6 @@ impl Display for Kind {
 }
 
 /// The spacetime of a variable describes how it evolves in each instant.
-/// The `Product` variant is used for records where variables have fields with various spacetime.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Spacetime {
   WorldLine,

@@ -44,7 +44,7 @@ public abstract class NAryCall extends ASTNode
 
   protected boolean executeArgs(Layer layer) {
     boolean ready = true;
-    for(int i=0; i < argsEval.size(); i++) {
+    for(int i=0; i < args.size(); i++) {
       ExprResult res = args.get(i).execute(layer);
       if (res.isSuspended()) {
         ready = false;
@@ -59,7 +59,7 @@ public abstract class NAryCall extends ASTNode
   public CanResult canWriteOn(String uid, boolean inSurface) {
     return args.stream()
       .map((a) -> a.canWriteOn(uid,inSurface))
-      .reduce(new CanResult(true,false), CanResult::and_term);
+      .reduce(CanResult.IDENTITY, CanResult::and_term);
   }
 
   public boolean canAnalysis(Layer layer) {

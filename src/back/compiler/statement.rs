@@ -43,23 +43,22 @@ impl<'a> StatementCompiler<'a>
       Nothing => self.nothing(),
       ExprStmt(expr) => self.procedure(expr),
       QFUniverse(body) => self.qf_universe(body),
+      Let(body) => self.let_decl(body),
+      LocalDrop(_) => (), // It is not used in the runtime.
       // Seq(branches) => self.sequence(branches),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
       // Space(branches) => self.space(branches),
-      // Let(body) => self.let_decl(body),
       // When(entailment, body) => self.when(entailment, body),
       // Suspend(entailment, body) => self.suspend(entailment, body),
       // Pause => self.pause(),
       // PauseUp => self.pause_up(),
       // Stop => self.stop(),
-      // Trap(name, body) => self.trap(name, body),
-      // Exit(name) => self.exit(name),
       // Loop(body) => self.loop_stmt(body),
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // Tell(var, expr) => self.tell(var, expr),
-      _ => unimplemented!("statement unimplemented.")
+      stmt => unimplemented!("statement unimplemented: {:?}.", stmt)
     }
   }
 
@@ -74,12 +73,80 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn qf_universe(&mut self, body: Box<Stmt>) {
-    self.fmt.push_line(&"new QFUniverse(");
+    self.fmt.push_line("new QFUniverse(");
     self.fmt.indent();
     self.compile(*body);
     self.fmt.unindent();
     self.fmt.push(")");
   }
+
+  fn let_decl(&mut self, let_decl: LetStmt) {
+    use ast::Kind::*;
+    use ast::Spacetime::*;
+    match let_decl.kind() {
+      Spacetime(SingleSpace) => self.single_space_local_decl(let_decl),
+      Spacetime(SingleTime) => unimplemented!("Kind::Spacetime(SingleTime) in let_decl"),
+      Spacetime(WorldLine) => unimplemented!("Kind::Spacetime(WorldLine) in let_decl"),
+      Product => unimplemented!("Kind::Product in let_decl"),
+      Host => unimplemented!("Kind::Host in let_decl")
+    }
+  }
+
+  fn single_space_local_decl(&mut self, let_decl: LetStmt) {
+    self.fmt.push("new SingleSpaceVarDecl(");
+    compile_local_var(self.session, self.context, self.fmt, let_decl.binding.name);
+    self.fmt.push(",");
+    self.fmt.indent();
+    let ty = Some(let_decl.binding.ty);
+    match let_decl.binding.expr.clone() {
+      Some(expr) => compile_functional_expr(self.session, self.context, self.fmt, expr, ty),
+      None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
+    }
+    self.fmt.push(",");
+    self.compile(*let_decl.body);
+    self.fmt.push(")");
+    self.fmt.unindent();
+  }
+
+  // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
+  // {
+  //   match binding.kind {
+  //     Kind::Spacetime(spacetime) =>
+  //       self.spacetime_binding(binding,
+  //         spacetime, is_field, uid_fn),
+  //     Kind::Product =>
+  //       self.module_binding(binding, uid_fn),
+  //     Kind::Host => panic!(
+  //       "BUG: Host variables are not stored inside the \
+  //        environment, and therefore binding cannot be generated.")
+  //   }
+  // }
+
+  // fn spacetime_binding(&mut self,
+  //   binding: Binding, spacetime: Spacetime, is_field: bool, uid_fn: &str)
+  // {
+  //   let spacetime = self.spacetime(spacetime);
+  //   let stream_bound = context.stream_bound_of(&binding.name);
+  //   self.fmt.push("new SpacetimeVar(");
+  //   if is_field { self.fmt.push(&binding.name); }
+  //   else { self.bottom(fmt, binding.ty.clone()); }
+  //   self.fmt.push(&format!(",\"{}\", {}(\"{}\"), {}, {}, {},",
+  //     binding.name, uid_fn, binding.name, spacetime,
+  //     binding.is_transient(), stream_bound));
+  //   self.closure(true,
+  //     binding.expr.expect("BUG: Generate binding without an expression."));
+  //   self.fmt.push(")");
+  // }
+
+  // fn module_binding(&mut self, binding: Binding, uid_fn: &str)
+  // {
+  //   self.fmt.push(&format!("new ModuleVar(\"{}\", {}(\"{}\"), ",
+  //     binding.name, uid_fn, binding.name));
+  //   self.closure(true,
+  //     binding.expr.expect("BUG: Generate binding without an expression."));
+  //   self.fmt.push(")");
+  // }
+
 
   // fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
   // {
@@ -137,62 +204,6 @@ impl<'a> StatementCompiler<'a>
   //   }
   //   self.fmt.unindent();
   //   self.fmt.push(")))");
-  // }
-
-  // fn let_decl(&mut self, let_decl: LetStmt) {
-  //   self.fmt.push(&format!("new LocalVar("));
-  //   self.binding(let_decl.binding, false, "__proc_uid.apply");
-  //   self.fmt.terminate_line(",");
-  //   self.compile(*let_decl.body);
-  //   self.fmt.push(")");
-  // }
-
-  // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
-  // {
-  //   match binding.kind {
-  //     Kind::Spacetime(spacetime) =>
-  //       self.spacetime_binding(binding,
-  //         spacetime, is_field, uid_fn),
-  //     Kind::Product =>
-  //       self.module_binding(binding, uid_fn),
-  //     Kind::Host => panic!(
-  //       "BUG: Host variables are not stored inside the \
-  //        environment, and therefore binding cannot be generated.")
-  //   }
-  // }
-
-  // fn spacetime_binding(&mut self,
-  //   binding: Binding, spacetime: Spacetime, is_field: bool, uid_fn: &str)
-  // {
-  //   let spacetime = self.spacetime(spacetime);
-  //   let stream_bound = context.stream_bound_of(&binding.name);
-  //   self.fmt.push("new SpacetimeVar(");
-  //   if is_field { self.fmt.push(&binding.name); }
-  //   else { self.bottom(fmt, binding.ty.clone()); }
-  //   self.fmt.push(&format!(",\"{}\", {}(\"{}\"), {}, {}, {},",
-  //     binding.name, uid_fn, binding.name, spacetime,
-  //     binding.is_transient(), stream_bound));
-  //   self.closure(true,
-  //     binding.expr.expect("BUG: Generate binding without an expression."));
-  //   self.fmt.push(")");
-  // }
-
-  // fn module_binding(&mut self, binding: Binding, uid_fn: &str)
-  // {
-  //   self.fmt.push(&format!("new ModuleVar(\"{}\", {}(\"{}\"), ",
-  //     binding.name, uid_fn, binding.name));
-  //   self.closure(true,
-  //     binding.expr.expect("BUG: Generate binding without an expression."));
-  //   self.fmt.push(")");
-  // }
-
-  // fn spacetime(spacetime: Spacetime) -> String {
-  //   use ast::Spacetime::*;
-  //   match spacetime {
-  //     SingleSpace(_) => String::from("Spacetime.SingleSpace"),
-  //     SingleTime => String::from("Spacetime.SingleTime"),
-  //     WorldLine(_) => String::from("Spacetime.WorldLine")
-  //   }
   // }
 
   // fn entailment(&mut self, entailment: EntailmentRel) {

@@ -30,11 +30,11 @@ public class Entailment extends ASTNode implements Expression
   // Note that constant are not represented in this class and directly compiled into the closure.
   private List<FreeAccess> leftVars;
   private List<FreeAccess> rightVars;
-  private Function<ArrayList<Object>, ES> eval;
+  private Function<ArrayList<Object>, Kleene> eval;
   private ExprResult result;
 
   public Entailment(List<FreeAccess> leftVars, List<FreeAccess> rightVars,
-    Function<ArrayList<Object>, ES> eval) {
+    Function<ArrayList<Object>, Kleene> eval) {
     this.leftVars = leftVars;
     this.rightVars = rightVars;
     this.eval = eval;
@@ -86,7 +86,7 @@ public class Entailment extends ASTNode implements Expression
       ArrayList<Object> args = new ArrayList();
       boolean leftReadOnly = evalArgs(layer, leftVars, args);
       boolean rightReadOnly = evalArgs(layer, rightVars, args);
-      Kleene r = eval.apply(args).unwrap();
+      Kleene r = eval.apply(args);
       Kleene promoted = promoteResult(r, leftReadOnly, rightReadOnly);
       if (promoted != null) {
         result = new ExprResult(new ES(promoted));

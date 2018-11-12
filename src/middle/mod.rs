@@ -52,6 +52,6 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_then(recursive_call)
     .and_next(instantaneous_analysis)
     .and_next(search_tree_wf)
-    .and_next(where_is_the_drop)
+    // .and_next(where_is_the_drop)
     .and_next(causality_analysis)
 }

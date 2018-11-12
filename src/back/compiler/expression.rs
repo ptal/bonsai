@@ -19,21 +19,25 @@ use back::code_formatter::*;
 /// Useful to compile expression without using the environment (for example when initializing a field).
 /// Precondition: All the free variables occuring in `expr` are supposed to be in scope.
 pub fn compile_expression(session: &Session, context: &Context, fmt: &mut CodeFormatter, expr: Expr) {
-  ExpressionCompiler::new(session, context, fmt).compile(expr, &vec![])
+  ExpressionCompiler::new(session, context, fmt).compile(expr, &vec![], None)
 }
 
-// /// Compile an expression that returns a result.
-// pub fn compile_functional_expr(session: &Session, context: &Context, fmt: &mut CodeFormatter, expr: Expr) {
-//   ExpressionCompiler(session, context, fmt).compile_fun_expr(expr)
-// }
+/// Compile an expression that returns a result.
+pub fn compile_functional_expr(session: &Session, context: &Context, fmt: &mut CodeFormatter, expr: Expr, ty: Option<JType>) {
+  ExpressionCompiler::new(session, context, fmt).compile_fun_expr(expr, ty)
+}
 
 /// Wrap the expression inside a closure `(args) -> [[expr]]` to be executed later with the environment.
 pub fn compile_closure(session: &Session, context: &Context, fmt: &mut CodeFormatter, expr: Expr, return_expr: bool) {
-  ExpressionCompiler::new(session, context, fmt).closure(expr, return_expr)
+  ExpressionCompiler::new(session, context, fmt).closure(expr, return_expr, None)
+}
+
+pub fn compile_local_var(session: &Session, context: &Context, fmt: &mut CodeFormatter, var_name: Ident) {
+  ExpressionCompiler::new(session, context, fmt).local_var(var_name)
 }
 
 static CLOSURE_ARGS: &str = "__args";
-static LOCAL_UID_FN: &str = "__proc_uid";
+static LOCAL_UID_FN: &str = "__proc_uid.apply";
 static FIELD_UID_PREFIX: &str = "__uid_";
 
 struct ExpressionCompiler<'a> {
@@ -52,25 +56,18 @@ impl<'a> ExpressionCompiler<'a>
     }
   }
 
-  // fn compile_fun_expr (&mut self, expr: Expr) {
-  //   use ast::ExprKind::*;
-  //   match expr.node {
-  //     Var(var) => self.variable(var, vars),
-  //     Call(call) => self.method_call(call, vars),
-  //     NewInstance(new_instance) => self.new_instance(new_instance, vars),
-  //     Trilean(t) => self.trilean(t),
-  //     Number(n) => self.number(n),
-  //     StringLiteral(lit) => self.string_literal(lit),
-  //     Bottom => unimplemented!("bot is unimplemented"),
-  //     Top => unimplemented!("top is unimplemented"),
-  //     Or(_, _) =>  unimplemented!("trilean or is unimplemented"),
-  //     And(_, _) => unimplemented!("trilean and is unimplemented"),
-  //     Not(_) => unimplemented!("trilean not is unimplemented"),
-  //     Entailment(_) => unimplemented!("entailment is unimplemented")
-  //   }
-  // }
+  fn compile_fun_expr (&mut self, expr: Expr, ty: Option<JType>) {
+    match expr.node.clone() {
+      ExprKind::Entailment(rel) => self.entailment(*rel),
+      _ => {
+        self.fmt.push("new FunctionCall(");
+        self.closure(expr, true, ty);
+        self.fmt.push(")");
+      }
+    }
+  }
 
-  fn compile(&mut self, expr: Expr, vars: &Vec<Variable>) {
+  fn compile(&mut self, expr: Expr, vars: &Vec<Variable>, ty: Option<JType>) {
     use ast::ExprKind::*;
     match expr.node {
       Var(var) => self.variable(var, vars),
@@ -79,8 +76,8 @@ impl<'a> ExpressionCompiler<'a>
       Trilean(t) => self.trilean(t),
       Number(n) => self.number(n),
       StringLiteral(lit) => self.string_literal(lit),
-      Bottom => unimplemented!("bot is unimplemented"),
-      Top => unimplemented!("top is unimplemented"),
+      Bottom => self.bottom(ty),
+      Top => self.top(ty),
       Or(_, _) =>  unimplemented!("trilean or is unimplemented"),
       And(_, _) => unimplemented!("trilean and is unimplemented"),
       Not(_) => unimplemented!("trilean not is unimplemented"),
@@ -111,39 +108,43 @@ impl<'a> ExpressionCompiler<'a>
 
   /// A closure is generated each time we call a Java expression or need the value of a variable.
   /// The closure is needed for retrieving these values from the environment.
-  fn closure(&mut self, expr: Expr, return_expr: bool) {
+  fn closure(&mut self, expr: Expr, return_expr: bool, ty: Option<JType>) {
     let mut variables = vec![];
     self.collect_variables(&mut variables, expr.clone());
-    self.list_of_accesses(&variables);
+    self.list_of_accesses(&variables, false);
     self.fmt.terminate_line(&format!(", ({}) -> {{", CLOSURE_ARGS));
     self.fmt.indent();
     if return_expr {
       self.fmt.push("return ");
     }
-    self.compile(expr, &variables);
+    self.compile(expr, &variables, ty);
     self.fmt.unindent();
     self.fmt.terminate_line(";}");
   }
 
-  fn list_of_accesses(&mut self, vars: &Vec<Variable>) {
+  fn list_of_accesses(&mut self, vars: &Vec<Variable>, free_access: bool) {
     self.fmt.terminate_line("Arrays.asList(");
     self.fmt.indent();
     for (i, var) in vars.iter().enumerate() {
-      self.var_access(var.clone());
+      self.var_access(var.clone(), free_access);
       if i != vars.len() - 1 {
-        self.fmt.terminate_line(",");
+        self.fmt.push(",");
       }
     }
-    self.fmt.terminate_line(")");
+    self.fmt.push(")");
     self.fmt.unindent();
   }
 
-  fn var_access(&mut self, var: Variable) {
-    let access_class = match var.permission.expect("All variables must have a permission at generation stage.") {
-      Permission::Read => format!("ReadAccess"),
-      Permission::Write => format!("WriteAccess"),
-      Permission::ReadWrite => format!("ReadWriteAccess")
-    };
+  fn var_access(&mut self, var: Variable, free_access: bool) {
+    let access_class =
+      if free_access { format!("FreeAccess") }
+      else {
+        match var.permission.expect("All variables must have a permission at generation stage.") {
+          Permission::Read => format!("ReadAccess"),
+          Permission::Write => format!("WriteAccess"),
+          Permission::ReadWrite => format!("ReadWriteAccess")
+        }
+      };
     self.fmt.push(&format!("new {}(", access_class));
     self.var_uid(var);
     self.fmt.push(")");
@@ -153,7 +154,7 @@ impl<'a> ExpressionCompiler<'a>
     let var_info = self.context.var_by_uid(var.first_uid());
     // Variable local to a process.
     if !var_info.is_field() && var.len() == 1 {
-      self.fmt.push(&format!("{}(\"{}\")", LOCAL_UID_FN, var.first()));
+      self.local_var(var.first());
     }
     // Variable local to a module.
     else {
@@ -169,6 +170,10 @@ impl<'a> ExpressionCompiler<'a>
       // The UID of the field.
       self.fmt.push(&format!("{}{}",FIELD_UID_PREFIX, var.last()));
     }
+  }
+
+  fn local_var(&mut self, var_name: Ident) {
+    self.fmt.push(&format!("{}(\"{}\")", LOCAL_UID_FN, var_name));
   }
 
   /// Collect all the variables appearing in `expr` and insert them in `variables`.
@@ -213,9 +218,9 @@ impl<'a> ExpressionCompiler<'a>
 
   fn args_list(&mut self, args: Vec<Expr>, vars: &Vec<Variable>) {
     let args_len = args.len();
-    self.fmt.push(&"(");
+    self.fmt.push("(");
     for (i, arg) in args.into_iter().enumerate() {
-      self.compile(arg, vars);
+      self.compile(arg, vars, None);
       if i != args_len - 1 {
         self.fmt.push(", ");
       }
@@ -252,5 +257,38 @@ impl<'a> ExpressionCompiler<'a>
 
   fn string_literal(&mut self, lit: String) {
     self.fmt.push(&format!("\"{}\"", lit));
+  }
+
+  fn entailment(&mut self, rel: EntailmentRel) {
+    self.fmt.push("new Entailment(");
+    let mut vars_left = vec![];
+    let mut vars_right = vec![];
+    self.collect_variables(&mut vars_left, rel.left.clone());
+    self.collect_variables(&mut vars_right, rel.right.clone());
+    self.list_of_accesses(&vars_left, true);
+    self.fmt.push(", ");
+    self.list_of_accesses(&vars_right, true);
+    let mut vars = vars_left;
+    vars.extend(vars_right.into_iter());
+    self.fmt.push(&format!(", ({}) -> (Lattice)(", CLOSURE_ARGS));
+    self.compile(rel.left, &vars, None);
+    self.fmt.push(").entails(");
+    self.compile(rel.right, &vars, None);
+    self.fmt.push("))");
+  }
+
+  fn bottom(&mut self, ty: Option<JType>) {
+    let ty = self.expect_ty("bot", ty);
+    self.fmt.push(&format!("new {}().bottom()", ty));
+  }
+
+  fn top(&mut self, ty: Option<JType>) {
+    let ty = self.expect_ty("top", ty);
+    self.fmt.push(&format!("new {}().top()", ty));
+  }
+
+  fn expect_ty(&self, context: &str, ty: Option<JType>) -> JType {
+    ty.expect(&format!("[BUG] try to generate the code of `{}` in\
+      a context not explicitly typed (e.g. `f({})`).", context, context))
   }
 }

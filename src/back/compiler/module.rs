@@ -63,6 +63,7 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.push_line("import bonsai.runtime.synchronous.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.env.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.statements.*;");
+    self.fmt.push_line("import bonsai.runtime.synchronous.expressions.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.interfaces.*;");
   }
 

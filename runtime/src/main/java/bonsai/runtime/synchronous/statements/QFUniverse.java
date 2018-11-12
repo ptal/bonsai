@@ -32,7 +32,7 @@ public class QFUniverse extends ASTNode implements Program
   }
 
   public void prepareSub(Environment env, int layerIndex) {
-    env.traverseLayerPrepare(layerIndex, this::prepare, body::prepareSub);
+    env.traverseLayerPrepare(layerIndex, body::prepare, body::prepareSub);
   }
 
   public CompletionCode executeSub(Environment env, int layerIndex) {
