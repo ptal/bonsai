@@ -18,7 +18,7 @@ import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
-public interface Expression extends Schedulable, Prepare
+public interface Expression extends Schedulable, Prepare, CanAnalysis
 {
   /// Idempotent: if called two times in a row, it must return the same result.
   ExprResult execute(Layer env);

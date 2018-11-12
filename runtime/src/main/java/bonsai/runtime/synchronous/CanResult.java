@@ -15,6 +15,7 @@
 package bonsai.runtime.synchronous;
 
 public class CanResult {
+  public static CanResult IDENTITY = new CanResult(true, false);
   public boolean canTerminate;
   public boolean canWrite;
   public CanResult(boolean canTerminate, boolean canWrite) {

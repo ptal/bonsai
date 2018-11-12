@@ -30,10 +30,8 @@ public class ReadAccess extends Access
     this.hasSubscribed = false;
   }
 
-  public void prepareInstant(Layer layer) {
-    super.prepareInstant(layer);
-    Variable var = layer.lookUpVar(uid);
-    var.joinRead(layer);
+  public void prepare(Layer layer) {
+    super.prepare(layer);
   }
 
   public ExprResult execute(Layer layer) {
@@ -51,8 +49,15 @@ public class ReadAccess extends Access
     return new CanResult(true,false);
   }
 
-  public void meetRWCounter(Layer layer) {
+  public boolean canAnalysis(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
+    var.joinRead(layer);
+    return true;
+  }
+
+  public boolean terminate(Layer layer) {
     Variable var = layer.lookUpVar(uid);
     var.meetRead(layer);
+    return true;
   }
 }

@@ -33,16 +33,16 @@ public class ProcedureCall extends NAryCall implements Program
     this.procedure = procedure;
   }
 
-  public void prepareSubInstant(Environment env, int layerIndex) {
-    throw new NoSubLayerException("ProcedureCall.prepareSubInstant");
+  public void prepareSub(Environment env, int layerIndex) {
+    throw new NoSubLayerException("ProcedureCall.prepareSub");
   }
   public CompletionCode executeSub(Environment env, int layerIndex) {
     throw new NoSubLayerException("ProcedureCall.executeSub");
   }
 
-  public void prepareInstant(Layer layer) {
+  public void prepare(Layer layer) {
     result = CompletionCode.WAIT;
-    super.prepareInstant(layer);
+    super.prepare(layer);
   }
 
   public CompletionCode execute(Layer layer) {

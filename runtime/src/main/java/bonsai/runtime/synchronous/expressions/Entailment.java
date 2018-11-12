@@ -43,11 +43,11 @@ public class Entailment extends ASTNode implements Expression
 
   private void prepareArgs(Layer layer, List<FreeAccess> accesses) {
     for (FreeAccess access: accesses) {
-      access.prepareInstant(layer);
+      access.prepare(layer);
     }
   }
 
-  public void prepareInstant(Layer layer) {
+  public void prepare(Layer layer) {
     this.result = new ExprResult();
     prepareArgs(layer, leftVars);
     prepareArgs(layer, rightVars);
@@ -99,5 +99,11 @@ public class Entailment extends ASTNode implements Expression
     return new CanResult(true,false);
   }
 
-  public void meetRWCounter(Layer layer) {}
+  public boolean canAnalysis(Layer layer) {
+    return true;
+  }
+
+  public boolean terminate(Layer layer) {
+    return true;
+  }
 }

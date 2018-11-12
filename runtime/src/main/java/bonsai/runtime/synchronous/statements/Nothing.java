@@ -26,22 +26,28 @@ public class Nothing extends ASTNode implements Program
     super();
   }
 
-  public void prepareSubInstant(Environment env, int layerIndex) {
-    throw new NoSubLayerException("Nothing.prepareSubInstant");
+  public void prepareSub(Environment env, int layerIndex) {
+    throw new NoSubLayerException("Nothing.prepareSub");
   }
   public CompletionCode executeSub(Environment env, int layerIndex) {
     throw new NoSubLayerException("Nothing.executeSub");
   }
 
-  public void prepareInstant(Layer layer) {}
+  public void prepare(Layer layer) {}
 
   public CompletionCode execute(Layer layer) {
     return CompletionCode.TERMINATE;
   }
 
-  public void meetRWCounter(Layer layer) {}
-
   public CanResult canWriteOn(String uid, boolean inSurface) {
     return new CanResult(true, false);
+  }
+
+  public boolean canAnalysis(Layer layer) {
+    return true;
+  }
+
+  public boolean terminate(Layer layer) {
+    return true;
   }
 }

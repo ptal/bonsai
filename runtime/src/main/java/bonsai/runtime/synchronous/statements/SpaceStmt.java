@@ -34,23 +34,30 @@ public class SpaceStmt extends ASTNode implements Program
     this.branch = branch;
   }
 
-  public void prepareSubInstant(Environment env, int layerIndex) {
-    throw new NoSubLayerException("SpaceStmt.prepareSubInstant");
+
+  public void prepareSub(Environment env, int layerIndex) {
+    throw new NoSubLayerException("SpaceStmt.prepareSub");
   }
   public CompletionCode executeSub(Environment env, int layerIndex) {
     throw new NoSubLayerException("SpaceStmt.executeSub");
   }
 
-  public void prepareInstant(Layer env) {}
+  public void prepare(Layer env) {}
   public CompletionCode execute(Layer env) {
     return CompletionCode.TERMINATE;
   }
 
   public CanResult canWriteOn(String uid, boolean inSurface) {
-    return new CanResult(true, false);
+    return CanResult.IDENTITY;
   }
 
-  public void meetRWCounter(Layer env) {}
+  public boolean canAnalysis(Layer env) {
+    return true;
+  }
+
+  public boolean terminate(Layer env) {
+    return true;
+  }
 
   public ArrayList<String> capturedUIDs() {
     return capturedUIDs;

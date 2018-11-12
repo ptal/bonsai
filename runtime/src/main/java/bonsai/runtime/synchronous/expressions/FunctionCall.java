@@ -32,9 +32,9 @@ public class FunctionCall extends NAryCall implements Expression
     this.function = function;
   }
 
-  public void prepareInstant(Layer layer) {
+  public void prepare(Layer layer) {
     result = new ExprResult();
-    super.prepareInstant(layer);
+    super.prepare(layer);
   }
 
   public ExprResult execute(Layer layer) {

@@ -31,15 +31,15 @@ public class QFUniverse extends ASTNode implements Program
     result = CompletionCode.PAUSE_DOWN;
   }
 
-  public void prepareSubInstant(Environment env, int layerIndex) {
-    env.traverseLayerPrepare(layerIndex, this::prepareInstant, body::prepareSubInstant);
+  public void prepareSub(Environment env, int layerIndex) {
+    env.traverseLayerPrepare(layerIndex, this::prepare, body::prepareSub);
   }
 
   public CompletionCode executeSub(Environment env, int layerIndex) {
     return env.traverseLayer(layerIndex, this::execute, body::executeSub);
   }
 
-  public void prepareInstant(Layer layer) {
+  public void prepare(Layer layer) {
     result = CompletionCode.PAUSE_DOWN;
   }
 
@@ -50,9 +50,18 @@ public class QFUniverse extends ASTNode implements Program
     return result;
   }
 
-  public void meetRWCounter(Layer layer) {}
-
+  // TODO
   public CanResult canWriteOn(String uid, boolean inSurface) {
     return null;
   }
+  // TODO
+  public boolean terminate(Layer layer) {
+    return false;
+  }
+
+  // TODO
+  public boolean canAnalysis(Layer layer) {
+    return false;
+  }
+
 }

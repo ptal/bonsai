@@ -40,5 +40,11 @@ public class FreeAccess extends Access
     return new CanResult(true,false);
   }
 
-  public void meetRWCounter(Layer layer) {}
+  public boolean canAnalysis(Layer layer) {
+    return true;
+  }
+
+  public boolean terminate(Layer layer) {
+    return true;
+  }
 }

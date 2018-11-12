@@ -52,4 +52,12 @@ public class Layer
   public boolean unblock(Program body) {
     return false;
   }
+
+  public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {
+    space.enterScope(uid, defaultValue, refUpdater);
+  }
+
+  public void exitScope(String uid) {
+    space.exitScope(uid);
+  }
 }

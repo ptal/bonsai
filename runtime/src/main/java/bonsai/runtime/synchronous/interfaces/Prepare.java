@@ -19,5 +19,7 @@ import bonsai.runtime.synchronous.env.*;
 
 public interface Prepare
 {
-  void prepareInstant(Layer env);
+  // This method is called before the statement is executed.
+  // `prepare` is not called again until termination (terminated completion code for statements (or aborted), and returning a non-suspended value for expressions).
+  void prepare(Layer env);
 }

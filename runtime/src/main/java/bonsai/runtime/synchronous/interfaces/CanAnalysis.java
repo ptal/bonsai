@@ -17,13 +17,15 @@ package bonsai.runtime.synchronous.interfaces;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
-public interface Schedulable
+public interface CanAnalysis
 {
-  void setParent(Schedulable parent);
-  // `schedule` can be called even if the current process is terminated.
-  // see Scheduler.schedule.
-  // It notifies the current process that an event arrived on a variable of one of its sub-expressions.
-  // Therefore it can be reschuled for execution.
-  // Note: this method should only be of interest in the parallel statements (to avoid rescheduling processes if nothing changed).
-  void schedule(Schedulable from);
+  // We analyse the current program to prove that a write on `uid` still can happen.
+  // We suppose the conditions currently suspended on `uid` to be `false` (if `inSurface` is `true`).
+  // `inSurface` is `true` if the statement analysed is currently suspended.
+  // This method can only be called on non-terminated statements or suspended expressions.
+  CanResult canWriteOn(String uid, boolean inSurface);
+  // `true` if it can terminate, count all the possible read/write operations (an upper bound) and add them in `layer`.
+  boolean canAnalysis(Layer layer);
+  // Reduce the read/write counter of the terminated (or aborted) operations.
+  boolean terminate(Layer layer);
 }

@@ -32,13 +32,13 @@ public abstract class NAryCall extends ASTNode
     this.argsEval = new ArrayList(args.size());
   }
 
-  protected void prepareInstant(Layer layer) {
+  protected void prepare(Layer layer) {
     argsEval.clear();
     for(int i=0; i < args.size(); i++) {
       argsEval.add(null);
     }
     for (Access access : args) {
-      access.prepareInstant(layer);
+      access.prepare(layer);
     }
   }
 
@@ -62,9 +62,23 @@ public abstract class NAryCall extends ASTNode
       .reduce(new CanResult(true,false), CanResult::and_term);
   }
 
-  public void meetRWCounter(Layer layer) {
+  public boolean canAnalysis(Layer layer) {
     for (Access access : args) {
-      access.meetRWCounter(layer);
+      checkTerminated(access.canAnalysis(layer));
+    }
+    return true;
+  }
+
+  public boolean terminate(Layer layer) {
+    for (Access access : args) {
+      checkTerminated(access.terminate(layer));
+    }
+    return true;
+  }
+
+  private void checkTerminated(boolean terminated) {
+    if(!terminated) {
+      throw new RuntimeException("[BUG] Arguments of NAryCall must always terminate.");
     }
   }
 }

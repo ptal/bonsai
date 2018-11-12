@@ -27,10 +27,8 @@ public class ReadWriteAccess extends Access
     super(uid);
   }
 
-  public void prepareInstant(Layer layer) {
-    super.prepareInstant(layer);
-    Variable var = layer.lookUpVar(uid);
-    var.joinReadWrite(layer);
+  public void prepare(Layer layer) {
+    super.prepare(layer);
   }
 
   public ExprResult execute(Layer layer) {
@@ -48,8 +46,15 @@ public class ReadWriteAccess extends Access
     return new CanResult(true, uid == this.uid);
   }
 
-  public void meetRWCounter(Layer layer) {
+  public boolean canAnalysis(Layer layer) {
+    Variable var = layer.lookUpVar(uid);
+    var.joinReadWrite(layer);
+    return true;
+  }
+
+  public boolean terminate(Layer layer) {
     Variable var = layer.lookUpVar(uid);
     var.meetReadWrite(layer);
+    return true;
   }
 }

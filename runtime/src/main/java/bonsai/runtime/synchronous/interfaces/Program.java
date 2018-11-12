@@ -17,9 +17,9 @@ package bonsai.runtime.synchronous.interfaces;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
-public interface Program extends Prepare, Schedulable
+public interface Program extends Prepare, Schedulable, CanAnalysis
 {
-  void prepareSubInstant(Environment env, int layerIndex);
+  void prepareSub(Environment env, int layerIndex);
   CompletionCode executeSub(Environment env, int layerIndex);
   CompletionCode execute(Layer env);
 }

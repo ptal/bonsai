@@ -29,7 +29,7 @@ public abstract class Access extends ASTNode implements Expression
     hasSubscribed = false;
   }
 
-  public void prepareInstant(Layer layer) {
+  public void prepare(Layer layer) {
     hasSubscribed = false;
   }
 
