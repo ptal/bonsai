@@ -48,4 +48,6 @@ public class Nothing extends ASTNode implements Program
     checkNoSubLayer(layersRemaining, "Nothing.canWriteOn");
     return false;
   }
+
+  public int countLayers() { return 0; }
 }

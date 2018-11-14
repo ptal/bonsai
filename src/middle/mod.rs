@@ -38,7 +38,7 @@ use middle::instantaneous::*;
 use middle::causality::*;
 use middle::recursive_call::*;
 use middle::search_tree_wf::*;
-use middle::add_local_drop::*;
+// use middle::add_local_drop::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
   env

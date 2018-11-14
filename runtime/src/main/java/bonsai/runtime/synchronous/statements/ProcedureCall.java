@@ -70,4 +70,6 @@ public class ProcedureCall extends NAryCall implements Program
     checkNoSubLayer(layersRemaining, "ProcedureCall.canWriteOn");
     return super.canWriteOn(uid);
   }
+
+  public int countLayers() { return 0; }
 }

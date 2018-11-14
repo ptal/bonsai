@@ -59,18 +59,16 @@ public class QFUniverse extends ASTNode implements Program
 
   public CompletionCode execute(int layersRemaining, Layer layer){
     if (layersRemaining == 0) {
+      // Promote the completion code of the body.
+      switch(bodyK) {
+        case PAUSE_UP: k = CompletionCode.PAUSE; break;
+        case STOP: k = CompletionCode.STOP; break;
+        case TERMINATE: k = CompletionCode.TERMINATE; break;
+      }
       return k;
     }
     else {
-      if (bodyK.isInternal()) {
-        bodyK = body.execute(layersRemaining - 1, layer);
-        // Promote the completion code of the body.
-        switch(bodyK) {
-          case PAUSE_UP: k = CompletionCode.PAUSE; break;
-          case STOP: k = CompletionCode.STOP; break;
-          case TERMINATE: k = CompletionCode.TERMINATE; break;
-        }
-      }
+      bodyK = body.execute(layersRemaining - 1, layer);
       return bodyK;
     }
   }
@@ -83,4 +81,6 @@ public class QFUniverse extends ASTNode implements Program
       return body.canWriteOn(layersRemaining - 1, uid, inSurface);
     }
   }
+
+  public int countLayers() { return 1 + body.countLayers(); }
 }

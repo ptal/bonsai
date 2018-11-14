@@ -55,4 +55,6 @@ public class SpaceStmt extends ASTNode implements Program
     checkNoSubLayer(layersRemaining, "SpaceStmt.canWriteOn");
     return false;
   }
+
+  public int countLayers() { return 0; }
 }

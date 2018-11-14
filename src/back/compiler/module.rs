@@ -124,7 +124,7 @@ impl<'a> ModuleCompiler<'a>
       self.fmt.open_block();
       self.fmt.push_block(format!("\
         Program program = {};\n\
-        SpaceMachine machine = new SpaceMachine(program,1,{});\n\
+        SpaceMachine machine = new SpaceMachine(program,{});\n\
         machine.execute();", main_expr, self.session.config().debug));
       self.fmt.close_block();
       self.fmt.newline();

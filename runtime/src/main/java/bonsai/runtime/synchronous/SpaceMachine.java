@@ -25,13 +25,10 @@ public class SpaceMachine
   private Environment env;
   private boolean debug;
 
-  public SpaceMachine(Program body, int numLayers, boolean debug) {
-    if (numLayers < 0) {
-      throw new RuntimeException("SpaceMachine: The number of layers cannot be negative.");
-    }
+  public SpaceMachine(Program body, boolean debug) {
+    this.env = new Environment(body.countLayers()+1);
     this.body = body;
     this.body.prepare();
-    this.env = new Environment(numLayers+1);
     this.debug = debug;
   }
 
@@ -39,6 +36,8 @@ public class SpaceMachine
   // If the program is terminated, it returns `false`.
   public boolean execute() {
     CompletionCode code = executeLayer();
+    // This part is useful for the automatic tests (because mvn exec does not flush automatically).
+    System.out.flush();
     return code != CompletionCode.TERMINATE;
   }
 

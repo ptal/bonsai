@@ -35,6 +35,10 @@ public class SingleSpaceVarDecl extends ASTNode implements Program
     this.uid = uid;
     this.initValue = initValue;
     this.body = body;
+    init();
+  }
+
+  private void init() {
     this.k = CompletionCode.WAIT;
     this.exprResult = new ExprResult();
   }
@@ -55,8 +59,7 @@ public class SingleSpaceVarDecl extends ASTNode implements Program
   }
 
   public void prepare() {
-    k = CompletionCode.WAIT;
-    exprResult = new ExprResult();
+    init();
     body.prepare();
   }
 
@@ -154,4 +157,6 @@ public class SingleSpaceVarDecl extends ASTNode implements Program
       return body.canWriteOn(layersRemaining, uid, inSurface);
     }
   }
+
+  public int countLayers() { return body.countLayers(); }
 }

@@ -51,7 +51,7 @@ public class SpaceMachineTest
     for(int numLayers=0; numLayers < 4; numLayers++) {
       currentTest = "universe^"+numLayers+" nothing end";
       Program process = createNestedQFUniverse(new Nothing(), numLayers);
-      SpaceMachine machine = new SpaceMachine(process, numLayers, true);
+      SpaceMachine machine = new SpaceMachine(process, true);
       assertTerminated(machine);
     }
   }
@@ -64,7 +64,7 @@ public class SpaceMachineTest
       Consumer<ArrayList<Object>> f = (args) -> numCall.inc();
       ProcedureCall procedure = new ProcedureCall(new ArrayList(), f);
       Program process = createNestedQFUniverse(procedure, numLayers);
-      SpaceMachine machine = new SpaceMachine(process, numLayers, true);
+      SpaceMachine machine = new SpaceMachine(process, true);
       assertTerminated(machine);
       assertThat(currentTest, numCall, equalTo(new LMax(1)));
     }
@@ -81,7 +81,7 @@ public class SpaceMachineTest
     SingleSpaceVarDecl process = new SingleSpaceVarDecl(xUID,
       new FunctionCall(Arrays.asList(), (args) -> new LMax(1)),
       procedure);
-    SpaceMachine machine = new SpaceMachine(process, 0, true);
+    SpaceMachine machine = new SpaceMachine(process, true);
     machine.execute();
   }
 }

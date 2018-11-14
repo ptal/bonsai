@@ -44,8 +44,7 @@ impl<'a> StatementCompiler<'a>
       ExprStmt(expr) => self.procedure(expr),
       QFUniverse(body) => self.qf_universe(body),
       Let(body) => self.let_decl(body),
-      LocalDrop(_) => (), // It is not used in the runtime.
-      // Seq(branches) => self.sequence(branches),
+      Seq(branches) => self.sequence(branches),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
       // Space(branches) => self.space(branches),
@@ -58,6 +57,7 @@ impl<'a> StatementCompiler<'a>
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // Tell(var, expr) => self.tell(var, expr),
+      // LocalDrop(_) => (), // It is not used in the runtime.
       stmt => unimplemented!("statement unimplemented: {:?}.", stmt)
     }
   }
@@ -108,6 +108,30 @@ impl<'a> StatementCompiler<'a>
     self.fmt.unindent();
   }
 
+  fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
+  {
+    if branches.len() == 1 {
+      self.compile(branches.pop().unwrap());
+    }
+    else {
+      self.fmt.push_line(&format!("new {}(Arrays.asList(", op_name));
+      self.fmt.indent();
+      let n = branches.len();
+      for (i, branch) in branches.into_iter().enumerate() {
+        self.compile(branch);
+        if i < n - 1 {
+          self.fmt.terminate_line(",");
+        }
+      }
+      self.fmt.push("))");
+      self.fmt.unindent();
+    }
+  }
+
+  fn sequence(&mut self, branches: Vec<Stmt>) {
+    self.nary_operator("Sequence", branches);
+  }
+
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
   // {
   //   match binding.kind {
@@ -145,29 +169,6 @@ impl<'a> StatementCompiler<'a>
   //   self.closure(true,
   //     binding.expr.expect("BUG: Generate binding without an expression."));
   //   self.fmt.push(")");
-  // }
-
-
-  // fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
-  // {
-  //   if branches.len() == 1 {
-  //     self.compile(branches.pop().unwrap());
-  //   }
-  //   else {
-  //     let mid = branches.len() / 2;
-  //     let right = branches.split_off(mid);
-  //     self.fmt.push_line(&format!("SC.{}(", op_name));
-  //     self.fmt.indent();
-  //     self.nary_operator(op_name, branches);
-  //     self.fmt.terminate_line(",");
-  //     self.nary_operator(op_name, right);
-  //     self.fmt.push(")");
-  //     self.fmt.unindent();
-  //   }
-  // }
-
-  // fn sequence(&mut self, branches: Vec<Stmt>) {
-  //   self.nary_operator("seq", branches);
   // }
 
   // fn or_parallel(&mut self, branches: Vec<Stmt>) {

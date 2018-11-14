@@ -70,4 +70,8 @@ public interface Program extends Schedulable
   ///   - Must be idempotent
   ///   - The internal state of the statement must not be modified.
   boolean canWriteOn(int layersRemaining, String uid, boolean inSurface);
+
+  /// Returns the number of layers of the program.
+  /// This method is only called once before `prepare`.
+  int countLayers();
 }

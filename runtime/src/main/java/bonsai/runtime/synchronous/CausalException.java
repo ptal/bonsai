@@ -19,7 +19,7 @@ import java.util.*;
 public class CausalException extends RuntimeException {
   public CausalException(String source) {
     super("[BUG]: The SpaceMachine was unable to schedule some processes during execution.\n" +
-          "It implies that the program is not causal (bug in the static analysis of the compiler) or a bug in the implementation of the scheduling.\n"+
+          "It implies that the program is not causal (bug in the static analysis of the compiler or in the implementation of the scheduling).\n"+
           "Source: " + source);
   }
 }
