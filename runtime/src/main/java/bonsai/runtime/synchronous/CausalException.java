@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous.interfaces;
+package bonsai.runtime.synchronous;
 
-import bonsai.runtime.synchronous.*;
-import bonsai.runtime.synchronous.env.*;
+import java.util.*;
 
-public interface Prepare
-{
-  // This method is called before the statement is executed.
-  // `prepare` is not called again until termination (terminated completion code for statements (or aborted), and returning a non-suspended value for expressions).
-  void prepare(Layer env);
+public class CausalException extends RuntimeException {
+  public CausalException(String source) {
+    super("[BUG]: The SpaceMachine was unable to schedule some processes during execution.\n" +
+          "It implies that the program is not causal (bug in the static analysis of the compiler) or a bug in the implementation of the scheduling.\n"+
+          "Source: " + source);
+  }
 }

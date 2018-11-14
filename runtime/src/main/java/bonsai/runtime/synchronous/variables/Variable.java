@@ -71,7 +71,10 @@ public class Variable
   }
 
   public void exitScope() {
-    refUpdaters.remove(refUpdaters.size() - 1);
+    // The `refUpdaters` list can be empty if the variable did not enter its scope (it was only `Space.register`).
+    if (!refUpdaters.isEmpty()) {
+      refUpdaters.remove(refUpdaters.size() - 1);
+    }
   }
 
   public boolean isInScope() {
@@ -133,5 +136,9 @@ public class Variable
 
   private void anyEvent(Layer env) {
     env.schedule(new Event(uid(), Event.ANY));
+  }
+
+  public String toString() {
+    return "UID: " + uid + " " + rw + ": " + value;
   }
 }

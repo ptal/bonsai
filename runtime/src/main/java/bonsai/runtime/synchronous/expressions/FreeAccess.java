@@ -36,15 +36,10 @@ public class FreeAccess extends Access
     return layer.lookUpVar(uid);
   }
 
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    return new CanResult(true,false);
+  public boolean canWriteOn(String uid) {
+    return false;
   }
 
-  public boolean canAnalysis(Layer layer) {
-    return true;
-  }
-
-  public boolean terminate(Layer layer) {
-    return true;
-  }
+  public void canInstant(Layer layer) {}
+  public void terminate(Layer layer) {}
 }

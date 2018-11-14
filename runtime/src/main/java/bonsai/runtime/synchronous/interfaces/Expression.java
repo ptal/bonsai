@@ -18,8 +18,32 @@ import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
-public interface Expression extends Schedulable, Prepare, CanAnalysis
+public interface Expression extends Schedulable
 {
-  /// Idempotent: if called two times in a row, it must return the same result.
-  ExprResult execute(Layer env);
+  /// Called at the beginning of an instant if this expression *can* be reached.
+  /// /!\ It is not idempotent.
+  /// Purposes:
+  ///  - Count all the possible read/write operations (an upper bound) and add them in `layer`.
+  void canInstant(Layer layer);
+
+  /// This function is always called to indicate that the expression is terminated.
+  /// /!\ It is not idempotent.
+  /// Purpose:
+  ///   - Reduce the read/write counters.
+  /// When:
+  ///   - This function is called when the statement is satisfied with the answer given by `execute`.
+  ///   - When the statement must be aborted or suspended.
+  void terminate(Layer layer);
+
+  /// Called several time during an instant if the expression *must* be executed.
+  /// Conditions:
+  ///   - Must be idempotent once `!result.isSuspended()`.
+  ExprResult execute(Layer layer);
+
+  /// We analyse the current program to prove that a write on `uid` still can happen.
+  /// It returns `true` if a write can happen, `false` otherwise.
+  /// Conditions:
+  ///   - Must be idempotent
+  ///   - Must not modify the internal state of the process.
+  boolean canWriteOn(String uid);
 }

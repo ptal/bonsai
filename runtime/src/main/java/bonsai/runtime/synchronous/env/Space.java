@@ -19,10 +19,12 @@ import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
 
+// `Space` is the variable's environment.
+// The life cycle of a variable is as follows: `register` (called during the `canAnalysis`), `enterScope` and finally `exitScope`.
 public class Space
 {
   // This is the memory of all variables, regardless of their spacetime.
-  // All variables in `memory` must be currently in scope.
+  // All variables in `memory` are registered or in scope.
   private HashMap<String, Variable> memory;
 
   public Space()
@@ -36,25 +38,32 @@ public class Space
     return v;
   }
 
-  public void checkVarNull(Variable v, String uid) {
+  private void checkVarNull(Variable v, String uid) {
     if (v == null) {
       throw new RuntimeException("The variable `" + uid
         + "` is not registered in `Space.memory`.");
     }
   }
 
-  public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {
+  private void checkNullUID(String uid, String from) {
     if (uid == null) {
-      throw new RuntimeException("Space.enterScope: null `uid` parameter.");
+      throw new RuntimeException(from + ": null `uid` parameter.");
     }
-    Variable var = memory.computeIfAbsent(uid, k -> new Variable(k));
+  }
+
+  public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {
+    checkNullUID(uid, "Space.enterScope");
+    Variable var = memory.get(uid);
+    if (var == null) {
+      throw new RuntimeException(
+        "Space.exitScope: The variable with UID `" + uid + "` is in scope, but " +
+        "it is not in `memory`.");
+    }
     var.enterScope(defaultValue, refUpdater);
   }
 
   public void exitScope(String uid) {
-    if (uid == null) {
-      throw new RuntimeException("Space.exitScope: null `uid` parameter.");
-    }
+    checkNullUID(uid, "Space.exitScope");
     Variable v = memory.get(uid);
     if (v == null) {
       throw new RuntimeException(
@@ -66,5 +75,10 @@ public class Space
     if(!v.isInScope()) {
       memory.remove(uid);
     }
+  }
+
+  public void register(String uid) {
+    checkNullUID(uid, "Space.register");
+    memory.computeIfAbsent(uid, k -> new Variable(k));
   }
 }

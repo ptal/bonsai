@@ -31,4 +31,14 @@ public abstract class ASTNode implements Schedulable
   public void schedule(Schedulable from) {
     parent.schedule(from);
   }
+
+  protected void checkNoSubLayer(int layersRemaining, String from) {
+    if (layersRemaining > 0) {
+      hasNoSubLayer(from);
+    }
+  }
+
+  protected void hasNoSubLayer(String from) {
+    throw new NoSubLayerException(from);
+  }
 }

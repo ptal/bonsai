@@ -23,8 +23,8 @@ import bonsai.runtime.synchronous.env.*;
 
 public class FunctionCall extends NAryCall implements Expression
 {
+  private final Function<ArrayList<Object>, Object> function;
   private ExprResult result;
-  private Function<ArrayList<Object>, Object> function;
 
   public FunctionCall(List<Access> args, Function<ArrayList<Object>, Object> function) {
     super(args);
@@ -32,9 +32,9 @@ public class FunctionCall extends NAryCall implements Expression
     this.function = function;
   }
 
-  public void prepare(Layer layer) {
+  public void canInstant(Layer layer) {
+    super.canInstant(layer);
     result = new ExprResult();
-    super.prepare(layer);
   }
 
   public ExprResult execute(Layer layer) {

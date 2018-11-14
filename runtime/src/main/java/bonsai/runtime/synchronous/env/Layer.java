@@ -60,4 +60,8 @@ public class Layer
   public void exitScope(String uid) {
     space.exitScope(uid);
   }
+
+  public void register(String uid) {
+    space.register(uid);
+  }
 }

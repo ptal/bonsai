@@ -22,46 +22,65 @@ import bonsai.runtime.synchronous.env.*;
 
 public class QFUniverse extends ASTNode implements Program
 {
-  private Program body;
-  private CompletionCode result;
+  private final Program body;
+  private CompletionCode bodyK;
+  private CompletionCode k;
 
   public QFUniverse(Program body) {
     super();
     this.body = body;
-    result = CompletionCode.PAUSE_DOWN;
+    prepare();
   }
 
-  public void prepareSub(Environment env, int layerIndex) {
-    env.traverseLayerPrepare(layerIndex, body::prepare, body::prepareSub);
+  public void prepare() {
+    k = CompletionCode.PAUSE_DOWN;
+    bodyK = CompletionCode.WAIT;
   }
 
-  public CompletionCode executeSub(Environment env, int layerIndex) {
-    return env.traverseLayer(layerIndex, this::execute, body::executeSub);
-  }
-
-  public void prepare(Layer layer) {
-    result = CompletionCode.PAUSE_DOWN;
-  }
-
-  public CompletionCode execute(Layer layer) {
-    if (!result.isLayerTerminated()) {
-      result = body.execute(layer);
+  public void canInstant(int layersRemaining, Layer layer) {
+    if (layersRemaining == 0) {
+      prepare();
     }
-    return result;
+    else {
+      body.canInstant(layersRemaining - 1, layer);
+    }
   }
 
-  // TODO
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    return null;
-  }
-  // TODO
-  public boolean terminate(Layer layer) {
-    return false;
+  public boolean canTerminate() {
+    return body.canTerminate();
   }
 
-  // TODO
-  public boolean canAnalysis(Layer layer) {
-    return false;
+  public void abort(Layer layer) {
+    k = CompletionCode.TERMINATE;
+    bodyK = CompletionCode.TERMINATE;
   }
 
+  public void suspend(Layer layer) {}
+
+  public CompletionCode execute(int layersRemaining, Layer layer){
+    if (layersRemaining == 0) {
+      return k;
+    }
+    else {
+      if (bodyK.isInternal()) {
+        bodyK = body.execute(layersRemaining - 1, layer);
+        // Promote the completion code of the body.
+        switch(bodyK) {
+          case PAUSE_UP: k = CompletionCode.PAUSE; break;
+          case STOP: k = CompletionCode.STOP; break;
+          case TERMINATE: k = CompletionCode.TERMINATE; break;
+        }
+      }
+      return bodyK;
+    }
+  }
+
+  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+    if (layersRemaining == 0) {
+      return false;
+    }
+    else {
+      return body.canWriteOn(layersRemaining - 1, uid, inSurface);
+    }
+  }
 }

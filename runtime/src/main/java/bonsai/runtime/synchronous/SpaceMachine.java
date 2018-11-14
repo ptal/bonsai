@@ -26,7 +26,11 @@ public class SpaceMachine
   private boolean debug;
 
   public SpaceMachine(Program body, int numLayers, boolean debug) {
-    this.body = new QFUniverse(body);
+    if (numLayers < 0) {
+      throw new RuntimeException("SpaceMachine: The number of layers cannot be negative.");
+    }
+    this.body = body;
+    this.body.prepare();
     this.env = new Environment(numLayers+1);
     this.debug = debug;
   }
@@ -40,43 +44,44 @@ public class SpaceMachine
 
   CompletionCode executeLayer() {
     env.incTargetLayer();
-    CompletionCode status = CompletionCode.PAUSE;
-    body.prepareSub(env, Environment.OUTERMOST_LAYER);
-    while (status == CompletionCode.PAUSE) {
+    Layer layer = env.targetLayer();
+    int targetIdx = env.targetIdx();
+    CompletionCode k = CompletionCode.PAUSE;
+    while (k == CompletionCode.PAUSE) {
+      body.canInstant(targetIdx, layer);
       // We execute as much as we can of the current instant.
-      status = executeInstant();
+      k = executeInstant(targetIdx, layer);
       // If we are blocked but a sub-layer can be activated, we proceed.
-      if (status == CompletionCode.PAUSE_DOWN) {
-        CompletionCode subStatus = executeLayer();
-        if (subStatus.isInternal()) {
-          throw new RuntimeException("BUG: a layer cannot complete its execution on an internal completion code.");
+      if (k == CompletionCode.PAUSE_DOWN) {
+        CompletionCode subK = executeLayer();
+        if (subK.isInternal()) {
+          throw new CausalException("A layer cannot complete its execution on an internal completion code.");
         }
         // We execute the remaining of the current instant (in case the sub-layer wrote on variables of its parent's layer).
-        status = executeInstant();
-        if (status.isInternal()) {
-          throw new RuntimeException("BUG: the sub-layer has been activated once, but the current instant is still blocked.");
+        k = executeInstant(targetIdx, layer);
+        if (k.isInternal()) {
+          throw new CausalException("The sub-layer has been activated once, but the current instant is still blocked.");
         }
       }
     }
     env.decTargetLayer();
-    return status;
+    return k;
   }
 
-  CompletionCode executeInstant() {
-    CompletionCode status = CompletionCode.WAIT;
-    while (status == CompletionCode.WAIT) {
-      status = body.executeSub(env, Environment.OUTERMOST_LAYER);
-      Layer layer = env.targetLayer();
-      if (status.isInternal() && !layer.processWasScheduled()) {
+  CompletionCode executeInstant(int layersRemaining, Layer layer) {
+    CompletionCode k = CompletionCode.WAIT;
+    while (k == CompletionCode.WAIT) {
+      k = body.execute(layersRemaining, layer);
+      if (k.isInternal() && !layer.processWasScheduled()) {
         boolean wasUnblocked = layer.unblock(body);
         if(!wasUnblocked) {
-          if (status != CompletionCode.PAUSE_DOWN) {
-            throw new RuntimeException("BUG: the current layer is blocked (every process waits for an event) and no sub-universe can be executed.");
+          if (k != CompletionCode.PAUSE_DOWN) {
+            throw new CausalException("The current layer is blocked (every process waits for an event) and no sub-universe can be executed.");
           }
           break;
         }
       }
     }
-    return status;
+    return k;
   }
 }

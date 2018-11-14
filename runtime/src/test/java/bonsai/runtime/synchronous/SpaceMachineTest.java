@@ -19,6 +19,7 @@ import java.util.function.*;
 import bonsai.runtime.lattices.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.statements.*;
+import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -69,16 +70,18 @@ public class SpaceMachineTest
     }
   }
 
-  // @Test throw CausalException
-  // public void testNonCausalProgram() {
-  //   currentTest = "universe f(read x, write x) end";
-  //   LMax numCall = new LMax(0);
-  //   Consumer<ArrayList<Object>> f = (args) -> fail(currentTest+": function f should not be called");
-  //   List<Access> args = List.of(new ReadAccess("x"), new WriteAccess("x"));
-  //   ProcedureCall procedure = new ProcedureCall(args, f);
-  //   Program process = createNestedQFUniverse(procedure, numLayers);
-  //   SpaceMachine machine = new SpaceMachine(process, numLayers, true);
-  //   assertTerminated(machine);
-  //   assertThat(currentTest, numCall, equalTo(new LMax(1)));
-  // }
+  @Test(expected = CausalException.class)
+  public void testNonCausalProgram() {
+    String xUID = "x_uid";
+    currentTest = "single_space LMax x = new LMax(1); f(read x, write x);";
+    LMax numCall = new LMax(1);
+    Consumer<ArrayList<Object>> f = (args) -> fail(currentTest+": function f should not be called");
+    List<Access> accesses = Arrays.asList(new ReadAccess(xUID), new WriteAccess(xUID));
+    ProcedureCall procedure = new ProcedureCall(accesses, f);
+    SingleSpaceVarDecl process = new SingleSpaceVarDecl(xUID,
+      new FunctionCall(Arrays.asList(), (args) -> new LMax(1)),
+      procedure);
+    SpaceMachine machine = new SpaceMachine(process, 0, true);
+    machine.execute();
+  }
 }

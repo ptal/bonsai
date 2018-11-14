@@ -28,9 +28,9 @@ public class Entailment extends ASTNode implements Expression
 {
   // We have the variables appearing in the left and right side of the entailment.
   // Note that constant are not represented in this class and directly compiled into the closure.
-  private List<FreeAccess> leftVars;
-  private List<FreeAccess> rightVars;
-  private Function<ArrayList<Object>, Kleene> eval;
+  private final List<FreeAccess> leftVars;
+  private final List<FreeAccess> rightVars;
+  private final Function<ArrayList<Object>, Kleene> eval;
   private ExprResult result;
 
   public Entailment(List<FreeAccess> leftVars, List<FreeAccess> rightVars,
@@ -39,18 +39,6 @@ public class Entailment extends ASTNode implements Expression
     this.rightVars = rightVars;
     this.eval = eval;
     this.result = new ExprResult();
-  }
-
-  private void prepareArgs(Layer layer, List<FreeAccess> accesses) {
-    for (FreeAccess access: accesses) {
-      access.prepare(layer);
-    }
-  }
-
-  public void prepare(Layer layer) {
-    this.result = new ExprResult();
-    prepareArgs(layer, leftVars);
-    prepareArgs(layer, rightVars);
   }
 
   private boolean evalArgs(Layer layer, List<FreeAccess> accesses,
@@ -81,6 +69,29 @@ public class Entailment extends ASTNode implements Expression
     return promoted;
   }
 
+  private void canInstantArgs(Layer layer, List<FreeAccess> accesses) {
+    for (FreeAccess access: accesses) {
+      access.canInstant(layer);
+    }
+  }
+
+  public void canInstant(Layer layer) {
+    this.result = new ExprResult();
+    canInstantArgs(layer, leftVars);
+    canInstantArgs(layer, rightVars);
+  }
+
+  private void terminateArgs(Layer layer, List<FreeAccess> accesses) {
+    for (FreeAccess access: accesses) {
+      access.terminate(layer);
+    }
+  }
+
+  public void terminate(Layer layer) {
+    terminateArgs(layer, leftVars);
+    terminateArgs(layer, rightVars);
+  }
+
   public ExprResult execute(Layer layer) {
     if (result.isSuspended()) {
       ArrayList<Object> args = new ArrayList();
@@ -95,15 +106,7 @@ public class Entailment extends ASTNode implements Expression
     return result;
   }
 
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    return new CanResult(true,false);
-  }
-
-  public boolean canAnalysis(Layer layer) {
-    return true;
-  }
-
-  public boolean terminate(Layer layer) {
-    return true;
+  public boolean canWriteOn(String uid) {
+    return false;
   }
 }

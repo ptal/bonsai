@@ -21,7 +21,7 @@ import bonsai.runtime.synchronous.env.*;
 
 public abstract class Access extends ASTNode implements Expression
 {
-  protected String uid;
+  protected final String uid;
   private boolean hasSubscribed;
 
   public Access(String uid) {
@@ -29,7 +29,7 @@ public abstract class Access extends ASTNode implements Expression
     hasSubscribed = false;
   }
 
-  public void prepare(Layer layer) {
+  public void canInstant(Layer layer) {
     hasSubscribed = false;
   }
 

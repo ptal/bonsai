@@ -24,7 +24,7 @@ import bonsai.runtime.synchronous.env.*;
 
 public abstract class NAryCall extends ASTNode
 {
-  protected List<Access> args;
+  protected final List<Access> args;
   protected ArrayList<Object> argsEval;
 
   public NAryCall(List<Access> args) {
@@ -32,13 +32,19 @@ public abstract class NAryCall extends ASTNode
     this.argsEval = new ArrayList(args.size());
   }
 
-  protected void prepare(Layer layer) {
+  protected void canInstant(Layer layer) {
     argsEval.clear();
     for(int i=0; i < args.size(); i++) {
       argsEval.add(null);
     }
     for (Access access : args) {
-      access.prepare(layer);
+      access.canInstant(layer);
+    }
+  }
+
+  public void terminate(Layer layer) {
+    for (Access access : args) {
+      access.terminate(layer);
     }
   }
 
@@ -56,29 +62,12 @@ public abstract class NAryCall extends ASTNode
     return ready;
   }
 
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    return args.stream()
-      .map((a) -> a.canWriteOn(uid,inSurface))
-      .reduce(CanResult.IDENTITY, CanResult::and_term);
-  }
-
-  public boolean canAnalysis(Layer layer) {
-    for (Access access : args) {
-      checkTerminated(access.canAnalysis(layer));
+  public boolean canWriteOn(String uid) {
+    for(Access arg: args) {
+      if (arg.canWriteOn(uid)) {
+        return true;
+      }
     }
-    return true;
-  }
-
-  public boolean terminate(Layer layer) {
-    for (Access access : args) {
-      checkTerminated(access.terminate(layer));
-    }
-    return true;
-  }
-
-  private void checkTerminated(boolean terminated) {
-    if(!terminated) {
-      throw new RuntimeException("[BUG] Arguments of NAryCall must always terminate.");
-    }
+    return false;
   }
 }

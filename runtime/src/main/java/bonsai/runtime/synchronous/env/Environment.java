@@ -26,7 +26,7 @@ public class Environment
 {
   public static int OUTERMOST_LAYER = -1;
   private ArrayList<Layer> layers;
-  private int targetLayer;
+  private int targetIdx;
 
   public Environment(int numLayers)
   {
@@ -34,43 +34,22 @@ public class Environment
     for(int i=0; i < numLayers; i++) {
       layers.add(new Layer());
     }
-    targetLayer = OUTERMOST_LAYER;
+    targetIdx = OUTERMOST_LAYER;
   }
 
   public void incTargetLayer() {
-    targetLayer += 1;
+    targetIdx += 1;
+    if (targetIdx >= layers.size()) {
+      throw new RuntimeException("Environment.incTargetLayer: Enter a layer that is not registered in the environment.");
+    }
   }
   public void decTargetLayer() {
-    targetLayer -= 1;
+    targetIdx -= 1;
   }
   public Layer targetLayer() {
-    return layers.get(targetLayer);
+    return layers.get(targetIdx);
   }
-
-  public CompletionCode traverseLayer(int currentLayer,
-   Function<Layer, CompletionCode> execute,
-   BiFunction<Environment, Integer, CompletionCode> executeSub) {
-    currentLayer += 1;
-    if (currentLayer == targetLayer) {
-      return execute.apply(layers.get(currentLayer));
-    }
-    else if (currentLayer < targetLayer) {
-      return executeSub.apply(this, currentLayer);
-    }
-    else {
-      return CompletionCode.PAUSE_DOWN;
-    }
-  }
-
-  public void traverseLayerPrepare(int currentLayer,
-   Consumer<Layer> prepare,
-   BiConsumer<Environment, Integer> prepareSub) {
-    currentLayer += 1;
-    if (currentLayer == targetLayer) {
-      prepare.accept(layers.get(currentLayer));
-    }
-    else if(currentLayer < targetLayer) {
-      prepareSub.accept(this, currentLayer);
-    }
+  public int targetIdx() {
+    return targetIdx;
   }
 }

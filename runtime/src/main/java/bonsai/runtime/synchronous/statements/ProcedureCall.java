@@ -24,35 +24,50 @@ import bonsai.runtime.synchronous.env.*;
 
 public class ProcedureCall extends NAryCall implements Program
 {
-  private CompletionCode result;
-  private Consumer<ArrayList<Object>> procedure;
+  private final Consumer<ArrayList<Object>> procedure;
+  private CompletionCode k;
 
   public ProcedureCall(List<Access> args, Consumer<ArrayList<Object>> procedure) {
     super(args);
-    this.result = CompletionCode.WAIT;
     this.procedure = procedure;
+    prepare();
   }
 
-  public void prepareSub(Environment env, int layerIndex) {
-    throw new NoSubLayerException("ProcedureCall.prepareSub");
-  }
-  public CompletionCode executeSub(Environment env, int layerIndex) {
-    throw new NoSubLayerException("ProcedureCall.executeSub");
+  public void prepare() {
+    k = CompletionCode.WAIT;
   }
 
-  public void prepare(Layer layer) {
-    result = CompletionCode.WAIT;
-    super.prepare(layer);
+  public void canInstant(int layersRemaining, Layer layer) {
+    checkNoSubLayer(layersRemaining, "ProcedureCall.canInstant");
+    super.canInstant(layer);
   }
 
-  public CompletionCode execute(Layer layer) {
-    if (result == CompletionCode.WAIT) {
+  public boolean canTerminate() {
+    return true;
+  }
+
+  public void abort(Layer layer) {
+    super.terminate(layer);
+  }
+
+  public void suspend(Layer layer) {
+    super.terminate(layer);
+  }
+
+  public CompletionCode execute(int layersRemaining, Layer layer) {
+    checkNoSubLayer(layersRemaining, "ProcedureCall.execute");
+    if (k == CompletionCode.WAIT) {
       boolean ready = super.executeArgs(layer);
       if (ready) {
         procedure.accept(argsEval);
-        result = CompletionCode.TERMINATE;
+        k = CompletionCode.TERMINATE;
       }
     }
-    return result;
+    return k;
+  }
+
+  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+    checkNoSubLayer(layersRemaining, "ProcedureCall.canWriteOn");
+    return super.canWriteOn(uid);
   }
 }

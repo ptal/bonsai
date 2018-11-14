@@ -25,8 +25,8 @@ import bonsai.runtime.synchronous.env.*;
 
 public class SpaceStmt extends ASTNode implements Program
 {
-  private ArrayList<String> capturedUIDs;
-  private Program branch;
+  private final ArrayList<String> capturedUIDs;
+  private final Program branch;
 
   public SpaceStmt(ArrayList<String> capturedUIDs, Program branch) {
     super();
@@ -34,36 +34,25 @@ public class SpaceStmt extends ASTNode implements Program
     this.branch = branch;
   }
 
+  public void prepare() {}
 
-  public void prepareSub(Environment env, int layerIndex) {
-    throw new NoSubLayerException("SpaceStmt.prepareSub");
-  }
-  public CompletionCode executeSub(Environment env, int layerIndex) {
-    throw new NoSubLayerException("SpaceStmt.executeSub");
+  public void canInstant(int layersRemaining, Layer layer) {
+    checkNoSubLayer(layersRemaining, "SpaceStmt.canInstant");
   }
 
-  public void prepare(Layer env) {}
-  public CompletionCode execute(Layer env) {
+  public boolean canTerminate() { return true; }
+
+  public void suspend(Layer layer) {}
+
+  public void abort(Layer layer) {}
+
+  public CompletionCode execute(int layersRemaining, Layer layer) {
+    checkNoSubLayer(layersRemaining, "SpaceStmt.execute");
     return CompletionCode.TERMINATE;
   }
 
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    return CanResult.IDENTITY;
-  }
-
-  public boolean canAnalysis(Layer env) {
-    return true;
-  }
-
-  public boolean terminate(Layer env) {
-    return true;
-  }
-
-  public ArrayList<String> capturedUIDs() {
-    return capturedUIDs;
-  }
-
-  public Program branch() {
-    return branch;
+  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+    checkNoSubLayer(layersRemaining, "SpaceStmt.canWriteOn");
+    return false;
   }
 }

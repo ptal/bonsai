@@ -28,50 +28,87 @@ public class SingleSpaceVarDecl extends ASTNode implements Program
   private Expression initValue;
   private Program body;
 
-  private CompletionCode result;
+  private CompletionCode k;
   private ExprResult exprResult;
 
   public SingleSpaceVarDecl(String uid, Expression initValue, Program body) {
     this.uid = uid;
     this.initValue = initValue;
     this.body = body;
-    this.result = CompletionCode.WAIT;
+    this.k = CompletionCode.WAIT;
     this.exprResult = new ExprResult();
   }
 
   // in the initializing expression.
   private boolean state1() {
-    return result != CompletionCode.TERMINATE && exprResult.isSuspended();
+    return k != CompletionCode.TERMINATE && exprResult.isSuspended();
   }
 
   // in the body.
   private boolean state2() {
-    return result != CompletionCode.TERMINATE && !exprResult.isSuspended();
+    return k != CompletionCode.TERMINATE && !exprResult.isSuspended();
   }
 
   // terminated.
   private boolean state3() {
-    return result == CompletionCode.TERMINATE;
+    return k == CompletionCode.TERMINATE;
   }
 
-  public void prepareSub(Environment env, int layerIndex) {
-    body.prepareSub(env, layerIndex);
-  }
-  public CompletionCode executeSub(Environment env, int layerIndex) {
-    return body.executeSub(env, layerIndex);
-  }
-
-  public void prepare(Layer layer) {
-    result = CompletionCode.WAIT;
+  public void prepare() {
+    k = CompletionCode.WAIT;
     exprResult = new ExprResult();
-    initValue.prepare(layer);
-    body.prepare(layer);
+    body.prepare();
   }
 
-  public CompletionCode execute(Layer layer) {
-    executeState1(layer);
-    executeState2(layer);
-    return result;
+  public void canInstant(int layersRemaining, Layer layer) {
+    if(layersRemaining == 0) {
+      initValue.canInstant(layer);
+      layer.register(uid);
+    }
+    body.canInstant(layersRemaining, layer);
+  }
+
+  public boolean canTerminate() {
+    return body.canTerminate();
+  }
+
+  public void abort(Layer layer) {
+    if (!state3()) {
+      if (state1()) { // if the initializing expression is not terminated.
+        initValue.terminate(layer);
+      }
+      body.abort(layer); // if the body was not terminated.
+      if (state2()) { // if the body is active and not terminated.
+        terminate(layer);
+      }
+      k = CompletionCode.TERMINATE;
+    }
+  }
+
+  public void suspend(Layer layer) {
+    if (!state3()) {
+      if (state1()) {
+        initValue.terminate(layer);
+      }
+      body.suspend(layer);
+    }
+  }
+
+  public CompletionCode execute(int layersRemaining, Layer layer) {
+    if (layersRemaining == 0) {
+      executeState1(layer);
+      executeState2(layer);
+      return k;
+    }
+    else {
+      if (state2()) {
+        return body.execute(layersRemaining, layer);
+      }
+      else {
+        hasNoSubLayer("SingleSpaceVarDecl.execute");
+        return null;
+      }
+    }
   }
 
   private void executeState1(Layer layer) {
@@ -86,51 +123,35 @@ public class SingleSpaceVarDecl extends ASTNode implements Program
 
   private void executeState2(Layer layer) {
     if (state2()) {
-      result = body.execute(layer);
-      executeState3(layer);
+      k = body.execute(0, layer);
+      if (state3()) {
+        terminate(layer);
+      }
     }
   }
 
-  // This state must be only executed one time once `state3()` holds (it is not idempotent).
-  private void executeState3(Layer layer) {
-    if (state3()) {
-      layer.exitScope(uid);
-      // Free the pointed value of the variable.
-      exprResult = new ExprResult();
-    }
+  private void terminate(Layer layer) {
+    layer.exitScope(uid);
+    // Free the pointed value of the variable.
+    exprResult = new ExprResult();
   }
 
-  private void jumpState3(Layer layer) {
-    result = CompletionCode.TERMINATE;
-    executeState3(layer);
-  }
-
-  public CanResult canWriteOn(String uid, boolean inSurface) {
-    CanResult result = CanResult.IDENTITY;
-    if (state1()) {
-      result = initValue.canWriteOn(uid, inSurface);
-    }
-    if (state1() || state2()) {
-      result = result.and_term(body.canWriteOn(uid, inSurface));
-    }
-    return result;
-  }
-
-  public boolean canAnalysis(Layer layer) {
-    return initValue.canAnalysis(layer) && body.canAnalysis(layer);
-  }
-
-  public boolean terminate(Layer layer) {
-    boolean canTerminate = true;
-    if (!state3()) {
+  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+    if (layersRemaining == 0) {
       if (state1()) {
-        initValue.terminate(layer);
+        if (initValue.canWriteOn(uid)) {
+          return true;
+        }
       }
       if (state1() || state2()) {
-        canTerminate = canTerminate && body.terminate(layer);
+        if (body.canWriteOn(layersRemaining, uid, inSurface)) {
+          return true;
+        }
       }
-      jumpState3(layer);
+      return false;
     }
-    return canTerminate;
+    else {
+      return body.canWriteOn(layersRemaining, uid, inSurface);
+    }
   }
 }

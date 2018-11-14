@@ -47,4 +47,8 @@ public class RWCounter {
         rw.write == write && rw.readwrite == readwrite && rw.read == read;
     }
   }
+
+  public String toString() {
+    return "(" + write + "," + readwrite + "," + read + ")";
+  }
 }
