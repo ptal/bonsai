@@ -133,11 +133,13 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn delay(&mut self, delay: Delay) {
+    self.fmt.push("new Delay(");
     match delay.kind {
-      DelayKind::Pause => self.fmt.push("new Pause()"),
-      DelayKind::PauseUp => unimplemented!("statement unimplemented: pause up"),
-      DelayKind::Stop => unimplemented!("statement unimplemented: stop")
+      DelayKind::Pause => self.fmt.push("CompletionCode.PAUSE"),
+      DelayKind::PauseUp => self.fmt.push("CompletionCode.PAUSE_UP"),
+      DelayKind::Stop => self.fmt.push("CompletionCode.STOP"),
     }
+    self.fmt.push(")");
   }
 
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)

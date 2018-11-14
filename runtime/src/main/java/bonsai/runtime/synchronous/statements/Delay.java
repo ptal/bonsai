@@ -20,42 +20,47 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class Pause extends ASTNode implements Program
+public class Delay extends ASTNode implements Program
 {
+  private final CompletionCode kind;
   private CompletionCode k;
-  public Pause() {
+  private boolean nextInstant;
+  public Delay(CompletionCode kind) {
     super();
+    this.kind = kind;
     prepare();
   }
 
   public void prepare() {
     k = CompletionCode.WAIT;
+    nextInstant = false;
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
-    checkNoSubLayer(layersRemaining, "Pause.canInstant");
+    checkNoSubLayer(layersRemaining, "Delay.canInstant");
+    nextInstant = true;
   }
 
   public boolean canTerminate() {
-    return k == CompletionCode.TERMINATE;
+    return k == CompletionCode.TERMINATE || (k == kind && nextInstant);
   }
 
   public void abort(Layer layer) {}
   public void suspend(Layer layer) {}
 
   public CompletionCode execute(int layersRemaining, Layer layer){
-    checkNoSubLayer(layersRemaining, "Pause.execute");
+    checkNoSubLayer(layersRemaining, "Delay.execute");
     if (k == CompletionCode.WAIT) {
-      k = CompletionCode.PAUSE;
+      k = kind;
     }
-    else if (k == CompletionCode.PAUSE) {
+    else if (k == kind) {
       k = CompletionCode.TERMINATE;
     }
     return k;
   }
 
   public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
-    checkNoSubLayer(layersRemaining, "Pause.canWriteOn");
+    checkNoSubLayer(layersRemaining, "Delay.canWriteOn");
     return false;
   }
 

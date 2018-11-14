@@ -179,19 +179,27 @@ impl Display
     }
   }
 
+  pub fn run_success(&mut self, test_name: String, process_name: String) {
+    self.success(format!("{}.{}", test_name, process_name))
+  }
+
+  fn run_failure(&mut self, path: PathBuf, test_name: String, process_name: String) {
+    self.failure(path, format!("{}.{}", test_name, process_name))
+  }
+
   pub fn maven_failure(&mut self, phase: &str, path: PathBuf,
-    test_name: String, output: Output)
+    test_name: String, process_name: String, output: Output)
   {
-    self.failure(path, test_name);
+    self.run_failure(path, test_name, process_name);
     self.error(format!("Maven {} should have succeeded but failed.", phase));
     self.write_maven_output(color::CYAN, "  [ stdout ] ", output.stdout);
     self.write_maven_output(color::CYAN, "  [ stderr ] ", output.stderr);
   }
 
   pub fn execution_failure(&mut self, path: PathBuf, test_name: String,
-    expected: String, obtained: String)
+    process_name: String, expected: String, obtained: String)
   {
-    self.failure(path, test_name);
+    self.run_failure(path, test_name, process_name);
     self.error(format!("The output does not match the expected regex."));
     self.write_line(color::CYAN, "  [ expected ] ", expected);
     self.write_line(color::CYAN, "  [ obtained ] ", obtained);

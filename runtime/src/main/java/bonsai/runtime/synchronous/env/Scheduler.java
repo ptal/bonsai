@@ -44,8 +44,8 @@ public class Scheduler
         s.schedule(null);
         scheduledProcess = true;
       }
+      processes.clear();
     }
-    processes.clear();
   }
 
   // Return true if a process has been scheduled since the last call to this method.

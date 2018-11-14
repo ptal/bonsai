@@ -20,13 +20,14 @@ use std::process::{Command, Stdio, Output};
 use std::io;
 
 pub struct Maven {
-  sandbox: PathBuf
+  sandbox: PathBuf,
+  filter_debug: bool
 }
 
 impl Maven {
-  pub fn new(root: PathBuf) -> Self {
+  pub fn new(root: PathBuf, filter_debug: bool) -> Self {
     Maven {
-      sandbox: root.join("sandbox/")
+      sandbox: root.join("sandbox/"), filter_debug
     }
   }
 
@@ -56,8 +57,9 @@ impl Maven {
   // mvn -B -q exec:java -Dexec.mainClass="test.<class_name>"
   pub fn execute_sandbox(&self, main_class: String) -> io::Result<Output> {
     let main_class_arg = format!("-Dexec.mainClass=test.{}", main_class);
+    let silent = if self.filter_debug { "-e" } else { "-q" };
     let child = Command::new("mvn")
-      .args(&["-B", "-q", "exec:java", &main_class_arg])
+      .args(&["-B", silent, "exec:java", &main_class_arg])
       .current_dir(self.sandbox.clone())
       .stdout(Stdio::piped())
       .spawn()?;

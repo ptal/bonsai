@@ -89,14 +89,15 @@ impl Display for CompilerTest
 #[derive(Clone, Debug)]
 pub struct ExecutionTest {
   pub process: MainMethod,
-  pub output_regex: Regex
+  pub output_regex: Regex,
+  pub filter_debug: bool
 }
 
 impl ExecutionTest {
-  pub fn new(class_name: String, process_name: String, regex: String) -> Self {
+  pub fn new(class_name: String, process_name: String, regex: String, filter_debug: bool) -> Self {
     let output_regex = Regex::new(&regex).unwrap();
     ExecutionTest {
-      process: MainMethod::new(class_name, process_name), output_regex }
+      process: MainMethod::new(class_name, process_name), output_regex, filter_debug }
   }
 }
 

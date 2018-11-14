@@ -28,9 +28,7 @@ use test::*;
 
 use std::path::{PathBuf, Path};
 
-#[test]
-fn test_data_directory()
-{
+fn test_data_dir(filter: bool) {
   let data_path = Path::new("data/");
   if !data_path.is_dir() {
     panic!(format!("`{}` is not a valid data directory.", data_path.display()));
@@ -42,6 +40,17 @@ fn test_data_directory()
   if !test_lib.is_dir() {
     panic!(format!("`{}` must be a directory (the bonsai library used in the test files).", test_lib.display()));
   }
-  let mut engine = Engine::new(test_path, test_lib);
+  let mut engine = Engine::new(test_path, test_lib, filter);
   engine.run();
+}
+
+#[test]
+fn test_data_directory()
+{
+  test_data_dir(false);
+}
+
+#[test]
+fn debug_run() {
+  test_data_dir(true);
 }

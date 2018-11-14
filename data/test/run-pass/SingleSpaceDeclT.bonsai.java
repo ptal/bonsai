@@ -15,6 +15,7 @@
 #[run(SingleSpaceDeclT.printBottom, "bot")]
 #[run(SingleSpaceDeclT.printBottom2, "bot")]
 #[run(SingleSpaceDeclT.printOne, "1")]
+#[run(SingleSpaceDeclT.printTwo, "2")]
 
 package test;
 
@@ -37,5 +38,11 @@ public class SingleSpaceDeclT
   public proc printOne() =
     single_space LMax a = new LMax(1);
     System.out.println(a);
+  end
+
+  public proc printTwo() =
+    single_space LMax a = new LMax(1);
+    readwrite a.inc();
+    System.out.println(read a);
   end
 }

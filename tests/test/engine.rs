@@ -33,22 +33,21 @@ pub struct Engine
   test_path: PathBuf,
   test_lib: PathBuf,
   display: Display,
+  filter_debug: bool,
   maven: Maven
 }
 
 impl Engine
 {
-  pub fn new(test_path: PathBuf, test_lib: PathBuf) -> Engine
+  pub fn new(test_path: PathBuf, test_lib: PathBuf, filter_debug: bool) -> Engine
   {
     if !test_path.is_dir() {
       panic!(format!("`{}` is not a valid test directory.", test_path.display()));
     }
-    let maven = Maven::new(test_path.clone());
+    let maven = Maven::new(test_path.clone(), filter_debug);
     Engine{
-      test_path: test_path,
-      test_lib: test_lib,
-      display: Display::new(),
-      maven: maven
+      test_path, test_lib, maven, filter_debug,
+      display: Display::new()
     }
   }
 
@@ -56,10 +55,15 @@ impl Engine
   {
     let test_path = self.test_path.clone();
     self.display.title("    Bonsai compiler tests suite");
-    self.test_directory(format!("Compile and Pass tests."),
-      test_path.join(Path::new("compile-pass")), CompileSuccess, false);
-    self.test_directory(format!("Compile and Fail tests"),
-      test_path.join(Path::new("compile-fail")), CompileFail, false);
+    if self.filter_debug {
+      self.display.title("         (debug mode)");
+    }
+    if !self.filter_debug {
+      self.test_directory(format!("Compile and Pass tests."),
+        test_path.join(Path::new("compile-pass")), CompileSuccess, false);
+      self.test_directory(format!("Compile and Fail tests"),
+        test_path.join(Path::new("compile-fail")), CompileFail, false);
+    }
     self.test_directory(format!("Compile and Run tests"),
       test_path.join(Path::new("run-pass")), CompileSuccess, true);
     self.display.stats();
@@ -120,20 +124,22 @@ impl Engine
   fn run_file(&mut self, mut session: Session, mut context: Context, filepath: PathBuf) {
     self.maven.delete_source_files();
     for test in session.execution_tests.clone() {
-      self.maven.delete_source_files();
-      session.config.configure_execution_test(&test);
-      let env = run_back(session, context)
-        .ensure("[Test] Could not generate the Bonsai code.");
-      let (s, c) = env.decompose();
-      session = s;
-      context = c.unwrap();
-      let mod_name = ModuleFile::extract_mod_name(filepath.clone()).expect("bonsai file name (run_file)");
-      let compile_result = self.maven.compile_sandbox();
-      let execute_result = self.maven.execute_sandbox(mod_name);
-      let execution_test = ExecuteTest::new(&mut self.display, compile_result,
-        execute_result, test.output_regex, filepath.clone());
-      execution_test.diagnostic();
-      self.maven.delete_source_files();
+      if !self.filter_debug || test.filter_debug {
+        self.maven.delete_source_files();
+        session.config.configure_execution_test(&test);
+        let env = run_back(session, context)
+          .ensure("[Test] Could not generate the Bonsai code.");
+        let (s, c) = env.decompose();
+        session = s;
+        context = c.unwrap();
+        let mod_name = ModuleFile::extract_mod_name(filepath.clone()).expect("bonsai file name (run_file)");
+        let compile_result = self.maven.compile_sandbox();
+        let execute_result = self.maven.execute_sandbox(mod_name);
+        let execution_test = ExecuteTest::new(&mut self.display, compile_result,
+          execute_result, test.output_regex, test.process.method, filepath.clone());
+        execution_test.diagnostic();
+        self.maven.delete_source_files();
+      }
     }
   }
 }

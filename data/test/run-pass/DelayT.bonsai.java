@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[run(Delay.pauseNothing, "")]
-#[run(Delay.onePausePrint, "1")]
-#[run(Delay.twoPausePrint, "1234")]
-#[run(Delay.pausePrintPause, "1")]
-#[run(Delay.pausePrintPausePrint, "12")]
-#[run(Delay.pauseDecl, "122")]
+#[run(DelayT.pauseNothing, "")]
+#[run(DelayT.onePausePrint, "1")]
+#[run(DelayT.twoPausePrint, "1234")]
+#[run(DelayT.pausePrintPause, "1")]
+#[run(DelayT.pausePrintPausePrint, "12")]
+#[run(DelayT.pauseDecl, "122")]
+#[run(DelayT.declDelayOp, "")]
+#[run(DelayT.stopNothing, "")]
+#[run(DelayT.pauseUpNothing, "")]
+#[run(DelayT.stopStmt, "12")]
+#[run(DelayT.pauseUp123, "123")]
 
 package test;
 
@@ -25,7 +30,7 @@ import java.lang.System;
 import java.util.*;
 import bonsai.runtime.lattices.LMax;
 
-public class Delay
+public class DelayT
 {
   public proc pauseNothing() = pause; nothing end
   public proc onePausePrint() = pause; System.out.println("1") end
@@ -35,13 +40,40 @@ public class Delay
   public proc pausePrintPausePrint() =
     pause; System.out.print(1); pause; System.out.print(2); end
 
-  public proc pauseDecl() =
+  public proc declDelayOp() =
     single_space LMax a = new LMax(1);
-    System.out.println(read a);
     pause;
     readwrite a.inc();
-    System.out.println(read a);
+  end
+
+  public proc pauseDecl() =
+    single_space LMax a = new LMax(1);
+    System.out.print(read a);
     pause;
-    System.out.println(read a);
+    readwrite a.inc();
+    System.out.print(read a);
+    pause;
+    System.out.print(read a);
+  end
+
+  public proc stopNothing() = stop; System.out.print(1) end
+
+  public proc pauseUpNothing() = pause up; System.out.print(1) end
+
+  public proc stopStmt() =
+    System.out.print(1);
+    pause;
+    System.out.print(2);
+    stop;
+    System.out.print(3);
+  end
+
+  public proc pauseUp123() =
+    universe
+      System.out.print(1);
+      pause up;
+      System.out.print(2)
+    end;
+    System.out.print(3)
   end
 }

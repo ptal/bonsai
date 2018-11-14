@@ -26,6 +26,7 @@ pub struct ExecuteTest<'a>
   compile_result: io::Result<Output>,
   execute_result: io::Result<Output>,
   expect: Regex,
+  process_name: String,
   file_path: PathBuf
 }
 
@@ -35,10 +36,11 @@ impl<'a> ExecuteTest<'a>
     compile_result: io::Result<Output>,
     execute_result: io::Result<Output>,
     expect: Regex,
+    process_name: String,
     file_path: PathBuf) -> Self
   {
     ExecuteTest {
-      display, compile_result, execute_result, expect, file_path
+      display, compile_result, execute_result, expect, file_path, process_name
     }
   }
 
@@ -67,7 +69,8 @@ impl<'a> ExecuteTest<'a>
       }
       else {
         let file_name = self.file_name();
-        self.display.maven_failure(phase, self.file_path.clone(), file_name, output);
+        self.display.maven_failure(phase, self.file_path.clone(), file_name,
+          self.process_name.clone(), output);
       }
     }
     None
@@ -106,11 +109,11 @@ impl<'a> ExecuteTest<'a>
   fn compare_output(&mut self, output: String) {
     let file_name = self.file_name();
     if self.expect.is_match(&output) {
-      self.display.success(file_name);
+      self.display.run_success(file_name, self.process_name.clone());
     }
     else {
       self.display.execution_failure(
-        self.file_path.clone(), file_name,
+        self.file_path.clone(), file_name, self.process_name.clone(),
         format!("{}", self.expect.as_str()), output);
     }
   }

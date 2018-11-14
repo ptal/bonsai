@@ -60,6 +60,7 @@ public class ProcedureCall extends NAryCall implements Program
       boolean ready = super.executeArgs(layer);
       if (ready) {
         procedure.accept(argsEval);
+        super.terminate(layer);
         k = CompletionCode.TERMINATE;
       }
     }
