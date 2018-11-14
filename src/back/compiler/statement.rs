@@ -45,12 +45,12 @@ impl<'a> StatementCompiler<'a>
       QFUniverse(body) => self.qf_universe(body),
       Let(body) => self.let_decl(body),
       Seq(branches) => self.sequence(branches),
+      DelayStmt(delay) => self.delay(delay),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
       // Space(branches) => self.space(branches),
       // When(entailment, body) => self.when(entailment, body),
       // Suspend(entailment, body) => self.suspend(entailment, body),
-      // Pause => self.pause(),
       // PauseUp => self.pause_up(),
       // Stop => self.stop(),
       // Loop(body) => self.loop_stmt(body),
@@ -130,6 +130,14 @@ impl<'a> StatementCompiler<'a>
 
   fn sequence(&mut self, branches: Vec<Stmt>) {
     self.nary_operator("Sequence", branches);
+  }
+
+  fn delay(&mut self, delay: Delay) {
+    match delay.kind {
+      DelayKind::Pause => self.fmt.push("new Pause()"),
+      DelayKind::PauseUp => unimplemented!("statement unimplemented: pause up"),
+      DelayKind::Stop => unimplemented!("statement unimplemented: stop")
+    }
   }
 
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
@@ -262,10 +270,6 @@ impl<'a> StatementCompiler<'a>
   //   self.fmt.push("\", ");
   //   self.closure(true, expr);
   //   self.fmt.push(")");
-  // }
-
-  // fn pause(&mut self) {
-  //   self.fmt.push("SC.stop()");
   // }
 
   // fn pause_up(&mut self) {
