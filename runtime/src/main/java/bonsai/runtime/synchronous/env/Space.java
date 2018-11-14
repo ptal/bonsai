@@ -77,8 +77,13 @@ public class Space
     }
   }
 
-  public void register(String uid) {
+  public void register(String uid, boolean overwrite) {
     checkNullUID(uid, "Space.register");
-    memory.computeIfAbsent(uid, k -> new Variable(k));
+    if (overwrite) {
+      memory.compute(uid, (k,v) -> new Variable(k));
+    }
+    else {
+      memory.computeIfAbsent(uid, k -> new Variable(k));
+    }
   }
 }

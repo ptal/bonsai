@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[run(SingleSpaceDeclT.printBottom, "bot")]
-#[run(SingleSpaceDeclT.printBottom2, "bot")]
-#[run(SingleSpaceDeclT.printOne, "1")]
-#[run(SingleSpaceDeclT.printTwo, "2")]
-#[run(SingleSpaceDeclT.oneInstant, "2")]
-#[run(SingleSpaceDeclT.severalInstant, "122")]
-#[run(SingleSpaceDeclT.bug1, "1")]
+#[run(SingleTimeDeclT.printBottom, "bot")]
+#[run(SingleTimeDeclT.printBottom2, "bot")]
+#[run(SingleTimeDeclT.printOne, "1")]
+#[run(SingleTimeDeclT.printTwo, "2")]
+#[run(SingleTimeDeclT.oneInstant, "12")]
+#[run(SingleTimeDeclT.severalInstant, "121")]
+#[run(SingleTimeDeclT.pauseUpInUniverse, "21")]
 
 package test;
 
@@ -26,38 +26,39 @@ import java.lang.System;
 import java.util.*;
 import bonsai.runtime.lattices.LMax;
 
-public class SingleSpaceDeclT
+public class SingleTimeDeclT
 {
   public proc printBottom() =
-    single_space LMax a;
+    single_time LMax a;
     System.out.println(a);
   end
 
   public proc printBottom2() =
-    single_space LMax a = bot;
+    single_time LMax a = bot;
     System.out.println(a);
   end
 
   public proc printOne() =
-    single_space LMax a = new LMax(1);
+    single_time LMax a = new LMax(1);
     System.out.println(a);
   end
 
   public proc printTwo() =
-    single_space LMax a = new LMax(1);
+    single_time LMax a = new LMax(1);
     readwrite a.inc();
     System.out.println(read a);
   end
 
   public proc oneInstant() =
-    single_space LMax a = new LMax(1);
+    single_time LMax a = new LMax(1);
+    System.out.print(read a);
     pause;
     readwrite a.inc();
     System.out.print(read a);
   end
 
   public proc severalInstant() =
-    single_space LMax a = new LMax(1);
+    single_time LMax a = new LMax(1);
     System.out.print(read a);
     pause;
     readwrite a.inc();
@@ -66,10 +67,14 @@ public class SingleSpaceDeclT
     System.out.print(read a);
   end
 
-  public proc bug1() =
-    single_space LMax a = new LMax(1);
-    single_space LMax b = new LMax(readwrite a); // This readwrite annotation must not be taken into account in the second instant.
-    pause;
+  public proc pauseUpInUniverse() =
+    single_time LMax a = new LMax(1);
+    readwrite a.inc();
+    System.out.print(read a);
+    universe
+      pause up
+    end;
     System.out.print(read a);
   end
+
 }

@@ -17,6 +17,7 @@
 #[run(SeqUnivDelay.delay3, "12")]
 #[run(SeqUnivDelay.print123321, "123321")]
 #[run(SeqUnivDelay.print1234321, "1234321")]
+#[run(SeqUnivDelay.print1233Stop, "1233")]
 
 package test;
 
@@ -60,6 +61,23 @@ public class SeqUnivDelay
       System.out.print(4);
       universe
         System.out.print(3);
+      end;
+      System.out.print(2);
+    end;
+    System.out.print(1);
+  end
+
+  public proc print1233Stop() =
+    System.out.print(1);
+    universe
+      System.out.print(2);
+      universe
+        System.out.print(3);
+      end;
+      pause;
+      universe
+        System.out.print(3);
+        stop;
       end;
       System.out.print(2);
     end;

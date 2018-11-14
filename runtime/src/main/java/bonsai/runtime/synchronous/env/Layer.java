@@ -61,7 +61,7 @@ public class Layer
     space.exitScope(uid);
   }
 
-  public void register(String uid) {
-    space.register(uid);
+  public void register(String uid, boolean overwrite) {
+    space.register(uid, overwrite);
   }
 }

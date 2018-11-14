@@ -22,18 +22,19 @@ import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class SingleSpaceVarDecl extends VarDecl implements Program
+public class SingleTimeVarDecl extends VarDecl implements Program
 {
-  public SingleSpaceVarDecl(String uid, Expression initValue, Program body) {
+  public SingleTimeVarDecl(String uid, Expression initValue, Program body) {
     super(uid, initValue, body);
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
-      if (state1()) {
-        initValue.canInstant(layer);
-        layer.register(uid, false);
+      if (state2()) {
+        terminate(layer);
       }
+      layer.register(uid, true);
+      initValue.canInstant(layer);
     }
     body.canInstant(layersRemaining, layer);
   }

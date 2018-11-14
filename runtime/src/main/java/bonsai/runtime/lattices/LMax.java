@@ -26,7 +26,7 @@ public class LMax extends TotalOrder<Integer>
     super(v);
   }
 
-  private LMax(LMax m) {
+  public LMax(LMax m) {
     super(new Integer(m.value));
   }
 

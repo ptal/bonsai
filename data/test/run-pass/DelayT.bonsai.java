@@ -17,8 +17,6 @@
 #[run(DelayT.twoPausePrint, "1234")]
 #[run(DelayT.pausePrintPause, "1")]
 #[run(DelayT.pausePrintPausePrint, "12")]
-#[run(DelayT.pauseDecl, "122")]
-#[run(DelayT.declDelayOp, "")]
 #[run(DelayT.stopNothing, "")]
 #[run(DelayT.pauseUpNothing, "")]
 #[run(DelayT.stopStmt, "12")]
@@ -39,22 +37,6 @@ public class DelayT
   public proc pausePrintPause() = pause; System.out.print(1); pause; end
   public proc pausePrintPausePrint() =
     pause; System.out.print(1); pause; System.out.print(2); end
-
-  public proc declDelayOp() =
-    single_space LMax a = new LMax(1);
-    pause;
-    readwrite a.inc();
-  end
-
-  public proc pauseDecl() =
-    single_space LMax a = new LMax(1);
-    System.out.print(read a);
-    pause;
-    readwrite a.inc();
-    System.out.print(read a);
-    pause;
-    System.out.print(read a);
-  end
 
   public proc stopNothing() = stop; System.out.print(1) end
 

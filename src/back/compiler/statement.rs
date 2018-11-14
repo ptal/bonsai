@@ -51,8 +51,6 @@ impl<'a> StatementCompiler<'a>
       // Space(branches) => self.space(branches),
       // When(entailment, body) => self.when(entailment, body),
       // Suspend(entailment, body) => self.suspend(entailment, body),
-      // PauseUp => self.pause_up(),
-      // Stop => self.stop(),
       // Loop(body) => self.loop_stmt(body),
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
@@ -85,15 +83,15 @@ impl<'a> StatementCompiler<'a>
     use ast::Spacetime::*;
     match let_decl.kind() {
       Spacetime(SingleSpace) => self.single_space_local_decl(let_decl),
-      Spacetime(SingleTime) => unimplemented!("Kind::Spacetime(SingleTime) in let_decl"),
+      Spacetime(SingleTime) => self.single_time_local_decl(let_decl),
       Spacetime(WorldLine) => unimplemented!("Kind::Spacetime(WorldLine) in let_decl"),
       Product => unimplemented!("Kind::Product in let_decl"),
       Host => unimplemented!("Kind::Host in let_decl")
     }
   }
 
-  fn single_space_local_decl(&mut self, let_decl: LetStmt) {
-    self.fmt.push("new SingleSpaceVarDecl(");
+  fn local_decl(&mut self, let_decl: LetStmt, decl_class: &str) {
+    self.fmt.push(&format!("new {}(", decl_class));
     compile_local_var(self.session, self.context, self.fmt, let_decl.binding.name);
     self.fmt.push(",");
     self.fmt.indent();
@@ -106,6 +104,14 @@ impl<'a> StatementCompiler<'a>
     self.compile(*let_decl.body);
     self.fmt.push(")");
     self.fmt.unindent();
+  }
+
+  fn single_space_local_decl(&mut self, let_decl: LetStmt) {
+    self.local_decl(let_decl, "SingleSpaceVarDecl");
+  }
+
+  fn single_time_local_decl(&mut self, let_decl: LetStmt) {
+    self.local_decl(let_decl, "SingleTimeVarDecl");
   }
 
   fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
@@ -272,14 +278,6 @@ impl<'a> StatementCompiler<'a>
   //   self.fmt.push("\", ");
   //   self.closure(true, expr);
   //   self.fmt.push(")");
-  // }
-
-  // fn pause_up(&mut self) {
-  //   self.fmt.push("new PauseUp()");
-  // }
-
-  // fn stop(&mut self) {
-  //   self.fmt.push("new BStop()");
   // }
 
   // fn loop_stmt(&mut self, body: Box<Stmt>) {
