@@ -19,6 +19,7 @@
 #[run(SingleTimeDeclT.oneInstant, "12")]
 #[run(SingleTimeDeclT.severalInstant, "121")]
 #[run(SingleTimeDeclT.pauseUpInUniverse, "21")]
+#[run(SingleTimeDeclT.reinitValue, "012")]
 
 package test;
 
@@ -77,4 +78,17 @@ public class SingleTimeDeclT
     System.out.print(read a);
   end
 
+  public proc reinitValue() =
+    single_time LMax a = init();
+    System.out.print(read a);
+    pause;
+    System.out.print(read a);
+    pause;
+    System.out.print(read a);
+  end
+
+  static int i = 0;
+  private static LMax init() {
+    return new LMax(i++);
+  }
 }

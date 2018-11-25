@@ -89,8 +89,8 @@ impl<'a> ModuleCompiler<'a>
 
   fn runtime_boilerplate(&mut self, module: &JModule) {
     self.runtime_object_uid(module);
-    self.runtime_init_method(module);
-    self.runtime_destroy_method(module);
+    // self.runtime_init_method(module);
+    // self.runtime_destroy_method(module);
   }
 
   fn class_decl(&mut self, jclass: &JClass) {

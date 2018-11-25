@@ -397,11 +397,20 @@ impl SymbolicExecution
 
   fn reduce_let(&self, span: Span, mut let_stmt: LetStmt, state: State) -> ResidualStmt
   {
+    let kind = let_stmt.kind();
     let next = self.reduce_stmt(*(let_stmt.body), state);
     match next {
       ResidualStmt::Next(next) => {
-        let_stmt.body = Box::new(next);
-        ResidualStmt::Next(Stmt::new(span, StmtKind::Let(let_stmt)))
+        // Host, single_space and world_line variables are only initialized during their first instant.
+        match kind {
+          Kind::Host
+        | Kind::Spacetime(Spacetime::SingleSpace)
+        | Kind::Spacetime(Spacetime::WorldLine) => ResidualStmt::Next(next),
+          _ => {
+            let_stmt.body = Box::new(next);
+            ResidualStmt::Next(Stmt::new(span, StmtKind::Let(let_stmt)))
+          }
+        }
       }
       n => n
     }
