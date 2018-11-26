@@ -27,6 +27,10 @@ public class WriteAccess extends Access
     super(uid);
   }
 
+  public WriteAccess copy() {
+    return new WriteAccess(uid);
+  }
+
   public void canInstant(Layer layer) {
     Variable var = layer.lookUpVar(uid);
     var.joinWrite(layer);

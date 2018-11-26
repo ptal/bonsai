@@ -41,6 +41,13 @@ public class Entailment extends ASTNode implements Expression
     this.result = new ExprResult();
   }
 
+  public Entailment copy() {
+    return new Entailment(
+      ASTNode.copyList(leftVars),
+      ASTNode.copyList(rightVars),
+      eval);
+  }
+
   private boolean evalArgs(Layer layer, List<FreeAccess> accesses,
    ArrayList<Object> args)
   {

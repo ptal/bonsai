@@ -32,6 +32,10 @@ public class QFUniverse extends ASTNode implements Program
     prepare();
   }
 
+  public QFUniverse copy() {
+    throw new CannotCopyException("QFUniverse");
+  }
+
   public void prepare() {
     k = CompletionCode.PAUSE_DOWN;
     bodyK = CompletionCode.WAIT;

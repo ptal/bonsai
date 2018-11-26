@@ -33,7 +33,7 @@ public class Space
   }
 
   public Variable lookUpVar(String uid) {
-    Variable v = memory.get(uid);
+    Variable v = lookUpVar(uid);
     checkVarNull(v, uid);
     return v;
   }
@@ -84,6 +84,14 @@ public class Space
     }
     else {
       memory.computeIfAbsent(uid, k -> new Variable(k));
+    }
+  }
+
+  // It merges the variables between two spaces.
+  // Precondition: Variables present in two spaces must have the same value.
+  public void merge(Space space) {
+    for (Map.Entry<String, Variable> var : space.memory.entrySet()) {
+      memory.computeIfAbsent(var.getKey(), k -> var.getValue());
     }
   }
 }

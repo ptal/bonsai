@@ -31,6 +31,10 @@ public class Delay extends ASTNode implements Program
     prepare();
   }
 
+  public Delay copy() {
+    return new Delay(kind);
+  }
+
   public void prepare() {
     k = CompletionCode.WAIT;
     nextInstant = false;

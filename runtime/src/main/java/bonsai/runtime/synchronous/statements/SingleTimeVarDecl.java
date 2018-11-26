@@ -28,6 +28,10 @@ public class SingleTimeVarDecl extends VarDecl implements Program
     super(uid, initValue, body);
   }
 
+  public SingleTimeVarDecl copy() {
+    throw new CannotCopyException("SingleTimeVarDecl");
+  }
+
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
       if (state2()) {

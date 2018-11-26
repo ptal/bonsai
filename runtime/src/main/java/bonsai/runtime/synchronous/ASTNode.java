@@ -14,6 +14,9 @@
 
 package bonsai.runtime.synchronous;
 
+import java.util.*;
+import java.util.stream.*;
+import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 
 public abstract class ASTNode implements Schedulable
@@ -40,5 +43,9 @@ public abstract class ASTNode implements Schedulable
 
   protected void hasNoSubLayer(String from) {
     throw new NoSubLayerException(from);
+  }
+
+  protected static <T extends Copy> List<T> copyList(List<T> nodes) {
+    return nodes.stream().map(v -> (T)v.copy()).collect(Collectors.toList());
   }
 }

@@ -14,6 +14,7 @@
 
 package bonsai.runtime.synchronous.interfaces;
 
+import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
@@ -21,7 +22,7 @@ import bonsai.runtime.synchronous.env.*;
 ///   - if layersRemaining == 0: Must never enter a sublayer.
 ///   - if layersRemaining > 0:  Must call substatements where no sublayer is currently active.
 ///
-public interface Program extends Schedulable
+public interface Program extends Schedulable, Copy<Program>
 {
   /// This method is called to (re)initialize the statement.
   /// It is called at start (before any other method) and is called again if the object was used and need to be reset.

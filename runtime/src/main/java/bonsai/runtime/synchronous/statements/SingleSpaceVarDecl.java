@@ -28,6 +28,10 @@ public class SingleSpaceVarDecl extends VarDecl implements Program
     super(uid, initValue, body);
   }
 
+  public SingleSpaceVarDecl copy() {
+    throw new CannotCopyException("SingleSpaceVarDecl");
+  }
+
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
       if (state1()) {

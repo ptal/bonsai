@@ -69,7 +69,7 @@ public class SpaceMachine
 
   CompletionCode executeInstant(int layersRemaining, Layer layer) {
     CompletionCode k = CompletionCode.WAIT;
-    while (k == CompletionCode.WAIT) {
+    while (k.isInternal()) {
       k = body.execute(layersRemaining, layer);
       if (k.isInternal() && !layer.processWasScheduled()) {
         boolean wasUnblocked = layer.unblock(body);

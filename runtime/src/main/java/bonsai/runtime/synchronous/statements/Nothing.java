@@ -26,6 +26,10 @@ public class Nothing extends ASTNode implements Program
     super();
   }
 
+  public Nothing copy() {
+    return new Nothing();
+  }
+
   public void prepare() {}
 
   public void canInstant(int layersRemaining, Layer layer) {

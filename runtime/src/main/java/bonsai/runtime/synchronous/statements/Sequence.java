@@ -33,6 +33,10 @@ public class Sequence extends ASTNode implements Program
     init();
   }
 
+  public Sequence copy() {
+    return new Sequence(ASTNode.copyList(seq));
+  }
+
   private Program current() {
     return seq.get(pc);
   }

@@ -15,6 +15,7 @@
 package bonsai.runtime.synchronous.expressions;
 
 import java.util.*;
+import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;

@@ -33,6 +33,10 @@ public class ProcedureCall extends NAryCall implements Program
     prepare();
   }
 
+  public ProcedureCall copy() {
+    return new ProcedureCall(ASTNode.copyList(args), procedure);
+  }
+
   public void prepare() {
     k = CompletionCode.WAIT;
   }

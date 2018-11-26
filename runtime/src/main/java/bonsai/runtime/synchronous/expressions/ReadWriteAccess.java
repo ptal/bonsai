@@ -27,6 +27,10 @@ public class ReadWriteAccess extends Access
     super(uid);
   }
 
+  public ReadWriteAccess copy() {
+    return new ReadWriteAccess(uid);
+  }
+
   public void canInstant(Layer layer) {
     Variable var = layer.lookUpVar(uid);
     var.joinReadWrite(layer);

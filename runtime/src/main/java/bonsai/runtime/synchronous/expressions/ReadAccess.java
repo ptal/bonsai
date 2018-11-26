@@ -30,6 +30,10 @@ public class ReadAccess extends Access
     this.hasSubscribed = false;
   }
 
+  public ReadAccess copy() {
+    return new ReadAccess(uid);
+  }
+
   public void canInstant(Layer layer) {
     super.canInstant(layer);
     Variable var = layer.lookUpVar(uid);

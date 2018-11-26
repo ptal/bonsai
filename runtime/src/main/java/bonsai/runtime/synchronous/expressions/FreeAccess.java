@@ -27,6 +27,10 @@ public class FreeAccess extends Access
     super(uid);
   }
 
+  public FreeAccess copy() {
+    return new FreeAccess(uid);
+  }
+
   public ExprResult execute(Layer layer) {
     throw new RuntimeException("BUG: Must call executeFree on FreeAccess.");
   }

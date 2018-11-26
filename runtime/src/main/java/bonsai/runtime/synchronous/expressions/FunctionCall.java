@@ -32,6 +32,10 @@ public class FunctionCall extends NAryCall implements Expression
     this.function = function;
   }
 
+  public FunctionCall copy() {
+    return new FunctionCall(ASTNode.copyList(args), function);
+  }
+
   public void canInstant(Layer layer) {
     super.canInstant(layer);
     result = new ExprResult();

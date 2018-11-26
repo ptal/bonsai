@@ -34,6 +34,10 @@ public class SpaceStmt extends ASTNode implements Program
     this.branch = branch;
   }
 
+  public SpaceStmt copy() {
+    throw new CannotCopyException("SpaceStmt");
+  }
+
   public void prepare() {}
 
   public void canInstant(int layersRemaining, Layer layer) {
