@@ -23,12 +23,12 @@ import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class SpaceStmt extends ASTNode implements Program
+public class SpaceStmt extends ASTNode implements Statement
 {
   private final ArrayList<String> capturedUIDs;
-  private final Program branch;
+  private final Statement branch;
 
-  public SpaceStmt(ArrayList<String> capturedUIDs, Program branch) {
+  public SpaceStmt(ArrayList<String> capturedUIDs, Statement branch) {
     super();
     this.capturedUIDs = capturedUIDs;
     this.branch = branch;

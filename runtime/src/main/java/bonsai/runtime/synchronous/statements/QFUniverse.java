@@ -20,13 +20,13 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class QFUniverse extends ASTNode implements Program
+public class QFUniverse extends ASTNode implements Statement
 {
-  private final Program body;
+  private final Statement body;
   private CompletionCode bodyK;
   private CompletionCode k;
 
-  public QFUniverse(Program body) {
+  public QFUniverse(Statement body) {
     super();
     this.body = body;
     prepare();

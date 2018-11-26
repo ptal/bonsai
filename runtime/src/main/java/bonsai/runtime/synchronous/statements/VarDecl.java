@@ -22,16 +22,16 @@ import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public abstract class VarDecl extends ASTNode implements Program
+public abstract class VarDecl extends ASTNode implements Statement
 {
   protected String uid;
   protected Expression initValue;
-  protected Program body;
+  protected Statement body;
 
   protected CompletionCode k;
   protected ExprResult exprResult;
 
-  public VarDecl(String uid, Expression initValue, Program body) {
+  public VarDecl(String uid, Expression initValue, Statement body) {
     this.uid = uid;
     this.initValue = initValue;
     this.body = body;

@@ -49,7 +49,7 @@ public class Layer
     return scheduler.processWasScheduled();
   }
 
-  public boolean unblock(Program body) {
+  public boolean unblock(Statement body) {
     return false;
   }
 

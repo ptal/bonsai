@@ -21,11 +21,11 @@ import bonsai.runtime.synchronous.env.*;
 
 public class SpaceMachine
 {
-  private Program body;
+  private Statement body;
   private Environment env;
   private boolean debug;
 
-  public SpaceMachine(Program body, boolean debug) {
+  public SpaceMachine(Statement body, boolean debug) {
     this.env = new Environment(body.countLayers()+1);
     this.body = body;
     this.body.prepare();

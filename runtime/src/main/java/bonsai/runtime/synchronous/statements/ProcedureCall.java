@@ -22,7 +22,7 @@ import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class ProcedureCall extends NAryCall implements Program
+public class ProcedureCall extends NAryCall implements Statement
 {
   private final Consumer<ArrayList<Object>> procedure;
   private CompletionCode k;

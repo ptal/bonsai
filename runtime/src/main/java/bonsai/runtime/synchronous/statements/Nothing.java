@@ -20,7 +20,7 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class Nothing extends ASTNode implements Program
+public class Nothing extends ASTNode implements Statement
 {
   public Nothing() {
     super();

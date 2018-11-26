@@ -22,9 +22,9 @@ import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class SingleTimeVarDecl extends VarDecl implements Program
+public class SingleTimeVarDecl extends VarDecl implements Statement
 {
-  public SingleTimeVarDecl(String uid, Expression initValue, Program body) {
+  public SingleTimeVarDecl(String uid, Expression initValue, Statement body) {
     super(uid, initValue, body);
   }
 

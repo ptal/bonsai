@@ -22,9 +22,9 @@ import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class SingleSpaceVarDecl extends VarDecl implements Program
+public class SingleSpaceVarDecl extends VarDecl implements Statement
 {
-  public SingleSpaceVarDecl(String uid, Expression initValue, Program body) {
+  public SingleSpaceVarDecl(String uid, Expression initValue, Statement body) {
     super(uid, initValue, body);
   }
 

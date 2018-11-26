@@ -20,7 +20,7 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class Delay extends ASTNode implements Program
+public class Delay extends ASTNode implements Statement
 {
   private final CompletionCode kind;
   private CompletionCode k;

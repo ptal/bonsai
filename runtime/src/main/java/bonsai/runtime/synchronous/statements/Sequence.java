@@ -21,13 +21,13 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class Sequence extends ASTNode implements Program
+public class Sequence extends ASTNode implements Statement
 {
-  private final List<Program> seq;
+  private final List<Statement> seq;
   private int pc; // program counter
   private CompletionCode k;
 
-  public Sequence(List<Program> seq) {
+  public Sequence(List<Statement> seq) {
     super();
     this.seq = seq;
     init();
@@ -37,7 +37,7 @@ public class Sequence extends ASTNode implements Program
     return new Sequence(ASTNode.copyList(seq));
   }
 
-  private Program current() {
+  private Statement current() {
     return seq.get(pc);
   }
 
@@ -47,16 +47,16 @@ public class Sequence extends ASTNode implements Program
   }
 
   public void prepare() {
-    for(Program p : seq) {
+    for(Statement p : seq) {
       p.prepare();
     }
     init();
   }
 
-  private boolean reachableSubsequence(Consumer<Program> f) {
+  private boolean reachableSubsequence(Consumer<Statement> f) {
     boolean canTerminate = true;
     for(int i=pc; i < seq.size() && canTerminate; i++) {
-      Program p = seq.get(i);
+      Statement p = seq.get(i);
       f.accept(p);
       canTerminate = p.canTerminate();
     }
@@ -109,7 +109,7 @@ public class Sequence extends ASTNode implements Program
       if (pc < seq.size()) {
         canWrite = current().canWriteOn(layersRemaining, uid, inSurface);
         for(int i=pc; i < seq.size() && canTerminate && !canWrite; i++) {
-          Program p = seq.get(i);
+          Statement p = seq.get(i);
           canWrite = p.canWriteOn(layersRemaining, uid, false);
           canTerminate = p.canTerminate();
         }
@@ -123,7 +123,7 @@ public class Sequence extends ASTNode implements Program
 
   public int countLayers() {
     int layers = 0;
-    for(Program p : seq) {
+    for(Statement p : seq) {
       layers = Math.max(p.countLayers(), layers);
     }
     return layers;
