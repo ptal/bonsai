@@ -52,7 +52,7 @@ public class Delay extends ASTNode implements Statement
   public void abort(Layer layer) {}
   public void suspend(Layer layer) {}
 
-  public CompletionCode execute(int layersRemaining, Layer layer){
+  public StmtResult execute(int layersRemaining, Layer layer){
     checkNoSubLayer(layersRemaining, "Delay.execute");
     if (k == CompletionCode.WAIT) {
       k = kind;
@@ -60,7 +60,7 @@ public class Delay extends ASTNode implements Statement
     else if (k == kind) {
       k = CompletionCode.TERMINATE;
     }
-    return k;
+    return new StmtResult(k);
   }
 
   public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {

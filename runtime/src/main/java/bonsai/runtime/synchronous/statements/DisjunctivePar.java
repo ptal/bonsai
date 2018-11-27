@@ -60,7 +60,7 @@ public class DisjunctivePar extends ASTNode implements Statement
     throw new RuntimeException("DisjunctivePar.suspend: unimplemented.");
   }
 
-  public CompletionCode execute(int layersRemaining, Layer layer) {
+  public StmtResult execute(int layersRemaining, Layer layer) {
     throw new RuntimeException("DisjunctivePar.execute: unimplemented.");
   }
 

@@ -123,7 +123,7 @@ impl<'a> ModuleCompiler<'a>
       self.fmt.push_line("public static void main(String[] args)");
       self.fmt.open_block();
       self.fmt.push_block(format!("\
-        Program program = {};\n\
+        Statement program = {};\n\
         SpaceMachine machine = new SpaceMachine(program,{});\n\
         machine.execute();", main_expr, self.session.config().debug));
       self.fmt.close_block();
@@ -260,7 +260,7 @@ impl<'a> ModuleCompiler<'a>
     let proc_instance = format!("__proc_{}_instance", process.name);
     self.fmt.push_line(&format!("static int {} = -1;", proc_instance));
     self.fmt.push(&format!(
-      "{} Program {}", process.visibility, process.name));
+      "{} Statement {}", process.visibility, process.name));
     self.params_list(process.params.clone());
     self.fmt.open_block();
     self.proc_uid(&process, proc_instance);

@@ -23,7 +23,7 @@ import bonsai.runtime.synchronous.env.*;
 public class QFUniverse extends ASTNode implements Statement
 {
   private final Statement body;
-  private CompletionCode bodyK;
+  private StmtResult bodyRes;
   private CompletionCode k;
 
   public QFUniverse(Statement body) {
@@ -38,7 +38,7 @@ public class QFUniverse extends ASTNode implements Statement
 
   public void prepare() {
     k = CompletionCode.PAUSE_DOWN;
-    bodyK = CompletionCode.WAIT;
+    bodyRes = new StmtResult(CompletionCode.WAIT);
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
@@ -56,24 +56,24 @@ public class QFUniverse extends ASTNode implements Statement
 
   public void abort(Layer layer) {
     k = CompletionCode.TERMINATE;
-    bodyK = CompletionCode.TERMINATE;
+    bodyRes = new StmtResult(CompletionCode.TERMINATE);
   }
 
   public void suspend(Layer layer) {}
 
-  public CompletionCode execute(int layersRemaining, Layer layer){
+  public StmtResult execute(int layersRemaining, Layer layer){
     if (layersRemaining == 0) {
       // Promote the completion code of the body.
-      switch(bodyK) {
+      switch(bodyRes.k) {
         case PAUSE_UP: k = CompletionCode.PAUSE; break;
         case STOP: k = CompletionCode.STOP; break;
         case TERMINATE: k = CompletionCode.TERMINATE; break;
       }
-      return k;
+      return new StmtResult(k);
     }
     else {
-      bodyK = body.execute(layersRemaining - 1, layer);
-      return bodyK;
+      bodyRes = body.execute(layersRemaining - 1, layer);
+      return bodyRes;
     }
   }
 

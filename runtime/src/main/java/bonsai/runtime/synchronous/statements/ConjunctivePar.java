@@ -60,7 +60,7 @@ public class ConjunctivePar extends ASTNode implements Statement
     throw new RuntimeException("ConjunctivePar.suspend: unimplemented.");
   }
 
-  public CompletionCode execute(int layersRemaining, Layer layer) {
+  public StmtResult execute(int layersRemaining, Layer layer) {
     throw new RuntimeException("ConjunctivePar.execute: unimplemented.");
   }
 

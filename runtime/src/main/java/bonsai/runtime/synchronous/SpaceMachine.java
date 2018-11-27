@@ -35,52 +35,52 @@ public class SpaceMachine
   // Returns `true` if the program is paused (through a `stop` or `pause up` statement).
   // If the program is terminated, it returns `false`.
   public boolean execute() {
-    CompletionCode code = executeLayer();
+    StmtResult res = executeLayer();
     // This part is useful for the automatic tests (because mvn exec does not flush automatically).
     System.out.flush();
-    return code != CompletionCode.TERMINATE;
+    return res.k != CompletionCode.TERMINATE;
   }
 
-  CompletionCode executeLayer() {
+  StmtResult executeLayer() {
     env.incTargetLayer();
     Layer layer = env.targetLayer();
     int targetIdx = env.targetIdx();
-    CompletionCode k = CompletionCode.PAUSE;
-    while (k == CompletionCode.PAUSE) {
+    StmtResult res = new StmtResult(CompletionCode.PAUSE);
+    while (res.k == CompletionCode.PAUSE) {
       body.canInstant(targetIdx, layer);
       // We execute as much as we can of the current instant.
-      k = executeInstant(targetIdx, layer);
+      res = executeInstant(targetIdx, layer);
       // If we are blocked but a sub-layer can be activated, we proceed.
-      if (k == CompletionCode.PAUSE_DOWN) {
-        CompletionCode subK = executeLayer();
-        if (subK.isInternal()) {
+      if (res.k == CompletionCode.PAUSE_DOWN) {
+        StmtResult subRes = executeLayer();
+        if (subRes.k.isInternal()) {
           throw new CausalException("A layer cannot complete its execution on an internal completion code.");
         }
         // We execute the remaining of the current instant (in case the sub-layer wrote on variables of its parent's layer).
-        k = executeInstant(targetIdx, layer);
-        if (k.isInternal()) {
+        res = executeInstant(targetIdx, layer);
+        if (res.k.isInternal()) {
           throw new CausalException("The sub-layer has been activated once, but the current instant is still blocked.");
         }
       }
     }
     env.decTargetLayer();
-    return k;
+    return res;
   }
 
-  CompletionCode executeInstant(int layersRemaining, Layer layer) {
-    CompletionCode k = CompletionCode.WAIT;
-    while (k.isInternal()) {
-      k = body.execute(layersRemaining, layer);
-      if (k.isInternal() && !layer.processWasScheduled()) {
+  StmtResult executeInstant(int layersRemaining, Layer layer) {
+    StmtResult res = new StmtResult(CompletionCode.WAIT);
+    while (res.k.isInternal()) {
+      res = body.execute(layersRemaining, layer);
+      if (res.k.isInternal() && !layer.processWasScheduled()) {
         boolean wasUnblocked = layer.unblock(body);
         if(!wasUnblocked) {
-          if (k != CompletionCode.PAUSE_DOWN) {
+          if (res.k != CompletionCode.PAUSE_DOWN) {
             throw new CausalException("The current layer is blocked (every process waits for an event) and no sub-universe can be executed.");
           }
           break;
         }
       }
     }
-    return k;
+    return res;
   }
 }

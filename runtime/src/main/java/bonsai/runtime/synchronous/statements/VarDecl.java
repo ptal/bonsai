@@ -28,7 +28,7 @@ public abstract class VarDecl extends ASTNode implements Statement
   protected Expression initValue;
   protected Statement body;
 
-  protected CompletionCode k;
+  protected StmtResult res;
   protected ExprResult exprResult;
 
   public VarDecl(String uid, Expression initValue, Statement body) {
@@ -39,23 +39,23 @@ public abstract class VarDecl extends ASTNode implements Statement
   }
 
   private void init() {
-    this.k = CompletionCode.WAIT;
+    this.res = new StmtResult(CompletionCode.WAIT);
     this.exprResult = new ExprResult();
   }
 
   // in the initializing expression.
   protected boolean state1() {
-    return k != CompletionCode.TERMINATE && exprResult.isSuspended();
+    return res.k != CompletionCode.TERMINATE && exprResult.isSuspended();
   }
 
   // in the body.
   protected boolean state2() {
-    return k != CompletionCode.TERMINATE && !exprResult.isSuspended();
+    return res.k != CompletionCode.TERMINATE && !exprResult.isSuspended();
   }
 
   // terminated.
   protected boolean state3() {
-    return k == CompletionCode.TERMINATE;
+    return res.k == CompletionCode.TERMINATE;
   }
 
   protected void terminate(Layer layer) {
@@ -82,7 +82,7 @@ public abstract class VarDecl extends ASTNode implements Statement
       if (state2()) { // if the body is active and not terminated.
         terminate(layer);
       }
-      k = CompletionCode.TERMINATE;
+      res = new StmtResult(CompletionCode.TERMINATE);
     }
   }
 
@@ -95,11 +95,11 @@ public abstract class VarDecl extends ASTNode implements Statement
     }
   }
 
-  public CompletionCode execute(int layersRemaining, Layer layer) {
+  public StmtResult execute(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
       executeState1(layer);
       executeState2(layer);
-      return k;
+      return res;
     }
     else {
       if (state2()) {
@@ -124,7 +124,7 @@ public abstract class VarDecl extends ASTNode implements Statement
 
   private void executeState2(Layer layer) {
     if (state2()) {
-      k = body.execute(0, layer);
+      res = body.execute(0, layer);
       if (state3()) {
         terminate(layer);
       }

@@ -43,9 +43,9 @@ public class Nothing extends ASTNode implements Statement
   public void abort(Layer layer) {}
   public void suspend(Layer layer) {}
 
-  public CompletionCode execute(int layersRemaining, Layer layer){
+  public StmtResult execute(int layersRemaining, Layer layer){
     checkNoSubLayer(layersRemaining, "Nothing.execute");
-    return CompletionCode.TERMINATE;
+    return new StmtResult(CompletionCode.TERMINATE);
   }
 
   public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {

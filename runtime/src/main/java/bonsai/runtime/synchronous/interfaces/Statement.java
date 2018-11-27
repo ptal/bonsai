@@ -59,7 +59,7 @@ public interface Statement extends Schedulable, Copy<Statement>
   /// It must always return the completion code of the layer pointed by `layersRemaining`.
   /// Conditions:
   ///   - It is not idempotent: it can be viewed as an internal transition of the statement from the current state to the next state.
-  CompletionCode execute(int layersRemaining, Layer layer);
+  StmtResult execute(int layersRemaining, Layer layer);
 
   /// We analyse the current program to prove that a write on `uid` still can happen.
   /// We suppose the conditions currently suspended on `uid` to be `false` (if `inSurface` is `true`).

@@ -25,7 +25,7 @@ public class Sequence extends ASTNode implements Statement
 {
   private final List<Statement> seq;
   private int pc; // program counter
-  private CompletionCode k;
+  private StmtResult res;
 
   public Sequence(List<Statement> seq) {
     super();
@@ -43,7 +43,7 @@ public class Sequence extends ASTNode implements Statement
 
   private void init() {
     pc = 0;
-    k = CompletionCode.TERMINATE;
+    res = new StmtResult(CompletionCode.TERMINATE);
   }
 
   public void prepare() {
@@ -84,18 +84,18 @@ public class Sequence extends ASTNode implements Statement
     reachableSubsequence((p) -> p.suspend(layer));
   }
 
-  public CompletionCode execute(int layersRemaining, Layer layer) {
+  public StmtResult execute(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
       while (pc < seq.size()) {
-        k = current().execute(layersRemaining, layer);
-        if (k == CompletionCode.TERMINATE) {
+        res = current().execute(layersRemaining, layer);
+        if (res.k == CompletionCode.TERMINATE) {
           pc++;
         }
         else {
           break;
         }
       }
-      return k;
+      return res;
     }
     else {
       return current().execute(layersRemaining, layer);

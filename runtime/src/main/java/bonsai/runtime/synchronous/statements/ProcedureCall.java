@@ -58,7 +58,7 @@ public class ProcedureCall extends NAryCall implements Statement
     super.terminate(layer);
   }
 
-  public CompletionCode execute(int layersRemaining, Layer layer) {
+  public StmtResult execute(int layersRemaining, Layer layer) {
     checkNoSubLayer(layersRemaining, "ProcedureCall.execute");
     if (k == CompletionCode.WAIT) {
       boolean ready = super.executeArgs(layer);
@@ -68,7 +68,7 @@ public class ProcedureCall extends NAryCall implements Statement
         k = CompletionCode.TERMINATE;
       }
     }
-    return k;
+    return new StmtResult(k);
   }
 
   public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
