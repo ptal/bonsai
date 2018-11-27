@@ -22,47 +22,62 @@ import bonsai.runtime.synchronous.search.*;
 
 public class StmtResult {
   public CompletionCode k;
-  public HashMap<String, BranchAlgebra> branches;
+  public HashMap<String, BranchAlgebra> branchesPerQueue;
 
   public StmtResult(CompletionCode k) {
     this.k = k;
-    this.branches = new HashMap();
+    this.branchesPerQueue = new HashMap();
   }
 
-  public void sequence(StmtResult res) {
+  public StmtResult(CompletionCode k, String queue, BranchAlgebra ba) {
+    this(k);
+    branchesPerQueue.put(queue, ba);
+  }
+
+  public StmtResult sequence(StmtResult res) {
     k = res.k;
-    for (Map.Entry<String, BranchAlgebra> entry : res.branches.entrySet()) {
-      branches.merge(entry.getKey(), entry.getValue(), BranchAlgebra::concat);
+    for (Map.Entry<String, BranchAlgebra> entry : res.branchesPerQueue.entrySet()) {
+      branchesPerQueue.merge(entry.getKey(), entry.getValue(), BranchAlgebra::concat);
     }
+    return this;
   }
 
   // We do not merge the branches if one completion is still internal.
   private static StmtResult par(ArrayList<StmtResult> processes,
-   Function<List<BranchAlgebra>, BranchAlgebra> join)
+   Function<ArrayList<BranchAlgebra>, BranchAlgebra> join)
   {
     HashSet<String> queues = new HashSet();
     StmtResult res = new StmtResult(CompletionCode.TERMINATE);
     for(StmtResult process : processes) {
       res.k = res.k.merge(process.k);
-      queues.addAll(process.branches.keySet());
+      queues.addAll(process.branchesPerQueue.keySet());
     }
     if (!res.k.isInternal()) {
       for(String queue: queues) {
-        List<BranchAlgebra> bas = processes.stream()
-          .map(p -> p.branches.get(queue))
+        ArrayList<BranchAlgebra> bas = processes.stream()
+          .map(p -> p.branchesPerQueue.get(queue))
           .filter(ba -> ba != null)
-          .collect(Collectors.toList());
-        res.branches.put(queue, join.apply(bas));
+          .collect(Collectors.toCollection(ArrayList::new));
+        res.branchesPerQueue.put(queue, join.apply(bas));
       }
     }
     return res;
   }
 
-  public void conjunctivePar(ArrayList<StmtResult> res) {
-    par(res, BranchAlgebra::intersect);
+  public static StmtResult conjunctivePar(ArrayList<StmtResult> res) {
+    return par(res, BranchAlgebra::intersect);
   }
 
-  public void disjunctivePar(ArrayList<StmtResult> res) {
-    par(res, BranchAlgebra::union);
+  public static StmtResult disjunctivePar(ArrayList<StmtResult> res) {
+    return par(res, BranchAlgebra::union);
+  }
+
+  // See also `BranchAlgebra.unwrap()`.
+  public HashMap<String, List<Future>> unwrap() {
+    HashMap<String, List<Future>> futuresPerQueue = new HashMap();
+    for(Map.Entry<String, BranchAlgebra> entry : branchesPerQueue.entrySet()) {
+      futuresPerQueue.put(entry.getKey(), entry.getValue().unwrap());
+    }
+    return futuresPerQueue;
   }
 }

@@ -33,7 +33,7 @@ public class Space
   }
 
   public Variable lookUpVar(String uid) {
-    Variable v = lookUpVar(uid);
+    Variable v = memory.get(uid);
     checkVarNull(v, uid);
     return v;
   }

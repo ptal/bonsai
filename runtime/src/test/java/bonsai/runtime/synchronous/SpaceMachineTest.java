@@ -37,7 +37,7 @@ public class SpaceMachineTest
     }
   }
 
-  public Program createNestedQFUniverse(Program code, int remaining) {
+  public Statement createNestedQFUniverse(Statement code, int remaining) {
     if (remaining == 0) {
       return code;
     }
@@ -50,7 +50,7 @@ public class SpaceMachineTest
   public void testNothingQFUniverse() {
     for(int numLayers=0; numLayers < 4; numLayers++) {
       currentTest = "universe^"+numLayers+" nothing end";
-      Program process = createNestedQFUniverse(new Nothing(), numLayers);
+      Statement process = createNestedQFUniverse(new Nothing(), numLayers);
       SpaceMachine machine = new SpaceMachine(process, true);
       assertTerminated(machine);
     }
@@ -63,7 +63,7 @@ public class SpaceMachineTest
       LMax numCall = new LMax(0);
       Consumer<ArrayList<Object>> f = (args) -> numCall.inc();
       ProcedureCall procedure = new ProcedureCall(new ArrayList(), f);
-      Program process = createNestedQFUniverse(procedure, numLayers);
+      Statement process = createNestedQFUniverse(procedure, numLayers);
       SpaceMachine machine = new SpaceMachine(process, true);
       assertTerminated(machine);
       assertThat(currentTest, numCall, equalTo(new LMax(1)));
