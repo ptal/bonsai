@@ -45,6 +45,10 @@ public class Delay extends ASTNode implements Statement
     nextInstant = true;
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    return new HashSet();
+  }
+
   public boolean canTerminate() {
     return k == CompletionCode.TERMINATE || (k == kind && nextInstant);
   }

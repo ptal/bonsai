@@ -48,6 +48,10 @@ public class DisjunctivePar extends ASTNode implements Statement
     throw new RuntimeException("DisjunctivePar.canInstant: unimplemented.");
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    throw new RuntimeException("DisjunctivePar.activeQueues: unimplemented.");
+  }
+
   public boolean canTerminate() {
     throw new RuntimeException("DisjunctivePar.canTerminate: unimplemented.");
   }

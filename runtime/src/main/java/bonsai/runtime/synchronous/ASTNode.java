@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.stream.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.exceptions.*;
 
 public abstract class ASTNode implements Schedulable
 {

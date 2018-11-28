@@ -48,6 +48,10 @@ public class ConjunctivePar extends ASTNode implements Statement
     throw new RuntimeException("ConjunctivePar.canInstant: unimplemented.");
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    throw new RuntimeException("ConjunctivePar.activeQueues: unimplemented.");
+  }
+
   public boolean canTerminate() {
     throw new RuntimeException("ConjunctivePar.canTerminate: unimplemented.");
   }

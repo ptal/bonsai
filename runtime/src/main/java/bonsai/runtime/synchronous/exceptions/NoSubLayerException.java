@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot
+// Copyright 2018 Pierre Talbot (IRCAM)
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.exceptions;
 
 import java.util.*;
 
-public class CannotCopyException extends RuntimeException {
-  public CannotCopyException(String from) {
-    super("[BUG] Copy is only useful to copy program `p` appearing in `space p end`.\n" +
-          "The statement `" + from + "` cannot appear in `p`.\n" +
-          "This should be checked by the compiler.");
+public class NoSubLayerException extends RuntimeException {
+  public NoSubLayerException(String from) {
+    super("[BUG] " + from + ": does not have an active sub-layer and is currently suspended "+
+      "or not yet executed in its current layer.");
   }
 }

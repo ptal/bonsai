@@ -23,9 +23,8 @@ import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.statements.*;
 import bonsai.runtime.synchronous.interfaces.*;
 
-
 // `CapturedSpace` is the variable's environment that is captured in `space` statements.
-// Its purpose is to keep alive (at least one reference) variables that went out of scopes, and `single_time` variables that are reinitialized at each instant.
+// Its purpose is to keep alive (at least one reference) variables that went out of scopes, and `single_time` variables because they are reinitialized at each instant.
 // `CapturedSpace` is shared among all the children nodes created during an instant.
 // The modifications performed on `single_space` or `world_line` variables through this class are automatically forwarded to the current space.
 // The reason is that the variables in `memory` are the same than the ones of the current layer.

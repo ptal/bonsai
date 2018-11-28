@@ -14,11 +14,11 @@
 
 package bonsai.runtime.core;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public interface Queueing<T>
 {
-  void push(ArrayList<T> store);
+  void push(List<T> store);
   T pop();
   int size();
   default boolean isEmpty() {

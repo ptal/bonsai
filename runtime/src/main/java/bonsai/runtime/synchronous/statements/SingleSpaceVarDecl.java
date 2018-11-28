@@ -20,6 +20,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.env.*;
 
 public class SingleSpaceVarDecl extends VarDecl implements Statement

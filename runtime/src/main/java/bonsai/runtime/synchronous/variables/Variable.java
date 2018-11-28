@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.function.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
+import bonsai.runtime.synchronous.exceptions.*;
 
 public class Variable
 {

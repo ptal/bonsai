@@ -40,6 +40,12 @@ public class Cast
     }
   }
 
+  static private void checkQueueingInterface(String var, Object o) {
+    if (!(o instanceof Queueing)) {
+      unimplementedInterface(var, o, "Queueing");
+    }
+  }
+
   static private void unimplementedInterface(String var, Object o, String interfaceName) {
     throw new RuntimeException(
       "The variable `" + var + "` does not implement the interface `"
@@ -59,5 +65,10 @@ public class Cast
   static public Copy toCopy(String var, Object o) {
     checkCopyInterface(var, o);
     return (Copy) o;
+  }
+
+  static public Queueing toQueueing(String var, Object o) {
+    checkQueueingInterface(var, o);
+    return (Queueing) o;
   }
 }

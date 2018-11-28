@@ -14,6 +14,7 @@
 
 package bonsai.runtime.synchronous.interfaces;
 
+import java.util.*;
 import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
@@ -38,6 +39,11 @@ public interface Statement extends Schedulable, Copy<Statement>
   /// Conditions:
   ///   - It is not idempotent on `layer`.
   void canInstant(int layersRemaining, Layer layer);
+
+  /// Collect all the queues currently active.
+  /// This method is called at the beginning of an instant before `canInstant` (although it should not matter).
+  /// `SpaceMachine` will pop the queues returned.
+  HashSet<String> activeQueues(int layersRemaining);
 
   boolean canTerminate();
 

@@ -72,6 +72,15 @@ public class Sequence extends ASTNode implements Statement
     }
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    if (layersRemaining == 0) {
+      return new HashSet();
+    }
+    else {
+      return current().activeQueues(layersRemaining);
+    }
+  }
+
   public boolean canTerminate() {
     return reachableSubsequence((p) -> {});
   }

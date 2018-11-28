@@ -16,11 +16,12 @@ package bonsai.runtime.synchronous.env;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 import bonsai.runtime.core.*;
-import bonsai.runtime.synchronous.variables.*;
 import bonsai.runtime.synchronous.*;
+import bonsai.runtime.synchronous.search.*;
+import bonsai.runtime.synchronous.variables.*;
 import bonsai.runtime.synchronous.interfaces.*;
-import bonsai.runtime.synchronous.statements.SpaceStmt;
 
 public class Environment
 {
@@ -51,5 +52,48 @@ public class Environment
   }
   public int targetIdx() {
     return targetIdx;
+  }
+
+  private Queueing getQueue(String name) {
+    Variable queueVar = layers.get(targetIdx - 1).lookUpVar(name);
+    return Cast.toQueueing(name, queueVar.value());
+  }
+
+  public void push(HashMap<String, List<Future>> futuresPerQueue) {
+    if (futuresPerQueue.size() > 0) {
+      ensureNoTopLayer();
+      for(Map.Entry<String, List<Future>> entry : futuresPerQueue.entrySet()) {
+        Queueing queue = getQueue(entry.getKey());
+        queue.push(entry.getValue());
+      }
+    }
+  }
+
+  public List<Future> pop(HashSet<String> queues) {
+    ensureNoTopLayer();
+    ArrayList<Future> futures = new ArrayList();
+    for (String name: queues) {
+      Queueing queue = getQueue(name);
+      futures.add(toFuture(name, queue.pop()));
+    }
+    return futures;
+  }
+
+  private void ensureNoTopLayer() {
+    if (targetIdx < 1) {
+      throw new RuntimeException("[BUG] Environment.ensureNoTopLayer: Try to push a future onto a queue in the top-level universe.");
+    }
+  }
+
+  static private void checkFutureObject(String var, Object o) {
+    if (!(o instanceof Future)) {
+      throw new RuntimeException(
+        "`pop` on the queue `" + var + "` did not return a `Future` element. Object: " + o);
+    }
+  }
+
+  static private Future toFuture(String var, Object o) {
+    checkFutureObject(var, o);
+    return (Future) o;
   }
 }

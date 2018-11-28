@@ -43,6 +43,16 @@ public abstract class VarDecl extends ASTNode implements Statement
     this.exprResult = new ExprResult();
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    if (layersRemaining == 0) {
+      return new HashSet();
+    }
+    else {
+      return body.activeQueues(layersRemaining);
+    }
+  }
+
+
   // in the initializing expression.
   protected boolean state1() {
     return res.k != CompletionCode.TERMINATE && exprResult.isSuspended();

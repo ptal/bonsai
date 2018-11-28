@@ -18,6 +18,7 @@ import java.util.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.env.*;
 
 public class QFUniverse extends ASTNode implements Statement
@@ -47,6 +48,15 @@ public class QFUniverse extends ASTNode implements Statement
     }
     else {
       body.canInstant(layersRemaining - 1, layer);
+    }
+  }
+
+  public HashSet<String> activeQueues(int layersRemaining) {
+    if (layersRemaining > 1) {
+      return body.activeQueues(layersRemaining - 1);
+    }
+    else {
+      return new HashSet();
     }
   }
 

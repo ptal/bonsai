@@ -36,6 +36,10 @@ public class Nothing extends ASTNode implements Statement
     checkNoSubLayer(layersRemaining, "Nothing.canInstant");
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    return new HashSet();
+  }
+
   public boolean canTerminate() {
     return true;
   }

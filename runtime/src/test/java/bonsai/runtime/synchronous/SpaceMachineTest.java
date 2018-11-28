@@ -21,6 +21,7 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.statements.*;
 import bonsai.runtime.synchronous.expressions.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.exceptions.*;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 import org.junit.*;

@@ -46,6 +46,10 @@ public class ProcedureCall extends NAryCall implements Statement
     super.canInstant(layer);
   }
 
+  public HashSet<String> activeQueues(int layersRemaining) {
+    return new HashSet();
+  }
+
   public boolean canTerminate() {
     return true;
   }

@@ -15,8 +15,7 @@
 package bonsai.runtime.queueing;
 
 import bonsai.runtime.core.Queueing;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.util.*;
 
 public class QueueLR<T> implements Queueing<T>
 {
@@ -26,7 +25,7 @@ public class QueueLR<T> implements Queueing<T>
     data = new ArrayDeque();
   }
 
-  public void push(ArrayList<T> store) {
+  public void push(List<T> store) {
     data.addAll(store);
   }
 

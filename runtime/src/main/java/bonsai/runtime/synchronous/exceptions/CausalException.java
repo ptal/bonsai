@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.exceptions;
 
 import java.util.*;
 
-public class NoSubLayerException extends RuntimeException {
-  public NoSubLayerException(String from) {
-    super("[BUG] " + from + ": does not have an active sub-layer and is currently suspended "+
-      "or not yet executed in its current layer.");
+public class CausalException extends RuntimeException {
+  public CausalException(String source) {
+    super("[BUG]: The SpaceMachine was unable to schedule some processes during execution.\n" +
+          "It implies that the program is not causal (bug in the static analysis of the compiler or in the implementation of the scheduling).\n"+
+          "Source: " + source);
   }
 }

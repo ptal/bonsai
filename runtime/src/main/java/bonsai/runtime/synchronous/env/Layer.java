@@ -32,6 +32,11 @@ public class Layer
     scheduler = new Scheduler();
   }
 
+  public Layer(Space space) {
+    this();
+    this.space = space;
+  }
+
   public Variable lookUpVar(String uid) {
     return space.lookUpVar(uid);
   }

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.runtime.synchronous;
+package bonsai.runtime.synchronous.exceptions;
 
 import java.util.*;
 
-public class CausalException extends RuntimeException {
-  public CausalException(String source) {
-    super("[BUG]: The SpaceMachine was unable to schedule some processes during execution.\n" +
-          "It implies that the program is not causal (bug in the static analysis of the compiler or in the implementation of the scheduling).\n"+
-          "Source: " + source);
+public class CannotCopyException extends RuntimeException {
+  public CannotCopyException(String from) {
+    super("[BUG] Copy is only useful to copy program `p` appearing in `space p end`.\n" +
+          "The statement `" + from + "` cannot appear in `p`.\n" +
+          "This should be checked by the compiler.");
   }
 }

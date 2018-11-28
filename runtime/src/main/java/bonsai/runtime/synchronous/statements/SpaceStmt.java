@@ -20,6 +20,7 @@ package bonsai.runtime.synchronous.statements;
 import java.util.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
@@ -42,6 +43,10 @@ public class SpaceStmt extends ASTNode implements Statement
 
   public void canInstant(int layersRemaining, Layer layer) {
     checkNoSubLayer(layersRemaining, "SpaceStmt.canInstant");
+  }
+
+  public HashSet<String> activeQueues(int layersRemaining) {
+    return new HashSet();
   }
 
   public boolean canTerminate() { return true; }

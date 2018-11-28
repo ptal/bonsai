@@ -25,7 +25,7 @@ public class StackRL<T> implements Queueing<T>
     data = new ArrayDeque();
   }
 
-  public void push(ArrayList<T> store) {
+  public void push(List<T> store) {
     for(T x : store) {
       data.push(x);
     }

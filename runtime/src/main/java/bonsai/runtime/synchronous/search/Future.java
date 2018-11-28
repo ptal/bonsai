@@ -22,11 +22,21 @@ import bonsai.runtime.synchronous.statements.*;
 import bonsai.runtime.synchronous.interfaces.*;
 
 public class Future {
-  private Statement body;
-  private CapturedSpace space;
+  public Statement body;
+  public CapturedSpace space;
 
   public Future(Statement body, CapturedSpace space) {
     this.body = body;
     this.space = space;
+  }
+
+  public static Future merge(List<Future> futures) {
+    ArrayList<Statement> processes = new ArrayList(futures.size());
+    CapturedSpace merged_space = new CapturedSpace();
+    for(Future future : futures) {
+      processes.add(future.body);
+      merged_space.merge(future.space);
+    }
+    return new Future(new DisjunctivePar(processes), merged_space);
   }
 }

@@ -25,7 +25,7 @@ public class QueueRL<T> implements Queueing<T>
     data = new ArrayDeque();
   }
 
-  public void push(ArrayList<T> store) {
+  public void push(List<T> store) {
     Collections.reverse(store);
     data.addAll(store);
   }
