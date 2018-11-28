@@ -304,6 +304,7 @@ pub enum StmtKind {
   ProcCall(Option<Variable>, Ident, Vec<Variable>),
   ExprStmt(Expr),
   QFUniverse(Box<Stmt>), // Queue-free universe
+  Universe(Variable, Box<Stmt>), // Queue-free universe
   Nothing,
   // Meta statement not appearing in the spacetime syntax.
   LocalDrop(VarPath)

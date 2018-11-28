@@ -229,6 +229,7 @@ grammar! bonsai {
     / NOTHING_OS > make_nothing
     / LOOP close_sequence END_OS > make_loop
     / UNIVERSE close_sequence END_OS > make_qf_universe
+    / UNIVERSE WITH variable IN close_sequence END_OS > make_universe
     / RUN proc_call_os > make_proc_call
     / binding_os > make_let_stmt
     / variable LEFT_ARROW expr > make_tell
@@ -331,6 +332,10 @@ grammar! bonsai {
 
   fn make_qf_universe(body: Stmt) -> StmtKind {
     StmtKind::QFUniverse(Box::new(body))
+  }
+
+  fn make_universe(queue: Variable, body: Stmt) -> StmtKind {
+    StmtKind::Universe(queue, Box::new(body))
   }
 
   proc_call_os = (variable DOT)? identifier LPAREN list_var RPAREN_OS
@@ -569,7 +574,8 @@ grammar! bonsai {
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "readwrite" / "read" / "write"
     / "or" / "and" / "not"
-    / "run" / "true" / "false" / "unknown" / "universe"
+    / "run" / "true" / "false" / "unknown"
+    / "universe" /  "with"
     / "suspend" / "abort" / java_kw
   kw_tail = kw_tail_os spacing
   kw_tail_os = !ident_char
@@ -594,6 +600,7 @@ grammar! bonsai {
   ABORT = "abort" kw_tail
   LOOP = "loop" kw_tail
   IN = "in" kw_tail
+  WITH = "with" kw_tail
   WORLD_LINE = "world_line" kw_tail
   SINGLE_TIME = "single_time" kw_tail
   SINGLE_SPACE = "single_space" kw_tail

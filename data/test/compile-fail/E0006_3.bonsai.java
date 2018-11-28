@@ -1,4 +1,4 @@
-// Copyright 2017 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[error(E0008, 29, 6)]
-#[error(E0008, 30, 20)]
-#[error(E0008, 34, 20)]
+#[error(E0006, 22, 18)]
 
 package test;
-import test.Module;
-import test.J;
 
-public class UnknownField
+public class E0006_3
 {
-  module Module m = new Module();
-
   public proc test() =
-    m.a;
-    m.c;
-    J.inside_args(m.d, m.a);
+    universe with q in nothing end
   end
-
-  public proc test2() =
-    universe with m.c in nothing end
 }

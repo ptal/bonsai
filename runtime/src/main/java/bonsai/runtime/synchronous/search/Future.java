@@ -37,6 +37,13 @@ public class Future {
       processes.add(future.body);
       merged_space.merge(future.space);
     }
-    return new Future(new DisjunctivePar(processes), merged_space);
+    Stmt merged_proc;
+    if (processes.size() > 1) {
+      merged_proc = new DisjunctivePar(processes);
+    }
+    else {
+      merged_proc = processes.get(0);
+    }
+    return new Future(merged_proc, merged_space);
   }
 }
