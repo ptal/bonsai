@@ -27,9 +27,12 @@ public class Space
   // All variables in `memory` are registered or in scope.
   private HashMap<String, Variable> memory;
 
-  public Space()
-  {
+  public Space() {
     memory = new HashMap();
+  }
+
+  protected Space(HashMap<String, Variable> memory) {
+    this.memory = memory;
   }
 
   public Variable lookUpVar(String uid) {
@@ -93,5 +96,13 @@ public class Space
     for (Map.Entry<String, Variable> var : space.memory.entrySet()) {
       memory.computeIfAbsent(var.getKey(), k -> var.getValue());
     }
+  }
+
+  public HashMap<String, Variable> project(ArrayList<String> varsUIDs) {
+    HashMap<String, Variable> projectedMemory = new HashMap();
+    for(String uid : varsUIDs) {
+      projectedMemory.put(uid, memory.get(uid));
+    }
+    return projectedMemory;
   }
 }

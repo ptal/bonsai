@@ -43,7 +43,7 @@ public class SpaceMachine
     return res.k != CompletionCode.TERMINATE;
   }
 
-  StmtResult executeLayer() {
+  private StmtResult executeLayer() {
     env.incTargetLayer();
     Layer layer = env.targetLayer();
     int targetIdx = env.targetIdx();
@@ -65,6 +65,7 @@ public class SpaceMachine
           throw new CausalException("The sub-layer has been activated once, but the current instant is still blocked.");
         }
       }
+      pushQueues(res);
     }
     env.decTargetLayer();
     return res;
@@ -76,7 +77,7 @@ public class SpaceMachine
   //    2. We execute the program "p1 || p2 || ... || pn" where "pi" represents one future.
   //       They can communicate on single space variables.
   // Since the captured space contains the same pointer to `Variable` than the current layer, the values are automatically updated in the layer.
-  void popQueues(int layersRemaining) {
+  private void popQueues(int layersRemaining) {
     HashSet<String> queues = program.activeQueues(layersRemaining);
     if (!queues.isEmpty()) {
       List<Future> futures = env.pop(queues);
@@ -85,6 +86,7 @@ public class SpaceMachine
       Statement mainProgram = program;
       program = future.body;
       Layer layer = new Layer(future.space);
+      program.prepare();
       program.canInstant(0, layer);
       StmtResult res = executeInstant(0, layer);
       program = mainProgram;
@@ -97,7 +99,11 @@ public class SpaceMachine
     }
   }
 
-  StmtResult executeInstant(int layersRemaining, Layer layer) {
+  private void pushQueues(StmtResult res) {
+    env.push(res.unwrap());
+  }
+
+  private StmtResult executeInstant(int layersRemaining, Layer layer) {
     StmtResult res = new StmtResult(CompletionCode.WAIT);
     while (res.k.isInternal()) {
       res = program.execute(layersRemaining, layer);

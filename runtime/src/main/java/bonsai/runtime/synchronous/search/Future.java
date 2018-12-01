@@ -37,7 +37,7 @@ public class Future {
       processes.add(future.body);
       merged_space.merge(future.space);
     }
-    Stmt merged_proc;
+    Statement merged_proc;
     if (processes.size() > 1) {
       merged_proc = new DisjunctivePar(processes);
     }

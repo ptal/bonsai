@@ -25,11 +25,13 @@ public class Layer
 {
   private Space space;
   private Scheduler scheduler;
+  private Optional<String> currentQueue;
 
   public Layer()
   {
     space = new Space();
     scheduler = new Scheduler();
+    currentQueue = Optional.empty();
   }
 
   public Layer(Space space) {
@@ -68,5 +70,32 @@ public class Layer
 
   public void register(String uid, boolean overwrite) {
     space.register(uid, overwrite);
+  }
+
+  public void enterQueue(String uid) {
+    if(currentQueue.isPresent()) {
+      throw new RuntimeException("[BUG] There is only one queue active at any time in a layer.");
+    }
+    currentQueue = Optional.of(uid);
+  }
+
+  public void exitQueue() {
+    currentQueue = Optional.empty();
+  }
+
+  public String currentQueue() {
+    if(!currentQueue.isPresent()) {
+      throw new RuntimeException("[BUG] `Layer.currentQueue` can only be called when a queue is in scope.");
+    }
+    return currentQueue.get();
+  }
+
+  public Queueing getQueue(String name) {
+    Variable queueVar = lookUpVar(name);
+    return Cast.toQueueing(name, queueVar.value());
+  }
+
+  public HashMap<String, Variable> project(ArrayList<String> varsUIDs) {
+    return space.project(varsUIDs);
   }
 }

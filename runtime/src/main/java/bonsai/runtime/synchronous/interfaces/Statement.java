@@ -61,7 +61,7 @@ public interface Statement extends Schedulable, Copy<Statement>
   ///   - Exit the scope of the variables.
   void abort(Layer layer);
 
-  /// Called several time during an instant if the statement *must* be executed.
+  /// Called several times during an instant if the statement *must* be executed.
   /// It must always return the completion code of the layer pointed by `layersRemaining`.
   /// Conditions:
   ///   - It is not idempotent: it can be viewed as an internal transition of the statement from the current state to the next state.

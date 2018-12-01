@@ -23,9 +23,9 @@ import bonsai.runtime.synchronous.env.*;
 
 public class QFUniverse extends ASTNode implements Statement
 {
-  private final Statement body;
-  private StmtResult bodyRes;
-  private CompletionCode k;
+  protected final Statement body;
+  protected StmtResult bodyRes;
+  protected CompletionCode k;
 
   public QFUniverse(Statement body) {
     super();

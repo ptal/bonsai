@@ -39,6 +39,11 @@ public class CapturedSpace extends Space
     labels = new HashMap();
   }
 
+  public CapturedSpace(HashMap<String, Variable> memory) {
+    super(memory);
+    labels = new HashMap();
+  }
+
   public void restore() {
     for (Map.Entry<String, Object> label : labels.entrySet()) {
       Variable v = lookUpVar(label.getKey());

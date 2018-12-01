@@ -23,6 +23,8 @@ import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
+import bonsai.runtime.synchronous.variables.*;
+import bonsai.runtime.synchronous.search.*;
 
 public class SpaceStmt extends ASTNode implements Statement
 {
@@ -57,7 +59,10 @@ public class SpaceStmt extends ASTNode implements Statement
 
   public StmtResult execute(int layersRemaining, Layer layer) {
     checkNoSubLayer(layersRemaining, "SpaceStmt.execute");
-    return new StmtResult(CompletionCode.TERMINATE);
+    HashMap<String, Variable> projection = layer.project(capturedUIDs);
+    CapturedSpace capturedSpace = new CapturedSpace(projection);
+    BranchAlgebra ba = BranchAlgebra.spaceBranch(branch, capturedSpace);
+    return new StmtResult(CompletionCode.TERMINATE, layer.currentQueue(), ba);
   }
 
   public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {

@@ -55,8 +55,7 @@ public class Environment
   }
 
   private Queueing getQueue(String name) {
-    Variable queueVar = layers.get(targetIdx - 1).lookUpVar(name);
-    return Cast.toQueueing(name, queueVar.value());
+    return layers.get(targetIdx - 1).getQueue(name);
   }
 
   public void push(HashMap<String, List<Future>> futuresPerQueue) {
