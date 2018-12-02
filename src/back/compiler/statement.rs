@@ -18,23 +18,22 @@ use back::code_formatter::*;
 use back::free_variables::*;
 use back::compiler::expression::*;
 
-pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, stmt: Stmt) {
-  StatementCompiler::new(session, context, fmt).compile(stmt)
+pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, stmt: Stmt) {
+  StatementCompiler::new(session, context, mod_name, fmt).compile(stmt)
 }
 
 struct StatementCompiler<'a> {
   session: &'a Session,
   context: &'a Context,
+  mod_name: Ident,
   fmt: &'a mut CodeFormatter
 }
 
 impl<'a> StatementCompiler<'a>
 {
-  pub fn new(session: &'a Session, context: &'a Context, fmt: &'a mut CodeFormatter) -> Self {
+  pub fn new(session: &'a Session, context: &'a Context, mod_name: Ident, fmt: &'a mut CodeFormatter) -> Self {
     StatementCompiler {
-      session: session,
-      context: context,
-      fmt: fmt
+      session, context, mod_name, fmt
     }
   }
 
@@ -143,7 +142,7 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn space(&mut self, branch: Box<Stmt>) {
-    let free_vars = free_variables((*branch).clone());
+    let free_vars = free_variables(self.context, self.mod_name.clone(), (*branch).clone());
     self.fmt.push_line("new SpaceStmt(");
     self.fmt.indent();
     self.fmt.push_line("new ArrayList<>(Arrays.asList(");

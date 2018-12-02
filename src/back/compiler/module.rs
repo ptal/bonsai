@@ -21,7 +21,8 @@ use back::compiler::statement::*;
 
 pub fn compile_module(env: Env<Context>, module: JModule) -> Env<(Context, String)> {
   env.and_next(|session, context| {
-    let code = ModuleCompiler::new(&session, &context).compile(module);
+    let mod_name = module.mod_name();
+    let code = ModuleCompiler::new(&session, &context, mod_name).compile(module);
     Env::new(session, code.map(|code| (context, code)))
   })
 }
@@ -29,15 +30,15 @@ pub fn compile_module(env: Env<Context>, module: JModule) -> Env<(Context, Strin
 struct ModuleCompiler<'a> {
   session: &'a Session,
   context: &'a Context,
+  mod_name: Ident,
   fmt: CodeFormatter
 }
 
 impl<'a> ModuleCompiler<'a>
 {
-  fn new(session: &'a Session, context: &'a Context) -> Self {
+  fn new(session: &'a Session, context: &'a Context, mod_name: Ident) -> Self {
     ModuleCompiler {
-      session: session,
-      context: context,
+      session, context, mod_name,
       fmt: CodeFormatter::new()
     }
   }
@@ -266,7 +267,7 @@ impl<'a> ModuleCompiler<'a>
     self.proc_uid(&process, proc_instance);
     self.fmt.push_line("return");
     self.fmt.indent();
-    compile_statement(self.session, self.context, &mut self.fmt, process.body);
+    compile_statement(self.session, self.context, &mut self.fmt, self.mod_name.clone(), process.body);
     self.fmt.unindent();
     self.fmt.terminate_line(";");
     self.fmt.close_block();

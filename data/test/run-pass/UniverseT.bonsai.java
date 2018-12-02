@@ -21,7 +21,11 @@
 #[run(UniverseT.twoPrintChild, "123456")]
 #[run(UniverseT.successiveChild, "123456")]
 #[run(UniverseT.successiveBinaryChild, "11a22a32b41b56")]
-#[debug(UniverseT.countSpace, "123")]
+#[run(UniverseT.countSpace, "012")]
+#[run(UniverseT.countSpace2, "012")]
+#[run(UniverseT.sequenceUniverse, "1234")]
+#[run(UniverseT.sequenceUniverse2, "12345")]
+#[run(UniverseT.nestedUniverse, "123456")]
 
 package test;
 
@@ -151,5 +155,76 @@ public class UniverseT
       pause;
       System.out.print(read count);
     end
+  end
+
+  public proc countSpace2() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      single_space LMax count = new LMax(0);
+      space readwrite count.inc() end;
+      System.out.print(read count);
+      pause;
+      space readwrite count.inc() end;
+      System.out.print(read count);
+      pause;
+      System.out.print(read count);
+    end
+  end
+
+  public proc sequenceUniverse() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      System.out.print(1);
+      space nothing end;
+      pause;
+      System.out.print(2);
+    end;
+    pause;
+    universe with stack in
+      System.out.print(3);
+      space nothing end;
+      pause;
+      System.out.print(4);
+    end
+  end
+
+  public proc sequenceUniverse2() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      System.out.print(1);
+      space nothing end;
+      pause;
+      System.out.print(2);
+      space nothing end;
+      space nothing end;
+    end;
+    pause;
+    universe with stack in
+      System.out.print(3);
+      pause;
+      System.out.print(4);
+      pause;
+      System.out.print(5);
+    end
+  end
+
+
+  public proc nestedUniverse() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      System.out.print(1);
+      space nothing end;
+      single_space StackLR stack2 = new StackLR();
+      universe with stack2 in
+        System.out.print(2);
+        space System.out.print(3) end;
+        pause;
+        pause;
+      end;
+      System.out.print(4);
+      pause;
+      System.out.print(5);
+    end
+    System.out.print(6)
   end
 }

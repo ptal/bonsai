@@ -23,7 +23,8 @@ public class Simple
   public proc test() =
     single_space StackLR stack = new StackLR();
     universe with stack in
-      space nothing end;
+      single_space LMax count = new LMax(0);
+      space readwrite count.inc() end;
       pause;
     end
   end

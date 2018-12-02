@@ -15,19 +15,23 @@
 use std::collections::hash_set::HashSet;
 use context::*;
 
-pub fn free_variables(program: Stmt) -> HashSet<Variable> {
-  let fv = FreeVariables::new();
+pub fn free_variables(context: &Context, current_mod: Ident, program: Stmt) -> HashSet<Variable> {
+  let fv = FreeVariables::new(context, current_mod);
   fv.collect(program)
 }
 
-struct FreeVariables {
+struct FreeVariables<'a> {
+  context: &'a Context,
+  current_mod: Ident,
   free_vars: HashSet<Variable>,
   in_scope_vars: HashSet<usize>
 }
 
-impl FreeVariables {
-  pub fn new() -> Self {
+impl<'a> FreeVariables<'a> {
+  pub fn new(context: &'a Context, current_mod: Ident) -> Self {
     FreeVariables {
+      context,
+      current_mod,
       free_vars: HashSet::new(),
       in_scope_vars: HashSet::new()
     }
@@ -47,10 +51,13 @@ impl FreeVariables {
   }
 }
 
-impl Visitor<JClass> for FreeVariables
+impl<'a> Visitor<JClass> for FreeVariables<'a>
 {
   fn visit_var(&mut self, var: Variable) {
-    if self.in_scope_vars.contains(&var.first_uid()) {
+    let head = var.path.first();
+    if !self.in_scope_vars.contains(&var.first_uid())
+     && !self.context.is_imported(&self.current_mod, &head)
+    {
       self.free_vars.insert(var);
     }
   }
