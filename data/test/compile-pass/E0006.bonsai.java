@@ -21,4 +21,11 @@ public class E0006
   public proc test() =
     System.out.println("test");
   end
+
+  public proc test2() =
+    universe
+      single_space LMax a = new LMax(0);
+      pause;
+      System.out.print(read a);
+    end
 }

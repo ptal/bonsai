@@ -18,9 +18,10 @@
 #[run(UniverseT.oneNothingChild, "1")]
 #[run(UniverseT.onePrintChild, "12")]
 #[run(UniverseT.onePrintChild2, "1234")]
-#[debug(UniverseT.twoPrintChild, "123456")]
-#[debug(UniverseT.successiveChild, "123456")]
-#[debug(UniverseT.successiveBinaryChild, "11a22a32b41b56")]
+#[run(UniverseT.twoPrintChild, "123456")]
+#[run(UniverseT.successiveChild, "123456")]
+#[run(UniverseT.successiveBinaryChild, "11a22a32b41b56")]
+#[debug(UniverseT.countSpace, "123")]
 
 package test;
 
@@ -136,5 +137,19 @@ public class UniverseT
       System.out.print("unreachable");
     end;
     System.out.print("6")
+  end
+
+  public proc countSpace() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      single_space LMax count = new LMax(0);
+      space readwrite count.inc() end;
+      space readwrite count.inc() end;
+      System.out.print(read count);
+      pause;
+      System.out.print(read count);
+      pause;
+      System.out.print(read count);
+    end
   end
 }

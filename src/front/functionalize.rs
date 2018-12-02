@@ -53,7 +53,16 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
       decl.body = Box::new(lift_stmt(*decl.body));
       Let(decl)
     },
-    x => x
+    Universe(queue, body) => Universe(queue, Box::new(lift_stmt(*body))),
+    QFUniverse(body) => QFUniverse(Box::new(lift_stmt(*body))),
+    // The following statements are not composed, we avoid writing `x => x` in case we add new statements later in the AST.
+    Prune => Prune,
+    Tell(v, e) => Tell(v, e),
+    DelayStmt(delay) => DelayStmt(delay),
+    ProcCall(target, name, args) => ProcCall(target, name, args),
+    ExprStmt(e) => ExprStmt(e),
+    Nothing => Nothing,
+    LocalDrop(path) => LocalDrop(path)
   };
   Stmt::new(stmt.span, node)
 }
