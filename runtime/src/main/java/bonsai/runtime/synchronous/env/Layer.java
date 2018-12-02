@@ -23,6 +23,7 @@ import bonsai.runtime.synchronous.statements.SpaceStmt;
 
 public class Layer
 {
+  private Layer parent;
   private Space space;
   private Scheduler scheduler;
   private Optional<String> currentQueue;
@@ -37,6 +38,14 @@ public class Layer
   public Layer(Space space) {
     this();
     this.space = space;
+  }
+
+  public void setParent(Layer layer) {
+    this.parent = layer;
+  }
+
+  public Layer parent() {
+    return parent;
   }
 
   public Variable lookUpVar(String uid) {

@@ -40,6 +40,11 @@ public class Nothing extends ASTNode implements Statement
     return new HashSet();
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    throwNonTerminatedEOI("nothing");
+    return CompletionCode.TERMINATE;
+  }
+
   public boolean canTerminate() {
     return true;
   }

@@ -49,4 +49,14 @@ public abstract class ASTNode implements Schedulable
   protected static <T extends Copy> List<T> copyList(List<T> nodes) {
     return nodes.stream().map(v -> (T)v.copy()).collect(Collectors.toList());
   }
+
+  protected void checkNonTerminatedEOI(String nameStmt, CompletionCode k) {
+    if (k == CompletionCode.TERMINATE) {
+      throwNonTerminatedEOI(nameStmt);
+    }
+  }
+
+  protected void throwNonTerminatedEOI(String nameStmt) throws RuntimeException {
+    throw new RuntimeException("[BUG] `" + nameStmt + "` should not be active at the end of instant.");
+  }
 }

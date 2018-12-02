@@ -65,6 +65,7 @@ public class Sequence extends ASTNode implements Statement
 
   public void canInstant(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
+      res = new StmtResult(res.k);
       reachableSubsequence((p) -> p.canInstant(layersRemaining, layer));
     }
     else {
@@ -78,6 +79,26 @@ public class Sequence extends ASTNode implements Statement
     }
     else {
       return current().activeQueues(layersRemaining);
+    }
+  }
+
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    if(layersRemaining == 0) {
+      checkNonTerminatedEOI("p;q", res.k);
+      CompletionCode k = current().endOfInstant(layersRemaining, layer);
+      if (k == CompletionCode.TERMINATE) {
+        pc++;
+        if (pc == seq.size()) {
+          res.k = CompletionCode.TERMINATE;
+        }
+        else {
+          res.k = current().endOfInstant(layersRemaining, layer);
+        }
+      }
+      return res.k;
+    }
+    else {
+      return current().endOfInstant(layersRemaining, layer);
     }
   }
 
@@ -96,7 +117,7 @@ public class Sequence extends ASTNode implements Statement
   public StmtResult execute(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
       while (pc < seq.size()) {
-        res = current().execute(layersRemaining, layer);
+        res.sequence(current().execute(layersRemaining, layer));
         if (res.k == CompletionCode.TERMINATE) {
           pc++;
         }

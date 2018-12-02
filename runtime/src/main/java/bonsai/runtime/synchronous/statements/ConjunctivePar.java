@@ -52,6 +52,10 @@ public class ConjunctivePar extends ASTNode implements Statement
     throw new RuntimeException("ConjunctivePar.activeQueues: unimplemented.");
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    throw new RuntimeException("ConjunctivePar.terminateEmptyQueue: unimplemented.");
+  }
+
   public boolean canTerminate() {
     throw new RuntimeException("ConjunctivePar.canTerminate: unimplemented.");
   }

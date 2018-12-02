@@ -14,5 +14,6 @@
 
 mod code_formatter;
 mod compiler;
+mod free_variables;
 
 pub use back::compiler::module::compile_module;

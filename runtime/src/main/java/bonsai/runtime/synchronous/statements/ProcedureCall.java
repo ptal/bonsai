@@ -50,6 +50,11 @@ public class ProcedureCall extends NAryCall implements Statement
     return new HashSet();
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    throwNonTerminatedEOI("call");
+    return CompletionCode.TERMINATE;
+  }
+
   public boolean canTerminate() {
     return true;
   }

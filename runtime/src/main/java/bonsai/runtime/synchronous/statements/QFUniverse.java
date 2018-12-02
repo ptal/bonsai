@@ -25,7 +25,7 @@ public class QFUniverse extends ASTNode implements Statement
 {
   protected final Statement body;
   protected StmtResult bodyRes;
-  protected CompletionCode k;
+  protected StmtResult res;
 
   public QFUniverse(Statement body) {
     super();
@@ -38,13 +38,17 @@ public class QFUniverse extends ASTNode implements Statement
   }
 
   public void prepare() {
-    k = CompletionCode.PAUSE_DOWN;
+    prepareInstant();
+  }
+
+  public void prepareInstant() {
+    res = new StmtResult(CompletionCode.PAUSE_DOWN);
     bodyRes = new StmtResult(CompletionCode.WAIT);
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
-      prepare();
+      prepareInstant();
     }
     else {
       body.canInstant(layersRemaining - 1, layer);
@@ -60,12 +64,22 @@ public class QFUniverse extends ASTNode implements Statement
     }
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkNonTerminatedEOI("universe p end", res.k);
+    if(layersRemaining == 0) {
+      return res.k;
+    }
+    else {
+      return body.endOfInstant(layersRemaining - 1, layer);
+    }
+  }
+
   public boolean canTerminate() {
     return body.canTerminate();
   }
 
   public void abort(Layer layer) {
-    k = CompletionCode.TERMINATE;
+    res = new StmtResult(CompletionCode.TERMINATE);
     bodyRes = new StmtResult(CompletionCode.TERMINATE);
   }
 
@@ -75,11 +89,11 @@ public class QFUniverse extends ASTNode implements Statement
     if (layersRemaining == 0) {
       // Promote the completion code of the body.
       switch(bodyRes.k) {
-        case PAUSE_UP: k = CompletionCode.PAUSE; break;
-        case STOP: k = CompletionCode.STOP; break;
-        case TERMINATE: k = CompletionCode.TERMINATE; break;
+        case PAUSE_UP: res.k = CompletionCode.PAUSE; break;
+        case STOP: res.k = CompletionCode.STOP; break;
+        case TERMINATE: res.k = CompletionCode.TERMINATE; break;
       }
-      return new StmtResult(k);
+      return res;
     }
     else {
       bodyRes = body.execute(layersRemaining - 1, layer);

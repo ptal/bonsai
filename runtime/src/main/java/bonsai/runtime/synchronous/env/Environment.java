@@ -35,6 +35,9 @@ public class Environment
     for(int i=0; i < numLayers; i++) {
       layers.add(new Layer());
     }
+    for(int i=1; i <numLayers; i++) {
+      layers.get(i).setParent(layers.get(i-1));
+    }
     targetIdx = OUTERMOST_LAYER;
   }
 

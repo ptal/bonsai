@@ -24,14 +24,19 @@ import bonsai.runtime.synchronous.env.*;
 public class Universe extends QFUniverse
 {
   private final String queueName;
+  private boolean firstInstant;
 
   public Universe(String queueName, Statement body) {
     super(body);
     this.queueName = queueName;
   }
 
-  // We terminate the statement if the queue is empty (but in the first instant).
-  public StmtResult execute(int layersRemaining, Layer layer){
+  public void prepare() {
+    super.prepare();
+    firstInstant = true;
+  }
+
+  public StmtResult execute(int layersRemaining, Layer layer) {
     if(layersRemaining == 1) {
       layer.enterQueue(queueName);
     }
@@ -39,23 +44,36 @@ public class Universe extends QFUniverse
     if(layersRemaining == 1) {
       layer.exitQueue();
     }
-    // If the current universe does not wait to execute the body in the current instant (k != PAUSE_DOWN), then we terminate the statement if the queue is empty.
-    // We do not check this condition during the first instant because "k == PAUSE_DOWN".
-    if(layersRemaining == 0 && k != CompletionCode.PAUSE_DOWN) {
-      Queueing queue = layer.getQueue(queueName);
-      if (queue.isEmpty()) {
-        k = CompletionCode.TERMINATE;
-        res = new StmtResult(k);
-      }
-    }
     return res;
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkNonTerminatedEOI("universe with q in p end", res.k);
+    firstInstant = false;
+    if (layersRemaining > 1) {
+      return body.endOfInstant(layersRemaining - 1, layer);
+    }
+    else if(layersRemaining == 1) {
+      Queueing queue = layer.parent().getQueue(queueName);
+      if (queue.isEmpty()) {
+        bodyRes = new StmtResult(CompletionCode.TERMINATE);
+        res = new StmtResult(CompletionCode.TERMINATE);
+      }
+      return bodyRes.k;
+    }
+    return res.k;
+  }
+
   public HashSet<String> activeQueues(int layersRemaining) {
-    if (layersRemaining == 1) {
-      HashSet<String> queues = new HashSet();
-      queues.add(queueName);
-      return queues;
+    if(layersRemaining <= 1) {
+      if (layersRemaining == 1 && res.k != CompletionCode.TERMINATE && !firstInstant) {
+        HashSet<String> queues = new HashSet();
+        queues.add(queueName);
+        return queues;
+      }
+      else {
+        return new HashSet();
+      }
     }
     else {
       return body.activeQueues(layersRemaining - 1);

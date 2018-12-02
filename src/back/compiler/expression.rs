@@ -36,6 +36,10 @@ pub fn compile_local_var(session: &Session, context: &Context, fmt: &mut CodeFor
   ExpressionCompiler::new(session, context, fmt).local_var(var_name)
 }
 
+pub fn generate_var_uid(session: &Session, context: &Context, fmt: &mut CodeFormatter, var: Variable) {
+  ExpressionCompiler::new(session, context, fmt).var_uid(var)
+}
+
 static CLOSURE_ARGS: &str = "__args";
 static LOCAL_UID_FN: &str = "__proc_uid.apply";
 static FIELD_UID_PREFIX: &str = "__uid_";

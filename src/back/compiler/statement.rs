@@ -15,6 +15,7 @@
 use context::*;
 use session::*;
 use back::code_formatter::*;
+use back::free_variables::*;
 use back::compiler::expression::*;
 
 pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, stmt: Stmt) {
@@ -42,13 +43,14 @@ impl<'a> StatementCompiler<'a>
     match stmt.node {
       Nothing => self.nothing(),
       ExprStmt(expr) => self.procedure(expr),
-      QFUniverse(body) => self.qf_universe(body),
       Let(body) => self.let_decl(body),
       Seq(branches) => self.sequence(branches),
       DelayStmt(delay) => self.delay(delay),
+      Space(branch) => self.space(branch),
+      QFUniverse(body) => self.qf_universe(body),
+      Universe(queue, body) => self.universe(queue, body),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
-      // Space(branches) => self.space(branches),
       // When(entailment, body) => self.when(entailment, body),
       // Suspend(entailment, body) => self.suspend(entailment, body),
       // Loop(body) => self.loop_stmt(body),
@@ -67,14 +69,6 @@ impl<'a> StatementCompiler<'a>
   fn procedure(&mut self, expr: Expr) {
     self.fmt.push("new ProcedureCall(");
     compile_closure(self.session, self.context, self.fmt, expr, false);
-    self.fmt.push(")");
-  }
-
-  fn qf_universe(&mut self, body: Box<Stmt>) {
-    self.fmt.push_line("new QFUniverse(");
-    self.fmt.indent();
-    self.compile(*body);
-    self.fmt.unindent();
     self.fmt.push(")");
   }
 
@@ -148,6 +142,43 @@ impl<'a> StatementCompiler<'a>
     self.fmt.push(")");
   }
 
+  fn space(&mut self, branch: Box<Stmt>) {
+    let free_vars = free_variables((*branch).clone());
+    self.fmt.push_line("new SpaceStmt(");
+    self.fmt.indent();
+    self.fmt.push_line("new ArrayList<>(Arrays.asList(");
+    self.fmt.indent();
+    let n = free_vars.len();
+    for (i, var) in free_vars.into_iter().enumerate() {
+      generate_var_uid(self.session, self.context, self.fmt, var);
+      if i != n - 1 {
+        self.fmt.push(", ")
+      }
+    }
+    self.fmt.terminate_line(")),");
+    self.fmt.unindent();
+    self.compile(*branch);
+    self.fmt.push(")");
+  }
+
+  fn qf_universe(&mut self, body: Box<Stmt>) {
+    self.fmt.push_line("new QFUniverse(");
+    self.fmt.indent();
+    self.compile(*body);
+    self.fmt.unindent();
+    self.fmt.push(")");
+  }
+
+  fn universe(&mut self, queue: Variable, body: Box<Stmt>) {
+    self.fmt.push_line("new Universe(");
+    self.fmt.indent();
+    generate_var_uid(self.session, self.context, self.fmt, queue);
+    self.fmt.terminate_line(", ");
+    self.compile(*body);
+    self.fmt.unindent();
+    self.fmt.push(")");
+  }
+
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
   // {
   //   match binding.kind {
@@ -193,34 +224,6 @@ impl<'a> StatementCompiler<'a>
 
   // fn and_parallel(&mut self, branches: Vec<Stmt>) {
   //   self.nary_operator("and_par", branches);
-  // }
-
-  // fn space(&mut self, branches: Vec<Stmt>) {
-  //   let branches_len = branches.len();
-  //   self.fmt.push_line("new Space(");
-  //   self.fmt.push_line("new ArrayList<>(Arrays.asList(");
-  //   let uids: HashSet<String> = collect_st_vars(branches);
-  //   self.fmt.indent();
-  //   for uid in uids {
-  //     self.fmt.push_line(&format!())
-  //   }
-  //   self.fmt.push_line("),");
-  //   self.fmt.push_line("new ArrayList<>(Arrays.asList(");
-  //   self.fmt.indent();
-  //   for (i, stmt) in branches.into_iter().enumerate() {
-  //     self.fmt.push_line("new SpaceBranch(");
-  //     self.fmt.indent();
-  //     self.compile(stmt);
-  //     self.fmt.unindent();
-  //     if i != branches_len - 1 {
-  //       self.fmt.terminate_line("),");
-  //     }
-  //     else {
-  //       self.fmt.push(")")
-  //     }
-  //   }
-  //   self.fmt.unindent();
-  //   self.fmt.push(")))");
   // }
 
   // fn entailment(&mut self, entailment: EntailmentRel) {

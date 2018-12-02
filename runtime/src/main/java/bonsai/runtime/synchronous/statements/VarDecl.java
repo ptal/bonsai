@@ -52,6 +52,15 @@ public abstract class VarDecl extends ASTNode implements Statement
     }
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkNonTerminatedEOI("Var decl", res.k);
+    if (state2()) {
+      return body.endOfInstant(layersRemaining, layer);
+    }
+    else {
+      return res.k;
+    }
+  }
 
   // in the initializing expression.
   protected boolean state1() {

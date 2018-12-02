@@ -67,6 +67,11 @@ public interface Statement extends Schedulable, Copy<Statement>
   ///   - It is not idempotent: it can be viewed as an internal transition of the statement from the current state to the next state.
   StmtResult execute(int layersRemaining, Layer layer);
 
+  /// This function is called at the end of the instant, after we pushed the nodes onto the queue.
+  /// Purpose:
+  ///   - Take into account queues that are empty to terminate universes.
+  CompletionCode endOfInstant(int layersRemaining, Layer layer);
+
   /// We analyse the current program to prove that a write on `uid` still can happen.
   /// We suppose the conditions currently suspended on `uid` to be `false` (if `inSurface` is `true`).
   /// `inSurface` is `true` if the flow of control is on the statement currently analysed.

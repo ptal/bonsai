@@ -51,6 +51,11 @@ public class SpaceStmt extends ASTNode implements Statement
     return new HashSet();
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    throwNonTerminatedEOI("space p end");
+    return CompletionCode.TERMINATE;
+  }
+
   public boolean canTerminate() { return true; }
 
   public void suspend(Layer layer) {}

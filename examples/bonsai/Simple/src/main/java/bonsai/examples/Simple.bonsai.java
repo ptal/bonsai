@@ -14,9 +14,17 @@
 
 package bonsai.examples;
 
+import java.lang.System;
 import java.util.*;
+import bonsai.runtime.queueing.*;
 
 public class Simple
 {
-  public proc test() = nothing
+  public proc test() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      space nothing end;
+      pause;
+    end
+  end
 }

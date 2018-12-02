@@ -49,7 +49,7 @@ public class SpaceMachine
     int targetIdx = env.targetIdx();
     StmtResult res = new StmtResult(CompletionCode.PAUSE);
     while (res.k == CompletionCode.PAUSE) {
-      popQueues(targetIdx);
+      popQueues(targetIdx, layer);
       program.canInstant(targetIdx, layer);
       // We execute as much as we can of the current instant.
       res = executeInstant(targetIdx, layer);
@@ -66,6 +66,9 @@ public class SpaceMachine
         }
       }
       pushQueues(res);
+      if(res.k != CompletionCode.TERMINATE) {
+        res.k = program.endOfInstant(targetIdx, layer);
+      }
     }
     env.decTargetLayer();
     return res;
@@ -77,7 +80,7 @@ public class SpaceMachine
   //    2. We execute the program "p1 || p2 || ... || pn" where "pi" represents one future.
   //       They can communicate on single space variables.
   // Since the captured space contains the same pointer to `Variable` than the current layer, the values are automatically updated in the layer.
-  private void popQueues(int layersRemaining) {
+  private void popQueues(int layersRemaining, Layer layer) {
     HashSet<String> queues = program.activeQueues(layersRemaining);
     if (!queues.isEmpty()) {
       List<Future> futures = env.pop(queues);
@@ -85,10 +88,10 @@ public class SpaceMachine
       future.space.restore();
       Statement mainProgram = program;
       program = future.body;
-      Layer layer = new Layer(future.space);
+      Layer encapsulatedLayer = new Layer(future.space);
       program.prepare();
-      program.canInstant(0, layer);
-      StmtResult res = executeInstant(0, layer);
+      program.canInstant(0, encapsulatedLayer);
+      StmtResult res = executeInstant(0, encapsulatedLayer);
       program = mainProgram;
       if (res.k != CompletionCode.TERMINATE) {
         throw new RuntimeException("A space statement did not terminate. (code: " + res.k + ")");

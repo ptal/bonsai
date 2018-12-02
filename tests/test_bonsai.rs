@@ -50,7 +50,7 @@ fn test_data_directory()
   test_data_dir(false);
 }
 
-// #[test]
-// fn debug_run() {
-//   test_data_dir(true);
-// }
+#[test]
+fn debug_run() {
+  test_data_dir(true);
+}

@@ -49,6 +49,11 @@ public class Delay extends ASTNode implements Statement
     return new HashSet();
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkNonTerminatedEOI("delay", k);
+    return k;
+  }
+
   public boolean canTerminate() {
     return k == CompletionCode.TERMINATE || (k == kind && nextInstant);
   }
