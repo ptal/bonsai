@@ -25,7 +25,7 @@ public class Space
 {
   // This is the memory of all variables, regardless of their spacetime.
   // All variables in `memory` are registered or in scope.
-  private HashMap<String, Variable> memory;
+  protected HashMap<String, Variable> memory;
 
   public Space() {
     memory = new HashMap();

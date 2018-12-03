@@ -224,7 +224,7 @@ public class UniverseT
       System.out.print(4);
       pause;
       System.out.print(5);
-    end
-    System.out.print(6)
+    end;
+    System.out.print(6);
   end
 }

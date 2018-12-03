@@ -44,6 +44,26 @@ public class CapturedSpace extends Space
     labels = new HashMap();
   }
 
+  public void registerWL(Variable var, boolean exitScope) {
+    String uid = var.uid();
+    boolean inMemory = memory.get(uid) != null;
+    boolean inLabels = labels.get(uid) != null;
+    // If `uid` is in `memory` but not in `labels` it means it is captured by a space statement.
+    // The variables exit its scope and is not captured in a space statement, so we do not need to save it.
+    if (!inMemory && !inLabels && exitScope) {
+      return;
+    }
+    else {
+      if (!inMemory) {
+        memory.put(uid, var);
+      }
+      if (!inLabels) {
+        Restorable r = Cast.toRestorable(uid, var.value());
+        labels.put(uid, r.label());
+      }
+    }
+  }
+
   public void restore() {
     for (Map.Entry<String, Object> label : labels.entrySet()) {
       Variable v = lookUpVar(label.getKey());

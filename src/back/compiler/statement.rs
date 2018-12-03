@@ -77,7 +77,7 @@ impl<'a> StatementCompiler<'a>
     match let_decl.kind() {
       Spacetime(SingleSpace) => self.single_space_local_decl(let_decl),
       Spacetime(SingleTime) => self.single_time_local_decl(let_decl),
-      Spacetime(WorldLine) => unimplemented!("Kind::Spacetime(WorldLine) in let_decl"),
+      Spacetime(WorldLine) => self.world_line_local_decl(let_decl),
       Product => unimplemented!("Kind::Product in let_decl"),
       Host => unimplemented!("Kind::Host in let_decl")
     }
@@ -105,6 +105,10 @@ impl<'a> StatementCompiler<'a>
 
   fn single_time_local_decl(&mut self, let_decl: LetStmt) {
     self.local_decl(let_decl, "SingleTimeVarDecl");
+  }
+
+  fn world_line_local_decl(&mut self, let_decl: LetStmt) {
+    self.local_decl(let_decl, "WorldLineVarDecl");
   }
 
   fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)

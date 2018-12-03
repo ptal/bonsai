@@ -19,6 +19,7 @@ import java.util.stream.*;
 import java.util.function.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.search.*;
+import bonsai.runtime.synchronous.variables.*;
 
 public class StmtResult {
   public CompletionCode k;
@@ -32,6 +33,11 @@ public class StmtResult {
   public StmtResult(CompletionCode k, String queue, BranchAlgebra ba) {
     this(k);
     branchesPerQueue.put(queue, ba);
+  }
+
+  public void registerWL(String queue, Variable var, boolean exitScope) {
+    BranchAlgebra ba = branchesPerQueue.computeIfAbsent(queue, q -> BranchAlgebra.neutralElement());
+    ba.registerWL(var, exitScope);
   }
 
   public StmtResult sequence(StmtResult res) {

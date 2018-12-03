@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,32 +19,27 @@ import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.expressions.*;
-import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.env.*;
+import bonsai.runtime.synchronous.variables.*;
 
-public class SingleTimeVarDecl extends VarDecl implements Statement
+public class WorldLineVarDecl extends SingleSpaceVarDecl
 {
-  public SingleTimeVarDecl(String uid, Expression initValue, Statement body) {
+  public WorldLineVarDecl(String uid, Expression initValue, Statement body) {
     super(uid, initValue, body);
   }
 
-  public SingleTimeVarDecl copy() {
-    throw new CannotCopyException("SingleTimeVarDecl");
+  public WorldLineVarDecl copy() {
+    throw new CannotCopyException("WorldLineVarDecl");
   }
 
-  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
-    if (layersRemaining == 0 && state2()) {
-      terminate(layer);
+  public StmtResult execute(int layersRemaining, Layer layer) {
+    StmtResult res = super.execute(layersRemaining, layer);
+    if (layersRemaining == 0 && !res.k.isInternal()) {
+      Variable v = layer.lookUpVar(uid);
+      res.registerWL(layer.currentQueue(), v, state3());
     }
-    return super.endOfInstant(layersRemaining, layer);
-  }
-
-  public void canInstant(int layersRemaining, Layer layer) {
-    if(layersRemaining == 0) {
-      layer.register(uid, true);
-      initValue.canInstant(layer);
-    }
-    body.canInstant(layersRemaining, layer);
+    return res;
   }
 }

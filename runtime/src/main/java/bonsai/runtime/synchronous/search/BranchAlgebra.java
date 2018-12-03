@@ -21,6 +21,7 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.statements.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.variables.*;
 
 // `BranchAlgebra` is a sequence of branches that can be pruned or not.
 // It contains method to create the neutral element (empty sequence), pruned branch and `space` branch.
@@ -140,5 +141,9 @@ public class BranchAlgebra {
       .collect(Collectors.toList());
     branches.clear();
     return futures;
+  }
+
+  public void registerWL(Variable var, boolean exitScope) {
+    space.registerWL(var, exitScope);
   }
 }
