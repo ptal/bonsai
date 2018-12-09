@@ -144,10 +144,10 @@ public class VarStore implements Store, Restorable
     return asn;
   }
 
-  public Kleene entail(Object value) {
+  public Kleene entails(Object value) {
     if (value instanceof VarStore) {
       VarStore vstore = (VarStore) value;
-      return entail(vstore);
+      return entails(vstore);
     }
     else {
       throw new UnsupportedOperationException(
@@ -156,13 +156,13 @@ public class VarStore implements Store, Restorable
     }
   }
 
-  private Kleene entail(VarStore vstore) {
+  private Kleene entails(VarStore vstore) {
     checkOnlyIntVar(model);
     checkOnlyIntVar(vstore.model);
     IntVar[] v1 = model.retrieveIntVars(true);
     IntVar[] v2 = vstore.model.retrieveIntVars(true);
     if (v1.length < v2.length) {
-      return Kleene.not(vstore.entail(this));
+      return Kleene.not(vstore.entails(this));
     }
     else {
       Kleene res = Kleene.TRUE;

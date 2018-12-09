@@ -78,8 +78,8 @@ public class ES implements Lattice {
     /* FALSE */   {TRUE, TRUE, TRUE},
     /* UNKNOWN */ {FALSE, FALSE, TRUE}
   };
-  public Kleene entail(Object o) {
-    ES e = castToES("entail", o);
+  public Kleene entails(Object o) {
+    ES e = castToES("entails", o);
     return table_entail[value.ordinal()][e.value.ordinal()];
   }
 

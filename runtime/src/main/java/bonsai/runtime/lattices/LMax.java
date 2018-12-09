@@ -49,8 +49,15 @@ public class LMax extends TotalOrder<Integer>
     return new LMax(this);
   }
 
-  protected boolean entail_inner(TotalOrder<Integer> o) {
-    Integer v = castInteger("entail_inner", o.value);
+  public Kleene entails(Object o) {
+    if (o instanceof Integer) {
+      o = new LMax((Integer)o);
+    }
+    return super.entails(o);
+  }
+
+  protected boolean entails_inner(TotalOrder<Integer> o) {
+    Integer v = castInteger("entails_inner", o.value);
     return value >= v;
   }
 

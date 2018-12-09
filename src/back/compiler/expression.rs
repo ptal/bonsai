@@ -82,10 +82,10 @@ impl<'a> ExpressionCompiler<'a>
       StringLiteral(lit) => self.string_literal(lit),
       Bottom => self.bottom(ty),
       Top => self.top(ty),
+      Entailment(rel) => self.entailment(*rel),
       Or(_, _) =>  unimplemented!("trilean or is unimplemented"),
       And(_, _) => unimplemented!("trilean and is unimplemented"),
       Not(_) => unimplemented!("trilean not is unimplemented"),
-      Entailment(_) => unimplemented!("entailment is unimplemented")
     }
   }
 
@@ -274,7 +274,7 @@ impl<'a> ExpressionCompiler<'a>
     self.list_of_accesses(&vars_right, true);
     let mut vars = vars_left;
     vars.extend(vars_right.into_iter());
-    self.fmt.push(&format!(", ({}) -> (Lattice)(", CLOSURE_ARGS));
+    self.fmt.push(&format!(", ({}) -> Cast.toLattice(\"<expr in entailment relation>\",", CLOSURE_ARGS));
     self.compile(rel.left, &vars, None);
     self.fmt.push(").entails(");
     self.compile(rel.right, &vars, None);

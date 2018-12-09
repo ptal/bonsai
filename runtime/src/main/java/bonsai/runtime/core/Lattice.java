@@ -17,7 +17,7 @@ package bonsai.runtime.core;
 // A lattice-based variable must implement three operations over lattice:
 // * `join` for adding a piece of information according to the order of the lattice.
 // * `meet` for removing a piece of information according to the order of the lattice.
-// * `entail` for asking if a piece of information can be deduced from the current element.
+// * `entails` for asking if a piece of information can be deduced from the current element.
 
 public interface Lattice
 {
@@ -32,17 +32,17 @@ public interface Lattice
 
   // The result of the entailment must reflect the current entailment relation between two objects.
   // We do not take care of the fact that objects can evolve, this is taken care of in the semantics of spacetime.
-  // For example, if the lattice is a totally ordered set, `entail` never returns `Kleene.UNKNOWN`.
+  // For example, if the lattice is a totally ordered set, `entails` never returns `Kleene.UNKNOWN`.
   // The following relation must hold:
-  //   * a.entail(b) == TRUE => b.entail(a) != UNKNOWN
-  //   * a.entail(b) == FALSE => b.entail(a) == TRUE
-  //   * a.entail(b) == UNKNOWN => b.entail(a) == UNKNOWN
-  Kleene entail(Object o);
+  //   * a.entails(b) == TRUE => b.entails(a) != UNKNOWN
+  //   * a.entails(b) == FALSE => b.entails(a) == TRUE
+  //   * a.entails(b) == UNKNOWN => b.entails(a) == UNKNOWN
+  Kleene entails(Object o);
 
   // NOTE: You should override the method `equals`, possibly using the following default static method `equals_default`.
   // The only way to ensure that `equals` is implemented in sub-classes would be to make `Lattice` an abstract class.
 
-  // (a.entail(b) == TRUE /\ b.entail(a) == TRUE) => a.equals(b) == TRUE
+  // (a.entails(b) == TRUE /\ b.entails(a) == TRUE) => a.equals(b) == TRUE
   static boolean equals_default(Lattice l, Object other) {
     if (other == null) {
       return false;
@@ -53,13 +53,13 @@ public interface Lattice
     else {
       Lattice o = (Lattice) other;
       return
-        l.entail(o) == Kleene.TRUE &&
-        o.entail(l) == Kleene.TRUE;
+        l.entails(o) == Kleene.TRUE &&
+        o.entails(l) == Kleene.TRUE;
     }
   }
 
   // Written `a |< b` in spacetime.
-  // a.strict_entail(b) == TRUE => a.entail(b) = TRUE /\ !(a.equals(b))
+  // a.strict_entail(b) == TRUE => a.entails(b) = TRUE /\ !(a.equals(b))
   default Kleene strict_entail(Object other) {
     if (other == null) {
       return Kleene.FALSE;
@@ -70,7 +70,7 @@ public interface Lattice
     else {
       Lattice o = (Lattice) other;
       return
-        Kleene.and(this.entail(o), Kleene.fromBool(!equals_default(this,o)));
+        Kleene.and(this.entails(o), Kleene.fromBool(!equals_default(this,o)));
     }
   }
 }

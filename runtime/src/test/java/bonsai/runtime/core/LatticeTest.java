@@ -22,9 +22,9 @@ public class LatticeTest
 {
   private String currentTest;
 
-  // a.entail(b) == TRUE => b.entail(a) != UNKNOWN
+  // a.entails(b) == TRUE => b.entails(a) != UNKNOWN
   private void testEntailmentTrue(Lattice a, Lattice b) {
-    Kleene ba = b.entail(a);
+    Kleene ba = b.entails(a);
     assertThat(currentTest, ba, not(equalTo(Kleene.UNKNOWN)));
     switch (ba) {
       case TRUE: {
@@ -42,22 +42,22 @@ public class LatticeTest
     }
   }
 
-  // a.entail(b) == FALSE => b.entail(a) == TRUE
+  // a.entails(b) == FALSE => b.entails(a) == TRUE
   private void testEntailmentFalse(Lattice a, Lattice b) {
-    Kleene ba = b.entail(a);
+    Kleene ba = b.entails(a);
     assertThat(currentTest, ba, equalTo(Kleene.TRUE));
     testEquality(a, b, false);
   }
 
-  // a.entail(b) == UNKNOWN => b.entail(a) == UNKNOWN
+  // a.entails(b) == UNKNOWN => b.entails(a) == UNKNOWN
   private void testEntailmentUnknown(Lattice a, Lattice b) {
-    Kleene ba = b.entail(a);
+    Kleene ba = b.entails(a);
     assertThat(currentTest, ba, equalTo(Kleene.UNKNOWN));
     testEquality(a, b, false);
   }
 
   private void testEntailment(Lattice a, Lattice b, Kleene expected) {
-    Kleene ab = a.entail(b);
+    Kleene ab = a.entails(b);
     assertThat(currentTest, ab, equalTo(expected));
     switch (expected) {
       case TRUE: {
@@ -186,7 +186,7 @@ public class LatticeTest
     assert b.length >= expectedMeet.length;
     int testNo = 0;
     for(int i = 0; i < expectedEntailment.length; i++) {
-      currentTest = testID + ".entail[" + testNo + "]";
+      currentTest = testID + ".entails[" + testNo + "]";
       testEntailment(a[i], b[i], expectedEntailment[i]);
       testNo = testNo + 1;
     }

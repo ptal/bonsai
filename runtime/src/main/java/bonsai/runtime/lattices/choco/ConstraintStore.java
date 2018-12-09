@@ -92,9 +92,9 @@ public class ConstraintStore implements Lattice, Restorable
       "`meet` is currently not defined for `ConstraintStore`.");
   }
 
-  public Kleene entail(Object value) {
+  public Kleene entails(Object value) {
     throw new UnsupportedOperationException(
-      "`entail` is currently not defined for `ConstraintStore`.");
+      "`entails` is currently not defined for `ConstraintStore`.");
   }
 
   // Spacetime signature: `read this.propagate(readwrite vstore)`

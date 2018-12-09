@@ -27,7 +27,7 @@ public abstract class TotalOrder<T>
   }
 
   // Returns `true` if `this.value |= other.value`.
-  protected abstract boolean entail_inner(TotalOrder<T> other);
+  protected abstract boolean entails_inner(TotalOrder<T> other);
 
   // Access: READ(this)
   public T unwrap() {
@@ -36,7 +36,7 @@ public abstract class TotalOrder<T>
 
   public TotalOrder<T> join(Object o) {
     TotalOrder<T> v = castTotalOrder("join", o);
-    return entail_inner(v) ? this.copy() : v.copy();
+    return entails_inner(v) ? this.copy() : v.copy();
   }
 
   public void join_in_place(Object o) {
@@ -45,7 +45,7 @@ public abstract class TotalOrder<T>
 
   public TotalOrder<T> meet(Object o) {
     TotalOrder<T> v = castTotalOrder("meet", o);
-    return entail_inner(v) ? v.copy() : this.copy();
+    return entails_inner(v) ? v.copy() : this.copy();
   }
 
   public void meet_in_place(Object o) {
@@ -61,9 +61,9 @@ public abstract class TotalOrder<T>
     this.value = v.value;
   }
 
-  public Kleene entail(Object o) {
-    TotalOrder<T> v = castTotalOrder("entail", o);
-    if (entail_inner(v)) {
+  public Kleene entails(Object o) {
+    TotalOrder<T> v = castTotalOrder("entails", o);
+    if (entails_inner(v)) {
       return Kleene.TRUE;
     }
     else {

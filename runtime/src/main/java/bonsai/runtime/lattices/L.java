@@ -123,22 +123,22 @@ public class L<T> implements Lattice, Copy<L<T>>
     }
   }
 
-  public Kleene entail(Object obj) {
-    L<T> other = flatLatticeOf("entail", obj);
+  public Kleene entails(Object obj) {
+    L<T> other = flatLatticeOf("entails", obj);
     switch (other.kind) {
       case BOT: return Kleene.TRUE;
       case TOP: return Kleene.fromBool(kind == LKind.TOP);
       default:
-        return entail_inner(other.value);
+        return entails_inner(other.value);
     }
   }
 
-  private Kleene entail_inner(T other) {
+  private Kleene entails_inner(T other) {
     switch (kind) {
       case BOT: return Kleene.FALSE;
       case TOP: return Kleene.TRUE;
       default: {
-        assertSameInnerTypes("entail", value, other);
+        assertSameInnerTypes("entails", value, other);
         if (value.equals(other)) {
           return Kleene.TRUE;
         }

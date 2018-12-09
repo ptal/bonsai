@@ -17,6 +17,7 @@ use session::*;
 use back::code_formatter::*;
 use back::free_variables::*;
 use back::compiler::expression::*;
+use trilean::SKleene;
 
 pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, stmt: Stmt) {
   StatementCompiler::new(session, context, mod_name, fmt).compile(stmt)
@@ -41,16 +42,16 @@ impl<'a> StatementCompiler<'a>
     use ast::StmtKind::*;
     match stmt.node {
       Nothing => self.nothing(),
+      DelayStmt(delay) => self.delay(delay),
+      Space(branch) => self.space(branch),
       ExprStmt(expr) => self.procedure(expr),
       Let(body) => self.let_decl(body),
       Seq(branches) => self.sequence(branches),
-      DelayStmt(delay) => self.delay(delay),
-      Space(branch) => self.space(branch),
+      When(cond, then, els) => self.when(cond, then, els),
       QFUniverse(body) => self.qf_universe(body),
       Universe(queue, body) => self.universe(queue, body),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
-      // When(entailment, body) => self.when(entailment, body),
       // Suspend(entailment, body) => self.suspend(entailment, body),
       // Loop(body) => self.loop_stmt(body),
       // ProcCall(process, args) => self.fun_call(process, args),
@@ -182,6 +183,33 @@ impl<'a> StatementCompiler<'a>
     self.fmt.push(")");
   }
 
+  fn condition(&mut self, mut cond: Expr) {
+    let rel = match cond.node.clone() {
+      ExprKind::Entailment(rel) => rel,
+      _ =>
+        // transform x to x |= true
+        Box::new(EntailmentRel {
+          left: cond.clone(),
+          right: Expr::new(DUMMY_SP, ExprKind::Trilean(SKleene::True)),
+          strict: false
+        })
+    };
+    cond.node = ExprKind::Entailment(rel);
+    compile_functional_expr(self.session, self.context, self.fmt, cond, None);
+  }
+
+  fn when(&mut self, cond: Expr, then: Box<Stmt>, els: Box<Stmt>) {
+    self.fmt.push("new WhenElse(");
+    self.fmt.indent();
+    self.condition(cond);
+    self.fmt.terminate_line(",");
+    self.compile(*then);
+    self.fmt.terminate_line(",");
+    self.compile(*els);
+    self.fmt.push(")");
+    self.fmt.unindent();
+  }
+
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
   // {
   //   match binding.kind {
@@ -227,38 +255,6 @@ impl<'a> StatementCompiler<'a>
 
   // fn and_parallel(&mut self, branches: Vec<Stmt>) {
   //   self.nary_operator("and_par", branches);
-  // }
-
-  // fn entailment(&mut self, entailment: EntailmentRel) {
-  //   self.fmt.push(&format!("new EntailmentConfig({}, \"", entailment.strict));
-  //   self.stream_var(fmt, entailment.left.clone());
-  //   self.fmt.push(&format!("\", {}, ", entailment.left.past));
-  //   self.closure(true, entailment.right);
-  //   self.fmt.push(")");
-  // }
-
-  // fn meta_entailment(&mut self, rel: MetaEntailmentRel) {
-  //   self.fmt.push("new MetaEntailmentConfig(");
-  //   self.entailment(rel.left);
-  //   self.fmt.push(&format!(", {})", rel.right));
-  // }
-
-  // fn condition(&mut self, condition: Condition) {
-  //   match condition {
-  //     Condition::Entailment(rel) => self.entailment(rel),
-  //     Condition::MetaEntailment(rel) => self.meta_entailment(rel)
-  //   }
-  // }
-
-  // fn when(&mut self, condition: Condition, body: Box<Stmt>) {
-  //   self.fmt.push("SC.when(");
-  //   self.condition(condition);
-  //   self.fmt.terminate_line(",");
-  //   self.fmt.indent();
-  //   self.compile(*body);
-  //   self.fmt.terminate_line(",");
-  //   self.fmt.push("SC.nothing())");
-  //   self.fmt.unindent();
   // }
 
   // fn suspend(&mut self, condition: Condition, body: Box<Stmt>) {
