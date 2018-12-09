@@ -90,53 +90,68 @@ public class Variable
     return rw.isReadWritable();
   }
 
-  public void joinRead(Layer env) {
+  public void joinRead(Layer layer) {
     rw.read += 1;
   }
 
-  public void joinReadWrite(Layer env) {
+  public void joinReadWrite(Layer layer) {
     rw.readwrite += 1;
   }
 
-  public void joinWrite(Layer env) {
+  public void joinWrite(Layer layer) {
     rw.write += 1;
   }
 
-  public void meetRead(Layer env) {
+  public void meetRead(Layer layer) {
     rw.read -= 1;
   }
 
-  public void meetReadWrite(Layer env) {
+  public void meetReadWrite(Layer layer) {
     rw.readwrite -= 1;
-    anyEvent(env);
+    anyEvent(layer);
     if (rw.readwrite == 0 && rw.read != 0) {
-      canReadEvent(env);
+      canReadEvent(layer);
     }
   }
 
-  public void meetWrite(Layer env) {
+  public void meetWrite(Layer layer) {
     rw.write -= 1;
-    anyEvent(env);
+    anyEvent(layer);
     if (rw.write == 0) {
       if (rw.readwrite == 0) {
-        canReadEvent(env);
+        canReadEvent(layer);
       }
       else {
-        canReadWriteEvent(env);
+        canReadWriteEvent(layer);
       }
     }
   }
 
-  private void canReadEvent(Layer env) {
-    env.schedule(new Event(uid(), Event.CAN_READ));
+  // Reduces the readwrite counter to (0,0,r) and generate events accordingly.
+  // This can happen after a `canWriteOn` analysis (see `Layer.unblock`).
+  public void meetReadOnly(Layer layer) {
+    if (rw.write > 0 || rw.readwrite > 0) {
+      if (rw.write > 0) {
+        rw.write = 0;
+        canReadWriteEvent(layer);
+      }
+      if (rw.readwrite > 0) {
+        rw.readwrite = 0;
+        canReadEvent(layer);
+      }
+    }
   }
 
-  private void canReadWriteEvent(Layer env) {
-    env.schedule(new Event(uid(), Event.CAN_READWRITE));
+  private void canReadEvent(Layer layer) {
+    layer.schedule(new Event(uid(), Event.CAN_READ));
   }
 
-  private void anyEvent(Layer env) {
-    env.schedule(new Event(uid(), Event.ANY));
+  private void canReadWriteEvent(Layer layer) {
+    layer.schedule(new Event(uid(), Event.CAN_READWRITE));
+  }
+
+  private void anyEvent(Layer layer) {
+    layer.schedule(new Event(uid(), Event.ANY));
   }
 
   public String toString() {

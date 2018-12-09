@@ -65,8 +65,8 @@ public class Layer
     return scheduler.processWasScheduled();
   }
 
-  public boolean unblock(Statement body) {
-    return false;
+  public boolean unblock(Statement body, int layersRemaining) {
+    return space.unblock(body, layersRemaining, this);
   }
 
   public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {

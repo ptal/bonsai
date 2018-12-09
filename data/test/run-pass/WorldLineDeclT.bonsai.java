@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[debug(WorldLineDeclT.rootNode, "0")]
-#[debug(WorldLineDeclT.oneBranchTree, "00")]
-#[debug(WorldLineDeclT.twoBranchesTree, "000")]
-#[debug(WorldLineDeclT.twoBranchesTree2, "011")]
+#[run(WorldLineDeclT.rootNode, "0")]
+#[run(WorldLineDeclT.oneBranchTree, "00")]
+#[run(WorldLineDeclT.twoBranchesTree, "000")]
+#[run(WorldLineDeclT.twoBranchesTree2, "011")]
 
 package test;
 

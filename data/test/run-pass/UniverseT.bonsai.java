@@ -26,6 +26,7 @@
 #[run(UniverseT.sequenceUniverse, "1234")]
 #[run(UniverseT.sequenceUniverse2, "12345")]
 #[run(UniverseT.nestedUniverse, "123456")]
+#[run(UniverseT.sequenceNested, "123")]
 
 package test;
 
@@ -226,5 +227,22 @@ public class UniverseT
       System.out.print(5);
     end;
     System.out.print(6);
+  end
+
+  // Check that the statements after a universe are executed in the same instant.
+  public proc sequenceNested() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      single_space StackLR stack2 = new StackLR();
+      universe with stack2 in
+        pause;
+        System.out.print("unreachable");
+      end;
+      System.out.print(1);
+      System.out.print(2);
+      pause;
+      System.out.print("unreachable");
+    end;
+    System.out.print(3);
   end
 }

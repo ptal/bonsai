@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
+import bonsai.runtime.synchronous.interfaces.*;
 
 // `Space` is the variable's environment.
 // The life cycle of a variable is as follows: `register` (called during the `canAnalysis`), `enterScope` and finally `exitScope`.
@@ -104,5 +105,18 @@ public class Space
       projectedMemory.put(uid, memory.get(uid));
     }
     return projectedMemory;
+  }
+
+  public boolean unblock(Statement body, int layersRemaining, Layer layer) {
+    boolean unblocked = false;
+    for (Variable var : memory.values()) {
+      if (!var.isReadable()) {
+        if(!body.canWriteOn(layersRemaining, layer, var.uid(), true)) {
+          unblocked = true;
+          var.meetReadOnly(layer);
+        }
+      }
+    }
+    return unblocked;
   }
 }

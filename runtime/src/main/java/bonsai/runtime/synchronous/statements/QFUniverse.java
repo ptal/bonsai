@@ -101,12 +101,12 @@ public class QFUniverse extends ASTNode implements Statement
     }
   }
 
-  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0) {
       return false;
     }
     else {
-      return body.canWriteOn(layersRemaining - 1, uid, inSurface);
+      return body.canWriteOn(layersRemaining - 1, layer, uid, inSurface);
     }
   }
 

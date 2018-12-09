@@ -59,4 +59,10 @@ public abstract class ASTNode implements Schedulable
   protected void throwNonTerminatedEOI(String nameStmt) throws RuntimeException {
     throw new RuntimeException("[BUG] `" + nameStmt + "` should not be active at the end of instant.");
   }
+
+  protected void checkExpressionStateEOI(String nameStmt, boolean state) {
+    if (state) {
+      throw new RuntimeException("[BUG] `" + nameStmt + "` is still blocked in an instantaneous expression at the end of instant.");
+    }
+  }
 }

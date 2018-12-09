@@ -72,7 +72,7 @@ public class ConjunctivePar extends ASTNode implements Statement
     throw new RuntimeException("ConjunctivePar.execute: unimplemented.");
   }
 
-  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     throw new RuntimeException("ConjunctivePar.canWriteOn: unimplemented.");
   }
 

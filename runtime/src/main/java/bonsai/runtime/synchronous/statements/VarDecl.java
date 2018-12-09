@@ -54,6 +54,7 @@ public abstract class VarDecl extends ASTNode implements Statement
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
     checkNonTerminatedEOI("Var decl", res.k);
+    checkExpressionStateEOI("Var decl", state1());
     if (state2()) {
       return body.endOfInstant(layersRemaining, layer);
     }
@@ -150,7 +151,7 @@ public abstract class VarDecl extends ASTNode implements Statement
     }
   }
 
-  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0) {
       if (state1()) {
         if (initValue.canWriteOn(uid)) {
@@ -158,14 +159,14 @@ public abstract class VarDecl extends ASTNode implements Statement
         }
       }
       if (state1() || state2()) {
-        if (body.canWriteOn(layersRemaining, uid, inSurface)) {
+        if (body.canWriteOn(layersRemaining, layer, uid, inSurface)) {
           return true;
         }
       }
       return false;
     }
     else {
-      return body.canWriteOn(layersRemaining, uid, inSurface);
+      return body.canWriteOn(layersRemaining, layer, uid, inSurface);
     }
   }
 

@@ -18,6 +18,7 @@ import bonsai.runtime.core.Copy;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.env.*;
 
+/// Expressions are stateless across instants but can maintain a state during an instant.
 public interface Expression extends Schedulable, Copy<Expression>
 {
   /// Called at the beginning of an instant if this expression *can* be reached.

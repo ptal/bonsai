@@ -111,7 +111,7 @@ public class SpaceMachine
     while (res.k.isInternal()) {
       res = program.execute(layersRemaining, layer);
       if (res.k.isInternal() && !layer.processWasScheduled()) {
-        boolean wasUnblocked = layer.unblock(program);
+        boolean wasUnblocked = layer.unblock(program, layersRemaining);
         if(!wasUnblocked) {
           if (res.k != CompletionCode.PAUSE_DOWN) {
             throw new CausalException("The current layer is blocked (every process waits for an event) and no sub-universe can be executed.");

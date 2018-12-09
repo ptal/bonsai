@@ -70,7 +70,7 @@ public class SpaceStmt extends ASTNode implements Statement
     return new StmtResult(CompletionCode.TERMINATE, layer.currentQueue(), ba);
   }
 
-  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     checkNoSubLayer(layersRemaining, "SpaceStmt.canWriteOn");
     return false;
   }

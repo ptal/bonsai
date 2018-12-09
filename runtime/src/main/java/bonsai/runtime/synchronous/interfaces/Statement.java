@@ -26,7 +26,7 @@ import bonsai.runtime.synchronous.env.*;
 public interface Statement extends Schedulable, Copy<Statement>
 {
   /// This method is called to (re)initialize the statement.
-  /// It is called at start (before any other method) and is called again if the object was used and need to be reset.
+  /// It is called at start (before any other method) and is called again if the statement went out of scope and need to be reset.
   /// This call must be forwarded to all sub-components: it ignores layers and instants.
   /// Special:
   ///   - Instantaneous statements should have nothing to prepare since they are stateless.
@@ -81,7 +81,7 @@ public interface Statement extends Schedulable, Copy<Statement>
   /// Conditions:
   ///   - Must be idempotent
   ///   - The internal state of the statement must not be modified.
-  boolean canWriteOn(int layersRemaining, String uid, boolean inSurface);
+  boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface);
 
   /// Returns the number of layers of the program.
   /// This method is only called once before `prepare`.

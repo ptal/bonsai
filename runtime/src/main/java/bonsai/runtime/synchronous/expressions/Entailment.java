@@ -27,7 +27,7 @@ import bonsai.runtime.synchronous.variables.*;
 public class Entailment extends ASTNode implements Expression
 {
   // We have the variables appearing in the left and right side of the entailment.
-  // Note that constant are not represented in this class and directly compiled into the closure.
+  // Note that constants are not represented in this class and directly compiled into the closure.
   private final List<FreeAccess> leftVars;
   private final List<FreeAccess> rightVars;
   private final Function<ArrayList<Object>, Kleene> eval;
@@ -48,13 +48,13 @@ public class Entailment extends ASTNode implements Expression
       eval);
   }
 
-  private boolean evalArgs(Layer layer, List<FreeAccess> accesses,
+  private boolean evalArgs(Layer layer, String readOnlyHypothesis, List<FreeAccess> accesses,
    ArrayList<Object> args)
   {
     boolean isReadOnly = true;
     for (FreeAccess access : accesses) {
       Variable var = access.executeFree(layer);
-      isReadOnly = isReadOnly && var.isReadable();
+      isReadOnly = isReadOnly && (var.isReadable() || var.uid().equals(readOnlyHypothesis));
       args.add(var.value());
     }
     return isReadOnly;
@@ -101,16 +101,21 @@ public class Entailment extends ASTNode implements Expression
 
   public ExprResult execute(Layer layer) {
     if (result.isSuspended()) {
-      ArrayList<Object> args = new ArrayList();
-      boolean leftReadOnly = evalArgs(layer, leftVars, args);
-      boolean rightReadOnly = evalArgs(layer, rightVars, args);
-      Kleene r = eval.apply(args);
-      Kleene promoted = promoteResult(r, leftReadOnly, rightReadOnly);
+      Kleene promoted = execute(layer, "");
       if (promoted != null) {
         result = new ExprResult(new ES(promoted));
       }
     }
     return result;
+  }
+
+  public Kleene execute(Layer layer, String readOnlyHypothesis) {
+    ArrayList<Object> args = new ArrayList();
+    boolean leftReadOnly = evalArgs(layer, readOnlyHypothesis, leftVars, args);
+    boolean rightReadOnly = evalArgs(layer, readOnlyHypothesis, rightVars, args);
+    Kleene r = eval.apply(args);
+    Kleene promoted = promoteResult(r, leftReadOnly, rightReadOnly);
+    return promoted;
   }
 
   public boolean canWriteOn(String uid) {

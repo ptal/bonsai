@@ -83,6 +83,7 @@ public class Sequence extends ASTNode implements Statement
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    // This can only happens if the sequence is at top-level.
     if(layersRemaining == 0) {
       checkNonTerminatedEOI("p;q", res.k);
       CompletionCode k = current().endOfInstant(layersRemaining, layer);
@@ -132,22 +133,22 @@ public class Sequence extends ASTNode implements Statement
     }
   }
 
-  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0) {
       boolean canTerminate = true;
       boolean canWrite = false;
       if (pc < seq.size()) {
-        canWrite = current().canWriteOn(layersRemaining, uid, inSurface);
+        canWrite = current().canWriteOn(layersRemaining, layer, uid, inSurface);
         for(int i=pc; i < seq.size() && canTerminate && !canWrite; i++) {
           Statement p = seq.get(i);
-          canWrite = p.canWriteOn(layersRemaining, uid, false);
+          canWrite = p.canWriteOn(layersRemaining, layer, uid, false);
           canTerminate = p.canTerminate();
         }
       }
       return canWrite;
     }
     else {
-      return current().canWriteOn(layersRemaining, uid, inSurface);
+      return current().canWriteOn(layersRemaining, layer, uid, inSurface);
     }
   }
 

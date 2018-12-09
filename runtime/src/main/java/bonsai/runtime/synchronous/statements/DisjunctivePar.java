@@ -24,6 +24,25 @@ import bonsai.runtime.synchronous.env.*;
 public class DisjunctivePar extends ASTNode implements Statement
 {
   private final List<Statement> par;
+  private ArrayList<LayerData> layersData;
+  private int currentLayer;
+
+  class LayerData {
+    public ArrayList<Integer> active;
+    public ArrayList<StmtResult> results;
+    public LayerData() {
+      init();
+    }
+
+    public void init() {
+      active = new ArrayList();
+      results = new ArrayList();
+      for(int i = 0; i < par.size(); i++) {
+        active.add(i);
+        results.add(new StmtResult(CompletionCode.WAIT));
+      }
+    }
+  }
 
   public DisjunctivePar(List<Statement> par) {
     super();
@@ -35,7 +54,10 @@ public class DisjunctivePar extends ASTNode implements Statement
     return new DisjunctivePar(ASTNode.copyList(par));
   }
 
-  private void init() {}
+  private void init() {
+    layersData = new ArrayList();
+    currentLayer = 0;
+  }
 
   public void prepare() {
     for(Statement p : par) {
@@ -69,14 +91,32 @@ public class DisjunctivePar extends ASTNode implements Statement
   }
 
   public StmtResult execute(int layersRemaining, Layer layer) {
+    currentLayer = layersRemaining;
     throw new RuntimeException("DisjunctivePar.execute: unimplemented.");
   }
 
-  public boolean canWriteOn(int layersRemaining, String uid, boolean inSurface) {
+  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     throw new RuntimeException("DisjunctivePar.canWriteOn: unimplemented.");
   }
 
   public int countLayers() {
-    throw new RuntimeException("DisjunctivePar.countLayers: unimplemented.");
+    int n = 0;
+    for (Statement p : par) {
+      n = Math.max(n, p.countLayers());
+    }
+    return n;
   }
+
+  // public void schedule(Schedulable from) {
+  //   for (int i = 0; i < par.size(); i++) {
+  //     Statement proc = par.get(i);
+  //     if (proc == from) {
+  //       if (!active.contains(i)) {
+  //         active.add(i);
+  //       }
+  //       break;
+  //     }
+  //   }
+  //   super.schedule(from);
+  // }
 }
