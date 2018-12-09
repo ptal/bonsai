@@ -16,10 +16,10 @@
 #[run(SingleTimeDeclT.printBottom2, "bot")]
 #[run(SingleTimeDeclT.printOne, "1")]
 #[run(SingleTimeDeclT.printTwo, "2")]
-#[run(SingleTimeDeclT.oneInstant, "12")]
-#[run(SingleTimeDeclT.severalInstant, "121")]
-#[run(SingleTimeDeclT.pauseUpInUniverse, "21")]
-#[run(SingleTimeDeclT.reinitValue, "012")]
+#[debug(SingleTimeDeclT.oneInstant, "12")]
+#[debug(SingleTimeDeclT.severalInstant, "121")]
+#[debug(SingleTimeDeclT.pauseUpInUniverse, "21")]
+#[debug(SingleTimeDeclT.reinitValue, "012")]
 
 package test;
 

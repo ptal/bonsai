@@ -107,13 +107,22 @@ public class Space
     return projectedMemory;
   }
 
+  // Unblocking processes on condition follows three steps:
+  //  1. Call `canWriteOn(x)` where `x` is a variable with a write/readwrite counter > 0.
+  //  2. Record all conditions that are unblocked on this variable with `layer.subscribeUnblocked`.
+  //  3a. If `canWriteOn(x) == false`, then we cannot write on this variable anymore:
+  //      We commit to the result recorded at step (2) for conditions on this variables.
+  //  3b. Otherwise we unsubscribe the unblocked condition.
   public boolean unblock(Statement body, int layersRemaining, Layer layer) {
     boolean unblocked = false;
     for (Variable var : memory.values()) {
       if (!var.isReadable()) {
         if(!body.canWriteOn(layersRemaining, layer, var.uid(), true)) {
           unblocked = true;
-          var.meetReadOnly(layer);
+          layer.scheduleUnblocked(var.uid());
+        }
+        else {
+          layer.unsubscribeUnblocked(var.uid());
         }
       }
     }

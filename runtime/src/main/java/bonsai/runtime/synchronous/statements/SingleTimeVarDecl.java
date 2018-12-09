@@ -34,6 +34,7 @@ public class SingleTimeVarDecl extends VarDecl implements Statement
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkExpressionStateEOI("Var decl", state1());
     if (layersRemaining == 0 && state2()) {
       terminate(layer);
     }

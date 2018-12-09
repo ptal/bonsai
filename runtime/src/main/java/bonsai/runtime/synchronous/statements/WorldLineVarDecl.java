@@ -34,6 +34,11 @@ public class WorldLineVarDecl extends SingleSpaceVarDecl
     throw new CannotCopyException("WorldLineVarDecl");
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkExpressionStateEOI("Var decl", state1());
+    return super.endOfInstant(layersRemaining, layer);
+  }
+
   public StmtResult execute(int layersRemaining, Layer layer) {
     StmtResult res = super.execute(layersRemaining, layer);
     if (layersRemaining == 0 && !res.k.isInternal()) {

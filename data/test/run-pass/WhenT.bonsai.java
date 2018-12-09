@@ -23,7 +23,7 @@
 #[run(WhenT.whenLMax2, "12")]
 #[run(WhenT.monotone, "4")]
 #[run(WhenT.antiMonotone, "5")]
-#[debug(WhenT.nestedWhen, "34")]
+#[run(WhenT.nestedWhen, "34")]
 
 package test;
 

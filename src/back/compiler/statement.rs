@@ -188,6 +188,7 @@ impl<'a> StatementCompiler<'a>
       ExprKind::Entailment(rel) => rel,
       _ =>
         // transform x to x |= true
+        // TODO: should be x == true.
         Box::new(EntailmentRel {
           left: cond.clone(),
           right: Expr::new(DUMMY_SP, ExprKind::Trilean(SKleene::True)),

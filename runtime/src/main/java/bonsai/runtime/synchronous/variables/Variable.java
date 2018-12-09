@@ -127,21 +127,6 @@ public class Variable
     }
   }
 
-  // Reduces the readwrite counter to (0,0,r) and generate events accordingly.
-  // This can happen after a `canWriteOn` analysis (see `Layer.unblock`).
-  public void meetReadOnly(Layer layer) {
-    if (rw.write > 0 || rw.readwrite > 0) {
-      if (rw.write > 0) {
-        rw.write = 0;
-        canReadWriteEvent(layer);
-      }
-      if (rw.readwrite > 0) {
-        rw.readwrite = 0;
-        canReadEvent(layer);
-      }
-    }
-  }
-
   private void canReadEvent(Layer layer) {
     layer.schedule(new Event(uid(), Event.CAN_READ));
   }

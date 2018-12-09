@@ -160,9 +160,7 @@ public class WhenElse extends ASTNode implements Statement
 
   public StmtResult execute(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
-      if (state1()) {
-        condResult = cond.execute(layer);
-      }
+      executeState1(layer);
       return branchOrDefault(
         s -> { res = s.execute(layersRemaining, layer); return res; },
         () -> res
@@ -176,6 +174,21 @@ public class WhenElse extends ASTNode implements Statement
     }
   }
 
+  private void executeState1(Layer layer) {
+    if (state1()) {
+      condResult = cond.execute(layer);
+      if (!condResult.isSuspended()) {
+        cond.terminate(layer);
+        if (state2a()) {
+          els.abort(layer);
+        }
+        else if (state2b()) {
+          then.abort(layer);
+        }
+      }
+    }
+  }
+
   public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0 && state1()) {
       if(inSurface) {
@@ -183,8 +196,10 @@ public class WhenElse extends ASTNode implements Statement
         if (k != null) {
           switch (k) {
             case TRUE:
+              layer.subscribeUnblocked(uid, cond, k);
               return then.canWriteOn(layersRemaining, layer, uid, false);
             case FALSE:
+              layer.subscribeUnblocked(uid, cond, k);
               return els.canWriteOn(layersRemaining, layer, uid, false);
             case UNKNOWN: throw new RuntimeException(
               "[BUG] Entailment.execute(layer,uid) returned an unknown result.");

@@ -20,6 +20,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.statements.SpaceStmt;
+import bonsai.runtime.synchronous.expressions.Entailment;
 
 public class Layer
 {
@@ -67,6 +68,18 @@ public class Layer
 
   public boolean unblock(Statement body, int layersRemaining) {
     return space.unblock(body, layersRemaining, this);
+  }
+
+  public void subscribeUnblocked(String uid, Entailment cond, Kleene result) {
+    scheduler.subscribeUnblocked(uid, cond, result);
+  }
+
+  public void scheduleUnblocked(String uid) {
+    scheduler.scheduleUnblocked(uid);
+  }
+
+  public void unsubscribeUnblocked(String uid) {
+    scheduler.unsubscribeUnblocked(uid);
   }
 
   public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {

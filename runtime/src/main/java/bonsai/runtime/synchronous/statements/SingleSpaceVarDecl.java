@@ -33,6 +33,11 @@ public class SingleSpaceVarDecl extends VarDecl implements Statement
     throw new CannotCopyException("SingleSpaceVarDecl");
   }
 
+  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkExpressionStateEOI("Var decl", state1());
+    return super.endOfInstant(layersRemaining, layer);
+  }
+
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
       if (state1()) {

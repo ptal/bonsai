@@ -19,15 +19,27 @@ import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.variables.*;
 import bonsai.runtime.synchronous.interfaces.*;
+import bonsai.runtime.synchronous.expressions.Entailment;
 
 public class Scheduler
 {
   private HashMap<Event, ArrayList<Schedulable>> waitingList;
   private boolean scheduledProcess;
+  private HashMap<String, PartialCond> unblocked;
+
+  class PartialCond {
+    public Entailment cond;
+    public Kleene result;
+    public PartialCond(Entailment cond, Kleene result) {
+      this.cond = cond;
+      this.result = result;
+    }
+  }
 
   public Scheduler() {
     waitingList = new HashMap();
     scheduledProcess = false;
+    unblocked = new HashMap();
   }
 
   public void subscribe(Event event, Schedulable process) {
@@ -56,5 +68,20 @@ public class Scheduler
     } else {
       return false;
     }
+  }
+
+  public void subscribeUnblocked(String uid, Entailment entailment, Kleene result) {
+    unblocked.put(uid, new PartialCond(entailment, result));
+  }
+
+  public void scheduleUnblocked(String uid) {
+    PartialCond partial = unblocked.remove(uid);
+    if (partial != null) {
+      partial.cond.commit(partial.result);
+    }
+  }
+
+  public void unsubscribeUnblocked(String uid) {
+    unblocked.remove(uid);
   }
 }

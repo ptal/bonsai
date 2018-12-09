@@ -103,7 +103,7 @@ public class Entailment extends ASTNode implements Expression
     if (result.isSuspended()) {
       Kleene promoted = execute(layer, "");
       if (promoted != null) {
-        result = new ExprResult(new ES(promoted));
+        commit(promoted);
       }
     }
     return result;
@@ -116,6 +116,10 @@ public class Entailment extends ASTNode implements Expression
     Kleene r = eval.apply(args);
     Kleene promoted = promoteResult(r, leftReadOnly, rightReadOnly);
     return promoted;
+  }
+
+  public void commit(Kleene partialRes) {
+    result = new ExprResult(new ES(partialRes));
   }
 
   public boolean canWriteOn(String uid) {
