@@ -44,6 +44,7 @@ impl<'a> StatementCompiler<'a>
       Nothing => self.nothing(),
       DelayStmt(delay) => self.delay(delay),
       Space(branch) => self.space(branch),
+      Prune => self.prune(),
       ExprStmt(expr) => self.procedure(expr),
       Let(body) => self.let_decl(body),
       Seq(branches) => self.sequence(branches),
@@ -163,6 +164,10 @@ impl<'a> StatementCompiler<'a>
     self.fmt.unindent();
     self.compile(*branch);
     self.fmt.push(")");
+  }
+
+  fn prune(&mut self) {
+    self.fmt.push("new Prune()");
   }
 
   fn qf_universe(&mut self, body: Box<Stmt>) {
