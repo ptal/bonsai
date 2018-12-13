@@ -97,4 +97,12 @@ public abstract class TotalOrder<T>
       return value.toString();
     }
   }
+
+  protected Object wrapInteger(Object o) {
+    if (o instanceof Integer) {
+      o = new LMax((Integer)o);
+    }
+    return o;
+  }
+
 }

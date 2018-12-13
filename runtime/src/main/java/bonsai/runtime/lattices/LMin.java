@@ -49,11 +49,16 @@ public class LMin extends TotalOrder<Integer>
     return new LMin(this);
   }
 
+  public LMin join(Object o) {
+    return (LMin) super.join(wrapInteger(o));
+  }
+
+  public LMin meet(Object o) {
+    return (LMin) super.meet(wrapInteger(o));
+  }
+
   public Kleene entails(Object o) {
-    if (o instanceof Integer) {
-      o = new LMin((Integer)o);
-    }
-    return super.entails(o);
+    return super.entails(wrapInteger(o));
   }
 
   protected boolean entails_inner(TotalOrder<Integer> o) {

@@ -24,6 +24,9 @@
 #[run(WhenT.monotone, "4")]
 #[run(WhenT.antiMonotone, "5")]
 #[run(WhenT.nestedWhen, "34")]
+#[run(WhenT.whenAndTell, "94")]
+#[run(WhenT.nonMonotonicTell, "4")]
+#[run(WhenT.nonMonotonicTell2, "344")]
 
 package test;
 
@@ -138,5 +141,36 @@ public class WhenT
         System.out.print(read y);
       end
     end
+  end
+
+  public proc whenAndTell() =
+    single_time LMax x = new LMax(3);
+    single_time LMax y = new LMax(4);
+    x <- 4;
+    when x |= y then
+      x <- 9;
+    else
+      y <- 9;
+    end;
+    System.out.print(read x);
+    System.out.print(read y);
+  end
+
+  public proc nonMonotonicTell() =
+    single_time LMax x = bot;
+    x <- 4;
+    x <- 3;
+    System.out.print(read x);
+  end
+
+  public proc nonMonotonicTell2() =
+    single_space LMax x = new LMax(3);
+    System.out.print(read x);
+    pause;
+    x <- 4;
+    System.out.print(read x);
+    pause;
+    x <- 3;
+    System.out.print(read x);
   end
 }

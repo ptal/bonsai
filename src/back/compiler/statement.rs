@@ -51,13 +51,13 @@ impl<'a> StatementCompiler<'a>
       When(cond, then, els) => self.when(cond, then, els),
       QFUniverse(body) => self.qf_universe(body),
       Universe(queue, body) => self.universe(queue, body),
+      Tell(var, expr) => self.tell(var, expr),
       // OrPar(branches) => self.or_parallel(branches),
       // AndPar(branches) => self.and_parallel(branches),
       // Suspend(entailment, body) => self.suspend(entailment, body),
       // Loop(body) => self.loop_stmt(body),
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
-      // Tell(var, expr) => self.tell(var, expr),
       // LocalDrop(_) => (), // It is not used in the runtime.
       stmt => unimplemented!("statement unimplemented: {:?}.", stmt)
     }
@@ -216,6 +216,14 @@ impl<'a> StatementCompiler<'a>
     self.fmt.unindent();
   }
 
+  // We rewrite `x <- v` to `x.join_in_place(v)`.
+  fn tell(&mut self, var: Variable, expr: Expr) {
+    let span = expr.span.clone();
+    let node = ExprKind::Call(MethodCall::new(
+      span.clone(), Some(var), Ident::gen("join_in_place"), vec![expr]));
+    self.procedure(Expr::new(span, node));
+  }
+
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
   // {
   //   match binding.kind {
@@ -276,14 +284,6 @@ impl<'a> StatementCompiler<'a>
   // fn module_call(&mut self, run_expr: RunExpr) {
   //   self.fmt.push(&format!("new CallProcess("));
   //   let expr = run_expr.to_expr();
-  //   self.closure(true, expr);
-  //   self.fmt.push(")");
-  // }
-
-  // fn tell(&mut self, var: Variable, expr: Expr) {
-  //   self.fmt.push("new Tell(\"");
-  //   self.stream_var(fmt, var);
-  //   self.fmt.push("\", ");
   //   self.closure(true, expr);
   //   self.fmt.push(")");
   // }

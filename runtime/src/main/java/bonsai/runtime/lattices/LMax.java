@@ -49,11 +49,16 @@ public class LMax extends TotalOrder<Integer>
     return new LMax(this);
   }
 
+  public LMax join(Object o) {
+    return (LMax) super.join(wrapInteger(o));
+  }
+
+  public LMax meet(Object o) {
+    return (LMax) super.meet(wrapInteger(o));
+  }
+
   public Kleene entails(Object o) {
-    if (o instanceof Integer) {
-      o = new LMax((Integer)o);
-    }
-    return super.entails(o);
+    return super.entails(wrapInteger(o));
   }
 
   protected boolean entails_inner(TotalOrder<Integer> o) {
