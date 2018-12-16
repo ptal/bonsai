@@ -113,14 +113,14 @@ public class BranchAlgebra {
   public static BranchAlgebra intersect(ArrayList<BranchAlgebra> processes) {
     return BranchAlgebra.merge(processes,
       (ps, i) -> ps.stream().anyMatch(ba -> !ba.branches.get(i).isPresent()),
-      (parProcesses) -> new ConjunctivePar(parProcesses)
+      (parProcesses) -> new ConjunctivePar(parProcesses, 0)
     );
   }
 
   public static BranchAlgebra union(ArrayList<BranchAlgebra> processes) {
     return BranchAlgebra.merge(processes,
       (ps, i) -> ps.stream().allMatch(ba -> !ba.branches.get(i).isPresent()),
-      (parProcesses) -> new DisjunctivePar(parProcesses)
+      (parProcesses) -> new DisjunctivePar(parProcesses, 0)
     );
   }
 

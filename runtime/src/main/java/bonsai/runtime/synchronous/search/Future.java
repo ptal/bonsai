@@ -39,7 +39,7 @@ public class Future {
     }
     Statement merged_proc;
     if (processes.size() > 1) {
-      merged_proc = new DisjunctivePar(processes);
+      merged_proc = new DisjunctivePar(processes, 0);
     }
     else {
       merged_proc = processes.get(0);

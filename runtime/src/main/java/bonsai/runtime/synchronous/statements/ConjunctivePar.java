@@ -21,62 +21,28 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class ConjunctivePar extends ASTNode implements Statement
+public class ConjunctivePar extends Parallel
 {
-  private final List<Statement> par;
+  public ConjunctivePar(List<Statement> par, int layerIdx) {
+    super(par, layerIdx);
+  }
 
-  public ConjunctivePar(List<Statement> par) {
-    super();
-    this.par = par;
-    init();
+  protected StmtResult mergeRes() {
+    return StmtResult.conjunctivePar(results);
   }
 
   public ConjunctivePar copy() {
-    return new ConjunctivePar(ASTNode.copyList(par));
-  }
-
-  private void init() {}
-
-  public void prepare() {
-    for(Statement p : par) {
-      p.prepare();
-    }
-    init();
-  }
-
-  public void canInstant(int layersRemaining, Layer layer) {
-    throw new RuntimeException("ConjunctivePar.canInstant: unimplemented.");
-  }
-
-  public HashSet<String> activeQueues(int layersRemaining) {
-    throw new RuntimeException("ConjunctivePar.activeQueues: unimplemented.");
+    return new ConjunctivePar(ASTNode.copyList(par), layerIdx);
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
-    throw new RuntimeException("ConjunctivePar.terminateEmptyQueue: unimplemented.");
-  }
-
-  public boolean canTerminate() {
-    throw new RuntimeException("ConjunctivePar.canTerminate: unimplemented.");
-  }
-
-  public void abort(Layer layer) {
-    throw new RuntimeException("ConjunctivePar.abort: unimplemented.");
-  }
-
-  public void suspend(Layer layer) {
-    throw new RuntimeException("ConjunctivePar.suspend: unimplemented.");
-  }
-
-  public StmtResult execute(int layersRemaining, Layer layer) {
-    throw new RuntimeException("ConjunctivePar.execute: unimplemented.");
-  }
-
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
-    throw new RuntimeException("ConjunctivePar.canWriteOn: unimplemented.");
-  }
-
-  public int countLayers() {
-    throw new RuntimeException("ConjunctivePar.countLayers: unimplemented.");
+    CompletionCode k = super.endOfInstant(layersRemaining, layer);
+    for(StmtResult s : results) {
+      if (s.k == CompletionCode.TERMINATE) {
+        k = CompletionCode.TERMINATE;
+        break;
+      }
+    }
+    return k;
   }
 }

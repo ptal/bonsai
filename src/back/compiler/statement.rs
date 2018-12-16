@@ -52,8 +52,8 @@ impl<'a> StatementCompiler<'a>
       QFUniverse(body) => self.qf_universe(body),
       Universe(queue, body) => self.universe(queue, body),
       Tell(var, expr) => self.tell(var, expr),
-      // OrPar(branches) => self.or_parallel(branches),
-      // AndPar(branches) => self.and_parallel(branches),
+      OrPar(branches) => self.or_parallel(branches),
+      AndPar(branches) => self.and_parallel(branches),
       // Suspend(entailment, body) => self.suspend(entailment, body),
       // Loop(body) => self.loop_stmt(body),
       // ProcCall(process, args) => self.fun_call(process, args),
@@ -113,7 +113,7 @@ impl<'a> StatementCompiler<'a>
     self.local_decl(let_decl, "WorldLineVarDecl");
   }
 
-  fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>)
+  fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>, extra: Option<&str>)
   {
     if branches.len() == 1 {
       self.compile(branches.pop().unwrap());
@@ -128,13 +128,17 @@ impl<'a> StatementCompiler<'a>
           self.fmt.terminate_line(",");
         }
       }
-      self.fmt.push("))");
+      self.fmt.push(")");
+      if let Some(e) = extra {
+        self.fmt.push(&format!(", {}", e));
+      }
+      self.fmt.push(")");
       self.fmt.unindent();
     }
   }
 
   fn sequence(&mut self, branches: Vec<Stmt>) {
-    self.nary_operator("Sequence", branches);
+    self.nary_operator("Sequence", branches, None);
   }
 
   fn delay(&mut self, delay: Delay) {
@@ -224,6 +228,17 @@ impl<'a> StatementCompiler<'a>
     self.procedure(Expr::new(span, node));
   }
 
+
+  fn or_parallel(&mut self, branches: Vec<Stmt>) {
+    self.nary_operator("LayeredParallel", branches,
+      Some("LayeredParallel.CONJUNCTIVE_PAR"));
+  }
+
+  fn and_parallel(&mut self, branches: Vec<Stmt>) {
+    self.nary_operator("LayeredParallel", branches,
+      Some("LayeredParallel.DISJUNCTIVE_PAR"));
+  }
+
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
   // {
   //   match binding.kind {
@@ -261,14 +276,6 @@ impl<'a> StatementCompiler<'a>
   //   self.closure(true,
   //     binding.expr.expect("BUG: Generate binding without an expression."));
   //   self.fmt.push(")");
-  // }
-
-  // fn or_parallel(&mut self, branches: Vec<Stmt>) {
-  //   self.nary_operator("or_par", branches);
-  // }
-
-  // fn and_parallel(&mut self, branches: Vec<Stmt>) {
-  //   self.nary_operator("and_par", branches);
   // }
 
   // fn suspend(&mut self, condition: Condition, body: Box<Stmt>) {

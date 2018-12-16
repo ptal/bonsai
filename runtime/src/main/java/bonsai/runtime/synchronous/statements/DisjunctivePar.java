@@ -21,102 +21,17 @@ import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
 
-public class DisjunctivePar extends ASTNode implements Statement
+public class DisjunctivePar extends Parallel
 {
-  private final List<Statement> par;
-  private ArrayList<LayerData> layersData;
-  private int currentLayer;
-
-  class LayerData {
-    public ArrayList<Integer> active;
-    public ArrayList<StmtResult> results;
-    public LayerData() {
-      init();
-    }
-
-    public void init() {
-      active = new ArrayList();
-      results = new ArrayList();
-      for(int i = 0; i < par.size(); i++) {
-        active.add(i);
-        results.add(new StmtResult(CompletionCode.WAIT));
-      }
-    }
+  public DisjunctivePar(List<Statement> par, int layerIdx) {
+    super(par, layerIdx);
   }
 
-  public DisjunctivePar(List<Statement> par) {
-    super();
-    this.par = par;
-    init();
+  protected StmtResult mergeRes() {
+    return StmtResult.disjunctivePar(results);
   }
 
   public DisjunctivePar copy() {
-    return new DisjunctivePar(ASTNode.copyList(par));
+    return new DisjunctivePar(ASTNode.copyList(par), layerIdx);
   }
-
-  private void init() {
-    layersData = new ArrayList();
-    currentLayer = 0;
-  }
-
-  public void prepare() {
-    for(Statement p : par) {
-      p.prepare();
-    }
-    init();
-  }
-
-  public void canInstant(int layersRemaining, Layer layer) {
-    throw new RuntimeException("DisjunctivePar.canInstant: unimplemented.");
-  }
-
-  public HashSet<String> activeQueues(int layersRemaining) {
-    throw new RuntimeException("DisjunctivePar.activeQueues: unimplemented.");
-  }
-
-  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
-    throw new RuntimeException("DisjunctivePar.terminateEmptyQueue: unimplemented.");
-  }
-
-  public boolean canTerminate() {
-    throw new RuntimeException("DisjunctivePar.canTerminate: unimplemented.");
-  }
-
-  public void abort(Layer layer) {
-    throw new RuntimeException("DisjunctivePar.abort: unimplemented.");
-  }
-
-  public void suspend(Layer layer) {
-    throw new RuntimeException("DisjunctivePar.suspend: unimplemented.");
-  }
-
-  public StmtResult execute(int layersRemaining, Layer layer) {
-    currentLayer = layersRemaining;
-    throw new RuntimeException("DisjunctivePar.execute: unimplemented.");
-  }
-
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
-    throw new RuntimeException("DisjunctivePar.canWriteOn: unimplemented.");
-  }
-
-  public int countLayers() {
-    int n = 0;
-    for (Statement p : par) {
-      n = Math.max(n, p.countLayers());
-    }
-    return n;
-  }
-
-  // public void schedule(Schedulable from) {
-  //   for (int i = 0; i < par.size(); i++) {
-  //     Statement proc = par.get(i);
-  //     if (proc == from) {
-  //       if (!active.contains(i)) {
-  //         active.add(i);
-  //       }
-  //       break;
-  //     }
-  //   }
-  //   super.schedule(from);
-  // }
 }
