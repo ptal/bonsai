@@ -82,7 +82,7 @@ public class ProcedureCall extends NAryCall implements Statement
 
   public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     checkNoSubLayer(layersRemaining, "ProcedureCall.canWriteOn");
-    System.out.println("ProcedureCall.canWriteOn: " + uid);
+    // System.out.println("ProcedureCall.canWriteOn: " + uid);
     return new CanWriteOnResult(true, super.canWriteOn(uid));
   }
 

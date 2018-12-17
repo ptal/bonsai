@@ -57,7 +57,7 @@ impl Maven {
   // mvn -B -q exec:java -Dexec.mainClass="test.<class_name>"
   pub fn execute_sandbox(&self, main_class: String) -> io::Result<Output> {
     let main_class_arg = format!("-Dexec.mainClass=test.{}", main_class);
-    let silent = if self.filter_debug { "-e" } else { "-q" };
+    let silent = if self.filter_debug { "-q" } else { "-q" };
     let child = Command::new("mvn")
       .args(&["-B", silent, "exec:java", &main_class_arg])
       .current_dir(self.sandbox.clone())

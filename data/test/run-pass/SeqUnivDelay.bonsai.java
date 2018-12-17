@@ -27,10 +27,10 @@ import java.util.*;
 public class SeqUnivDelay
 {
   public proc pauseNothing() = universe pause; nothing end
-  public proc onePausePrint() = pause; universe System.out.println("1") end end
+  public proc onePausePrint() = pause; universe System.out.print("1") end end
   public proc delay3() =
     pause; System.out.print("1");
-    universe pause; System.out.println("2") end;
+    universe pause; System.out.print("2") end;
     pause
   end
 

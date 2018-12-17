@@ -31,8 +31,8 @@ import bonsai.runtime.lattices.LMax;
 public class DelayT
 {
   public proc pauseNothing() = pause; nothing end
-  public proc onePausePrint() = pause; System.out.println("1") end
-  public proc twoPausePrint() = pause; pause; System.out.println("1234") end
+  public proc onePausePrint() = pause; System.out.print("1") end
+  public proc twoPausePrint() = pause; pause; System.out.print("1234") end
 
   public proc pausePrintPause() = pause; System.out.print(1); pause; end
   public proc pausePrintPausePrint() =

@@ -30,23 +30,23 @@ public class SingleSpaceDeclT
 {
   public proc printBottom() =
     single_space LMax a;
-    System.out.println(a);
+    System.out.print(a);
   end
 
   public proc printBottom2() =
     single_space LMax a = bot;
-    System.out.println(a);
+    System.out.print(a);
   end
 
   public proc printOne() =
     single_space LMax a = new LMax(1);
-    System.out.println(a);
+    System.out.print(a);
   end
 
   public proc printTwo() =
     single_space LMax a = new LMax(1);
     readwrite a.inc();
-    System.out.println(read a);
+    System.out.print(read a);
   end
 
   public proc oneInstant() =

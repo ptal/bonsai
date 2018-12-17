@@ -142,7 +142,7 @@ public class Sequence extends ASTNode implements Statement
   public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0) {
       CanWriteOnResult canRes = new CanWriteOnResult(true, false);
-      System.out.println("Sequence.canWriteOn: " + uid);
+      // System.out.println("Sequence.canWriteOn: " + uid);
       if (pc < seq.size()) {
         canRes = current().canWriteOn(layersRemaining, layer, uid, inSurface);
         for(int i=pc+1; i < seq.size() && canRes.canTerminate && !canRes.canWrite; i++) {

@@ -22,7 +22,14 @@ import bonsai.runtime.core.*;
 public class Simple
 {
   public proc test() =
-    System.out.print(1);
-    pause;
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      par space System.out.print(1) end
+      ||  prune
+      end;
+      pause;
+      pause;
+      System.out.println("unreachable");
+    end
   end
 }

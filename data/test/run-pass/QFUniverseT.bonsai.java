@@ -24,6 +24,6 @@ import java.util.*;
 public class QFUniverseT
 {
   public proc printNothing() = universe nothing end
-  public proc printOne() = universe System.out.println("1") end
-  public proc printTwo() = universe universe System.out.println("2") end end
+  public proc printOne() = universe System.out.print("1") end
+  public proc printTwo() = universe universe System.out.print("2") end end
 }

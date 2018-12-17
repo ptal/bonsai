@@ -47,6 +47,8 @@ grammar! bonsai {
 
   fn make_execution_test(filter_debug: bool, class_name: String, process_name: String, regex: String) -> TestAnnotation
   {
+    // We ensure that the regex matches "exactly" the given string.
+    let regex = format!("^{}$", regex);
     TestAnnotation::Execution(ExecutionTest::new(class_name, process_name, regex, filter_debug))
   }
 

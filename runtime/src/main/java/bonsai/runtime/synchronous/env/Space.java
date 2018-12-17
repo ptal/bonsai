@@ -117,7 +117,7 @@ public class Space
     boolean unblocked = false;
     for (Variable var : memory.values()) {
       if (!var.isReadable()) {
-        System.out.println("unblock: " + var.uid());
+        // System.out.println("unblock: " + var.uid());
         if(!body.canWriteOn(layersRemaining, layer, var.uid(), true).canWrite) {
           unblocked = true;
           layer.scheduleUnblocked(var.uid());

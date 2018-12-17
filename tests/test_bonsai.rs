@@ -44,13 +44,13 @@ fn test_data_dir(filter: bool) {
   engine.run();
 }
 
-// #[test]
-// fn test_data_directory()
-// {
-//   test_data_dir(false);
-// }
-
 #[test]
-fn debug_run() {
-  test_data_dir(true);
+fn test_data_directory()
+{
+  test_data_dir(false);
 }
+
+// #[test]
+// fn debug_run() {
+//   test_data_dir(true);
+// }

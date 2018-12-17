@@ -31,23 +31,23 @@ public class SingleTimeDeclT
 {
   public proc printBottom() =
     single_time LMax a;
-    System.out.println(a);
+    System.out.print(a);
   end
 
   public proc printBottom2() =
     single_time LMax a = bot;
-    System.out.println(a);
+    System.out.print(a);
   end
 
   public proc printOne() =
     single_time LMax a = new LMax(1);
-    System.out.println(a);
+    System.out.print(a);
   end
 
   public proc printTwo() =
     single_time LMax a = new LMax(1);
     readwrite a.inc();
-    System.out.println(read a);
+    System.out.print(read a);
   end
 
   public proc oneInstant() =
