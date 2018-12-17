@@ -57,9 +57,9 @@ public class Nothing extends ASTNode implements Statement
     return new StmtResult(CompletionCode.TERMINATE);
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     checkNoSubLayer(layersRemaining, "Nothing.canWriteOn");
-    return false;
+    return new CanWriteOnResult(true, false);
   }
 
   public int countLayers() { return 0; }

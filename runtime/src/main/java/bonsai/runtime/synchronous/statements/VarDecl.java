@@ -150,19 +150,17 @@ public abstract class VarDecl extends ASTNode implements Statement
     }
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0) {
       if (state1()) {
         if (initValue.canWriteOn(uid)) {
-          return true;
+          return new CanWriteOnResult(canTerminate(), true);
         }
       }
       if (state1() || state2()) {
-        if (body.canWriteOn(layersRemaining, layer, uid, inSurface)) {
-          return true;
-        }
+        return body.canWriteOn(layersRemaining, layer, uid, inSurface);
       }
-      return false;
+      return new CanWriteOnResult(true, false);
     }
     else {
       return body.canWriteOn(layersRemaining, layer, uid, inSurface);

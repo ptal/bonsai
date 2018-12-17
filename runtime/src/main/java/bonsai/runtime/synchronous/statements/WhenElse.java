@@ -189,16 +189,20 @@ public class WhenElse extends ASTNode implements Statement
     }
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+    System.out.println("WhenElse.canWriteOn: " + uid);
     if (layersRemaining == 0 && state1()) {
       if(inSurface) {
         Kleene k = cond.execute(layer, uid);
+        System.out.println("WhenElse.canWriteOn: " + uid);
         if (k != null) {
           switch (k) {
             case TRUE:
+              System.out.println("WhenElse.canWriteOn.TRUE: " + uid);
               layer.subscribeUnblocked(uid, cond, k);
               return then.canWriteOn(layersRemaining, layer, uid, false);
             case FALSE:
+              System.out.println("WhenElse.canWriteOn.FALSE: " + uid);
               layer.subscribeUnblocked(uid, cond, k);
               return els.canWriteOn(layersRemaining, layer, uid, false);
             case UNKNOWN: throw new RuntimeException(
@@ -207,12 +211,12 @@ public class WhenElse extends ASTNode implements Statement
         }
       }
       return then.canWriteOn(layersRemaining, layer, uid, inSurface)
-          || els.canWriteOn(layersRemaining, layer, uid, inSurface);
+       .join(els.canWriteOn(layersRemaining, layer, uid, inSurface));
     }
     else {
       return branchOrDefault(
         s -> s.canWriteOn(layersRemaining, layer, uid, inSurface),
-        () -> false);
+        () -> new CanWriteOnResult(true, false));
     }
   }
 

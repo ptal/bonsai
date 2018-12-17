@@ -26,6 +26,7 @@ public class Sequence extends ASTNode implements Statement
   private final List<Statement> seq;
   private int pc; // program counter
   private StmtResult res;
+  private int reachable;
 
   public Sequence(List<Statement> seq) {
     super();
@@ -43,6 +44,7 @@ public class Sequence extends ASTNode implements Statement
 
   private void init() {
     pc = 0;
+    reachable = 0;
     res = new StmtResult(CompletionCode.TERMINATE);
   }
 
@@ -66,7 +68,8 @@ public class Sequence extends ASTNode implements Statement
   public void canInstant(int layersRemaining, Layer layer) {
     if (layersRemaining == 0) {
       res = new StmtResult(res.k);
-      reachableSubsequence((p) -> p.canInstant(layersRemaining, layer));
+      reachable = pc - 1;
+      reachableSubsequence((p) -> {reachable++; p.canInstant(layersRemaining, layer);});
     }
     else {
       current().canInstant(layersRemaining, layer);
@@ -94,6 +97,9 @@ public class Sequence extends ASTNode implements Statement
         }
         else {
           res.k = current().endOfInstant(layersRemaining, layer);
+          for(int i = pc; i <= reachable; i++) {
+            seq.get(i).abort(layer);
+          }
         }
       }
       return res.k;
@@ -133,19 +139,18 @@ public class Sequence extends ASTNode implements Statement
     }
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     if (layersRemaining == 0) {
-      boolean canTerminate = true;
-      boolean canWrite = false;
+      CanWriteOnResult canRes = new CanWriteOnResult(true, false);
+      System.out.println("Sequence.canWriteOn: " + uid);
       if (pc < seq.size()) {
-        canWrite = current().canWriteOn(layersRemaining, layer, uid, inSurface);
-        for(int i=pc; i < seq.size() && canTerminate && !canWrite; i++) {
+        canRes = current().canWriteOn(layersRemaining, layer, uid, inSurface);
+        for(int i=pc+1; i < seq.size() && canRes.canTerminate && !canRes.canWrite; i++) {
           Statement p = seq.get(i);
-          canWrite = p.canWriteOn(layersRemaining, layer, uid, false);
-          canTerminate = p.canTerminate();
+          canRes = canRes.join(p.canWriteOn(layersRemaining, layer, uid, false));
         }
       }
-      return canWrite;
+      return canRes;
     }
     else {
       return current().canWriteOn(layersRemaining, layer, uid, inSurface);

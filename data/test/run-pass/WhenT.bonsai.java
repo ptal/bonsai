@@ -27,6 +27,7 @@
 #[run(WhenT.whenAndTell, "94")]
 #[run(WhenT.nonMonotonicTell, "4")]
 #[run(WhenT.nonMonotonicTell2, "344")]
+#[debug(WhenT.example4_4_thesis, "33")]
 
 package test;
 
@@ -172,5 +173,19 @@ public class WhenT
     pause;
     x <- 3;
     System.out.print(read x);
+  end
+
+  public proc example4_4_thesis() =
+    single_space LMax x = bot;
+    single_space LMax y = new LMax(1);
+    when x |= y then
+      x <- 2
+    else
+      y <- 3;
+      pause
+    end;
+    x <- 3;
+    System.out.print(read x);
+    System.out.print(read y);
   end
 }

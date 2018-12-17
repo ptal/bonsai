@@ -72,9 +72,10 @@ public class Delay extends ASTNode implements Statement
     return new StmtResult(k);
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     checkNoSubLayer(layersRemaining, "Delay.canWriteOn");
-    return false;
+    System.out.println("Delay.canWriteOn");
+    return new CanWriteOnResult(false, false);
   }
 
   public int countLayers() { return 0; }

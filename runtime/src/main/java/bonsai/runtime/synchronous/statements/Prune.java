@@ -58,9 +58,9 @@ public class Prune extends ASTNode implements Statement
     return new StmtResult(CompletionCode.TERMINATE, layer.currentQueue(), ba);
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     checkNoSubLayer(layersRemaining, "Prune.canWriteOn");
-    return false;
+    return new CanWriteOnResult(true, false);
   }
 
   public int countLayers() { return 0; }

@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.examples;
+package bonsai.runtime.synchronous;
 
-import java.lang.System;
 import java.util.*;
-import bonsai.runtime.queueing.*;
-import bonsai.runtime.core.*;
 
-public class Simple
-{
-  public proc test() =
-    System.out.print(1);
-    pause;
-  end
+public class CanWriteOnResult {
+  public boolean canTerminate;
+  public boolean canWrite;
+
+  public CanWriteOnResult(boolean canTerminate, boolean canWrite) {
+    this.canTerminate = canTerminate;
+    this.canWrite = canWrite;
+  }
+
+  public CanWriteOnResult join(CanWriteOnResult r) {
+    this.canTerminate = this.canTerminate && r.canTerminate;
+    this.canWrite = this.canWrite || r.canWrite;
+    return this;
+  }
 }

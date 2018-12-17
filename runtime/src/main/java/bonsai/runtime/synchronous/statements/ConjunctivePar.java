@@ -37,11 +37,19 @@ public class ConjunctivePar extends Parallel
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
     CompletionCode k = super.endOfInstant(layersRemaining, layer);
+    boolean terminated = false;
     for(StmtResult s : results) {
       if (s.k == CompletionCode.TERMINATE) {
-        k = CompletionCode.TERMINATE;
+        terminated = true;
         break;
       }
+    }
+    if (terminated) {
+      k = CompletionCode.PAUSE;
+      for(StmtResult s : results) {
+        s.k = CompletionCode.TERMINATE;
+      }
+      active.clear();
     }
     return k;
   }

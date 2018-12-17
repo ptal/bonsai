@@ -61,7 +61,7 @@ public class LayeredParallel extends ASTNode implements Statement
   }
 
   private Statement top() {
-    return top();
+    return layeredPar.get(0);
   }
 
   public LayeredParallel copy() {
@@ -102,7 +102,7 @@ public class LayeredParallel extends ASTNode implements Statement
     return layeredPar.get(layersRemaining).execute(layersRemaining, layer);
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
     return layeredPar.get(layersRemaining).canWriteOn(layersRemaining, layer, uid, inSurface);
   }
 

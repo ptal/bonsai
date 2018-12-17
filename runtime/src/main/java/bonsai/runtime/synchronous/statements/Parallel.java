@@ -121,10 +121,10 @@ public abstract class Parallel extends ASTNode implements Statement
     return mergeRes();
   }
 
-  public boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
-    WrapB canWrite = new WrapB(false);
-    activeProcesses((i,s) -> canWrite.val = canWrite.val || s.canWriteOn(layersRemaining, layer, uid, inSurface));
-    return canWrite.val;
+  public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
+    CanWriteOnResult res = new CanWriteOnResult(true, false);
+    activeProcesses((i,s) -> res.join(s.canWriteOn(layersRemaining, layer, uid, inSurface)));
+    return res;
   }
 
   public int countLayers() {

@@ -77,11 +77,12 @@ public interface Statement extends Schedulable, Copy<Statement>
   /// `inSurface` is `true` if the flow of control is on the statement currently analysed.
   /// It returns `true` if a write can happen, `false` otherwise.
   /// Note:
-  ///   - It can return `true` immediately when one of its sub-component returns `true`.
+  ///   - It can return `canWrite = true` immediately when one of its sub-component returns `canWrite = true`.
+  ///   - We need to evaluate `canTerminate` too, for example to tackle processes of the shape `when c then P; pause else Q; R`.
   /// Conditions:
   ///   - Must be idempotent
   ///   - The internal state of the statement must not be modified.
-  boolean canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface);
+  CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface);
 
   /// Returns the number of layers of the program.
   /// This method is only called once before `prepare`.
