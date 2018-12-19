@@ -30,7 +30,8 @@ public class SingleSpaceVarDecl extends VarDecl implements Statement
   }
 
   public SingleSpaceVarDecl copy() {
-    throw new CannotCopyException("SingleSpaceVarDecl");
+    // throw new CannotCopyException("SingleSpaceVarDecl");
+    return new SingleSpaceVarDecl(uid, initValue.copy(), body.copy());
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {

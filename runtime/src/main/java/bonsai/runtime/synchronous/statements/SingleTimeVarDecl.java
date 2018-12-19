@@ -30,7 +30,8 @@ public class SingleTimeVarDecl extends VarDecl implements Statement
   }
 
   public SingleTimeVarDecl copy() {
-    throw new CannotCopyException("SingleTimeVarDecl");
+    // throw new CannotCopyException("SingleTimeVarDecl");
+    return new SingleTimeVarDecl(uid, initValue.copy(), body.copy());
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {

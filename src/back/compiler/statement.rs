@@ -54,8 +54,8 @@ impl<'a> StatementCompiler<'a>
       Tell(var, expr) => self.tell(var, expr),
       OrPar(branches) => self.or_parallel(branches),
       AndPar(branches) => self.and_parallel(branches),
+      Loop(body) => self.loop_stmt(body),
       // Suspend(entailment, body) => self.suspend(entailment, body),
-      // Loop(body) => self.loop_stmt(body),
       // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // LocalDrop(_) => (), // It is not used in the runtime.
@@ -239,6 +239,12 @@ impl<'a> StatementCompiler<'a>
       Some("LayeredParallel.DISJUNCTIVE_PAR"));
   }
 
+  fn loop_stmt(&mut self, body: Box<Stmt>) {
+    self.fmt.push("new Loop(");
+    self.compile(*body);
+    self.fmt.push(")");
+  }
+
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
   // {
   //   match binding.kind {
@@ -292,14 +298,6 @@ impl<'a> StatementCompiler<'a>
   //   self.fmt.push(&format!("new CallProcess("));
   //   let expr = run_expr.to_expr();
   //   self.closure(true, expr);
-  //   self.fmt.push(")");
-  // }
-
-  // fn loop_stmt(&mut self, body: Box<Stmt>) {
-  //   self.fmt.push_line("SC.loop(");
-  //   self.fmt.indent();
-  //   self.compile(*body);
-  //   self.fmt.unindent();
   //   self.fmt.push(")");
   // }
 }

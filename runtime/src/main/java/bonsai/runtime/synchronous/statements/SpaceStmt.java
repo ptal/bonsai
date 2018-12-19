@@ -38,7 +38,8 @@ public class SpaceStmt extends ASTNode implements Statement
   }
 
   public SpaceStmt copy() {
-    throw new CannotCopyException("SpaceStmt");
+    // throw new CannotCopyException("SpaceStmt");
+    return new SpaceStmt(capturedUIDs, branch.copy());
   }
 
   public void prepare() {}

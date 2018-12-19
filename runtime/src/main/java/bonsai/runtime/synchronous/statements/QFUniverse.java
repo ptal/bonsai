@@ -34,7 +34,8 @@ public class QFUniverse extends ASTNode implements Statement
   }
 
   public QFUniverse copy() {
-    throw new CannotCopyException("QFUniverse");
+    // throw new CannotCopyException("QFUniverse");
+    return new QFUniverse(body.copy());
   }
 
   public void prepare() {

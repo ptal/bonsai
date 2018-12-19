@@ -28,7 +28,8 @@ public class Prune extends ASTNode implements Statement
   public Prune() {}
 
   public Prune copy() {
-    throw new CannotCopyException("Prune");
+    // throw new CannotCopyException("Prune");
+    return new Prune();
   }
 
   public void prepare() {}

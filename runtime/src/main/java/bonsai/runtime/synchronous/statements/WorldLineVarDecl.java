@@ -31,7 +31,8 @@ public class WorldLineVarDecl extends SingleSpaceVarDecl
   }
 
   public WorldLineVarDecl copy() {
-    throw new CannotCopyException("WorldLineVarDecl");
+    // throw new CannotCopyException("WorldLineVarDecl");
+    return new WorldLineVarDecl(uid, initValue.copy(), body.copy());
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {

@@ -36,6 +36,11 @@ public class Universe extends QFUniverse
     firstInstant = true;
   }
 
+  public Universe copy() {
+    // throw new CannotCopyException("Universe");
+    return new Universe(queueName, body.copy());
+  }
+
   public StmtResult execute(int layersRemaining, Layer layer) {
     if(layersRemaining == 1) {
       layer.enterQueue(queueName);

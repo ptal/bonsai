@@ -24,12 +24,21 @@ public class Simple
   public proc test() =
     single_space StackLR stack = new StackLR();
     universe with stack in
-      par space System.out.print(1) end
-      ||  prune
+      single_space LMax nodes = new LMax(0);
+      loop
+        readwrite nodes.inc();
+        when nodes |= 2 then
+          System.out.print("nodes |= 2");
+          nothing
+        else
+          System.out.print("nodes =| 2");
+          space nothing end
+        end;
+        System.out.print(read nodes);
+        pause;
       end;
-      pause;
-      pause;
-      System.out.println("unreachable");
-    end
+      System.out.print("unreachable");
+    end;
+    System.out.print("e")
   end
 }
