@@ -62,7 +62,7 @@ impl<'a> ExpressionCompiler<'a>
 
   fn compile_fun_expr (&mut self, expr: Expr, ty: Option<JType>) {
     match expr.node.clone() {
-      ExprKind::Entailment(rel) => self.entailment(*rel),
+      ExprKind::Entailment(rel) => self.entailment_expr(*rel),
       _ => {
         self.fmt.push("new FunctionCall(");
         self.closure(expr, true, ty);
@@ -82,7 +82,7 @@ impl<'a> ExpressionCompiler<'a>
       StringLiteral(lit) => self.string_literal(lit),
       Bottom => self.bottom(ty),
       Top => self.top(ty),
-      Entailment(rel) => self.entailment(*rel),
+      Entailment(rel) => self.entailment(*rel, vars),
       Or(_, _) =>  unimplemented!("trilean or is unimplemented"),
       And(_, _) => unimplemented!("trilean and is unimplemented"),
       Not(_) => unimplemented!("trilean not is unimplemented"),
@@ -263,7 +263,15 @@ impl<'a> ExpressionCompiler<'a>
     self.fmt.push(&format!("\"{}\"", lit));
   }
 
-  fn entailment(&mut self, rel: EntailmentRel) {
+  fn entailment(&mut self, rel: EntailmentRel, vars: &Vec<Variable>) {
+    self.fmt.push("Cast.toLattice(\"<expr in entailment relation>\",");
+    self.compile(rel.left, vars, None);
+    self.fmt.push(").entails(");
+    self.compile(rel.right, vars, None);
+    self.fmt.push(")");
+  }
+
+  fn entailment_expr(&mut self, rel: EntailmentRel) {
     self.fmt.push("new Entailment(");
     let mut vars_left = vec![];
     let mut vars_right = vec![];
@@ -274,11 +282,9 @@ impl<'a> ExpressionCompiler<'a>
     self.list_of_accesses(&vars_right, true);
     let mut vars = vars_left;
     vars.extend(vars_right.into_iter());
-    self.fmt.push(&format!(", ({}) -> Cast.toLattice(\"<expr in entailment relation>\",", CLOSURE_ARGS));
-    self.compile(rel.left, &vars, None);
-    self.fmt.push(").entails(");
-    self.compile(rel.right, &vars, None);
-    self.fmt.push("))");
+    self.fmt.push(&format!(", ({}) -> ", CLOSURE_ARGS));
+    self.entailment(rel, &vars);
+    self.fmt.push(")");
   }
 
   fn bottom(&mut self, ty: Option<JType>) {

@@ -42,6 +42,7 @@ public class SingleSpaceVarDecl extends VarDecl implements Statement
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
       if (state1()) {
+        // System.out.println("SingleSpaceVarDecl.canInstant: register(" + uid + ")");
         initValue.canInstant(layer);
         layer.register(uid, false);
       }

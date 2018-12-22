@@ -208,7 +208,7 @@ public class VarStore implements Store, Restorable
     }
   }
 
-  public class IntDomain {
+  public static class IntDomain {
     public int lb, ub;
     public boolean bounded;
 

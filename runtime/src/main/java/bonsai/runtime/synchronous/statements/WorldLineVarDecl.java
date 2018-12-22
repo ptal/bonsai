@@ -41,9 +41,9 @@ public class WorldLineVarDecl extends SingleSpaceVarDecl
   }
 
   public StmtResult execute(int layersRemaining, Layer layer) {
+    Variable v = layer.lookUpVar(uid); // Before we remove it in case the statement ends. (we still need to add it in the StmtResult).
     StmtResult res = super.execute(layersRemaining, layer);
     if (layersRemaining == 0 && !res.k.isInternal()) {
-      Variable v = layer.lookUpVar(uid);
       res.registerWL(layer.currentQueue(), v, state3());
     }
     return res;

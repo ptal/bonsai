@@ -90,6 +90,9 @@ public class ES implements Lattice {
 
   private ES castToES(String from, Object o) {
     Cast.checkNull("argument", from, o);
+    if (o instanceof Kleene) {
+      o = new ES((Kleene) o);
+    }
     if (!(o.getClass() == ES.class)) {
       throw new ClassCastException("Operation `" + from + "` between type `ES` and type `"
         + o.getClass().getCanonicalName() + "` is not supported.");

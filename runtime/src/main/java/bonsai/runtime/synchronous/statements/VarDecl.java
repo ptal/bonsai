@@ -78,6 +78,7 @@ public abstract class VarDecl extends ASTNode implements Statement
   }
 
   protected void terminate(Layer layer) {
+    // System.out.println("VarDecl.terminate: exitScope(" + uid + ")");
     layer.exitScope(uid);
     // Free the pointed value of the variable.
     exprResult = new ExprResult();

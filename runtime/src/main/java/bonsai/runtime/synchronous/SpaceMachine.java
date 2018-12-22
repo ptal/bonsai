@@ -45,31 +45,39 @@ public class SpaceMachine
 
   private StmtResult executeLayer() {
     env.incTargetLayer();
+    // System.out.println("BEGIN: SpaceMachine.executeLayer() in layer " + env.targetIdx());
     Layer layer = env.targetLayer();
     int targetIdx = env.targetIdx();
     StmtResult res = new StmtResult(CompletionCode.PAUSE);
     while (res.k == CompletionCode.PAUSE) {
       popQueues(targetIdx, layer);
       program.canInstant(targetIdx, layer);
+      // System.out.println("[executeLayer] start executeInstant.");
       // We execute as much as we can of the current instant.
       res = executeInstant(targetIdx, layer);
+      // System.out.println("After first instant with code " + res.k);
       // If we are blocked but a sub-layer can be activated, we proceed.
       if (res.k == CompletionCode.PAUSE_DOWN) {
         StmtResult subRes = executeLayer();
+        // System.out.println("After internal instant with code " + subRes.k);
         if (subRes.k.isInternal()) {
           throw new CausalException("A layer cannot complete its execution on an internal completion code.");
         }
         // We execute the remaining of the current instant (in case the sub-layer wrote on variables of its parent's layer).
         res = executeInstant(targetIdx, layer);
+        // System.out.println("After second instant with code " + res.k);
         if (res.k.isInternal()) {
           throw new CausalException("The sub-layer has been activated once, but the current instant is still blocked.");
         }
       }
       pushQueues(res);
+      // System.out.println("Before end of instant with code " + res.k);
       if(res.k != CompletionCode.TERMINATE) {
         res.k = program.endOfInstant(targetIdx, layer);
       }
+      // System.out.println("End of instant with code " + res.k);
     }
+    // System.out.println("END: SpaceMachine.executeLayer() in layer " + env.targetIdx());
     env.decTargetLayer();
     return res;
   }
@@ -110,6 +118,7 @@ public class SpaceMachine
     StmtResult res = new StmtResult(CompletionCode.WAIT);
     while (res.k.isInternal()) {
       res = program.execute(layersRemaining, layer);
+      // System.out.println("Layer " + env.targetIdx() + ": Internal step with code " + res.k);
       if (res.k.isInternal() && !layer.processWasScheduled()) {
         boolean wasUnblocked = layer.unblock(program, layersRemaining);
         if(!wasUnblocked) {

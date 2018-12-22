@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[debug(LoopT.loopOne, "1e")]
-#[debug(LoopT.loopTwo, "10e")]
-#[debug(LoopT.loopJoinSpace, "210-1e")]
+#[run(LoopT.loopOne, "1e")]
+#[run(LoopT.loopTwo, "10e")]
+#[run(LoopT.loopJoinSpace, "210-1e")]
 
 package test;
 

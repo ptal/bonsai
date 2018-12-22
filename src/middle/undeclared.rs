@@ -197,8 +197,8 @@ impl<'a> VisitorMut<JClass> for Undeclared
   }
 
   fn visit_let(&mut self, let_stmt: &mut LetStmt) {
-    self.enter_local_scope(&mut let_stmt.binding);
     self.visit_binding(&mut let_stmt.binding);
+    self.enter_local_scope(&mut let_stmt.binding);
     self.visit_stmt(&mut *(let_stmt.body));
     self.exit_scope();
   }

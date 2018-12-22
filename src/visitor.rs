@@ -118,13 +118,13 @@ pub trait Visitor<H>
     walk_binding(self, binding)
   }
 
+  fn visit_expr(&mut self, expr: Expr) {
+    walk_expr(self, expr)
+  }
+
   fn visit_entailment(&mut self, rel: EntailmentRel) {
     self.visit_expr(rel.left);
     self.visit_expr(rel.right);
-  }
-
-  fn visit_expr(&mut self, expr: Expr) {
-    walk_expr(self, expr)
   }
 
   fn visit_new_instance(&mut self, _ty: JType, args: Vec<Expr>) {

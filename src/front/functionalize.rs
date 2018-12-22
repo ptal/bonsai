@@ -84,7 +84,7 @@ pub fn lift_seq(mut stmts: Vec<Stmt>) -> Stmt {
 fn lift_single_stmt(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
   use ast::StmtKind::*;
   if stmts.len() == 1 {
-    stmts
+    vec![lift_stmt(stmts.remove(0))]
   }
   else {
     // If the first statement of the list is a let-decl, then lift the rest of the list in the let-decl.

@@ -28,4 +28,13 @@ public class E0006
       pause;
       System.out.print(read a);
     end
+
+  public proc test3() =
+    single_space LMax a = bot;
+    a <- 1;
+    par
+    || single_time ES unk = unknown;
+       unk |= true;
+    end
+  end
 }

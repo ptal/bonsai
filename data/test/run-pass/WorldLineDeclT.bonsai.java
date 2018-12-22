@@ -16,12 +16,14 @@
 #[run(WorldLineDeclT.oneBranchTree, "00")]
 #[run(WorldLineDeclT.twoBranchesTree, "000")]
 #[run(WorldLineDeclT.twoBranchesTree2, "011")]
+#[run(WorldLineDeclT.init, "0")]
 
 package test;
 
 import java.lang.System;
 import java.util.*;
 import bonsai.runtime.queueing.*;
+import bonsai.runtime.lattices.*;
 
 public class WorldLineDeclT
 {
@@ -77,6 +79,14 @@ public class WorldLineDeclT
       System.out.print(count);
       pause;
       System.out.print("unreachable");
+    end
+  end
+
+  public proc init() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      world_line LMax a = new LMax(0);
+      System.out.print(read a);
     end
   end
 }
