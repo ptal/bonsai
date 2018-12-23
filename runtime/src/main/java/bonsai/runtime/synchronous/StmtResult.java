@@ -45,6 +45,7 @@ public class StmtResult {
     for (Map.Entry<String, BranchAlgebra> entry : res.branchesPerQueue.entrySet()) {
       branchesPerQueue.merge(entry.getKey(), entry.getValue(), BranchAlgebra::concat);
     }
+    res.branchesPerQueue.clear();
     return this;
   }
 
@@ -67,6 +68,7 @@ public class StmtResult {
         res.branchesPerQueue.put(queue, join.apply(bas));
       }
     }
+    processes.stream().forEach(p -> p.branchesPerQueue.clear());
     return res;
   }
 
@@ -84,6 +86,7 @@ public class StmtResult {
     for(Map.Entry<String, BranchAlgebra> entry : branchesPerQueue.entrySet()) {
       futuresPerQueue.put(entry.getKey(), entry.getValue().unwrap());
     }
+    branchesPerQueue.clear();
     return futuresPerQueue;
   }
 }

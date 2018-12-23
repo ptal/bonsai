@@ -56,7 +56,7 @@ public class Space
   }
 
   public void enterScope(String uid, Object defaultValue, Consumer<Object> refUpdater) {
-    System.out.println("enterScope" + uid);
+    // System.out.println("enterScope" + uid);
     checkNullUID(uid, "Space.enterScope");
     Variable var = memory.get(uid);
     if (var == null) {
@@ -68,7 +68,7 @@ public class Space
   }
 
   public void exitScope(String uid) {
-    System.out.println("exitScope" + uid);
+    // System.out.println("exitScope" + uid);
     checkNullUID(uid, "Space.exitScope");
     Variable v = memory.get(uid);
     if (v == null) {
@@ -86,7 +86,7 @@ public class Space
   }
 
   public void register(String uid, boolean overwrite) {
-    System.out.println("register" + uid);
+    // System.out.println("register" + uid);
     checkNullUID(uid, "Space.register");
     if (overwrite) {
       memory.compute(uid, (k,v) -> new Variable(k));
