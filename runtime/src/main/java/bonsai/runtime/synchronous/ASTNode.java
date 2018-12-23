@@ -34,7 +34,7 @@ public abstract class ASTNode implements Schedulable
 
   public void schedule(Schedulable from) {
     if (parent != null) {
-      parent.schedule(from);
+      parent.schedule(this);
     }
   }
 

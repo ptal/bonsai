@@ -58,6 +58,7 @@ public abstract class Parallel extends ASTNode implements Statement
   public void prepare() {
     for(Statement p : par) {
       p.prepare();
+      p.setParent(this);
     }
     init();
   }
@@ -70,6 +71,12 @@ public abstract class Parallel extends ASTNode implements Statement
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
+    active.clear();
+    for (int i = 0; i < par.size(); i++) {
+      if (results.get(i).k != CompletionCode.TERMINATE) {
+        active.add(i);
+      }
+    }
     activeProcesses((i,s) -> s.canInstant(layersRemaining, layer));
   }
 
@@ -106,11 +113,10 @@ public abstract class Parallel extends ASTNode implements Statement
     activeProcesses((i,s) -> s.suspend(layer));
   }
 
-  private void reduceActive() {
-    for(int i = 0; i < active.size(); i++) {
-      if(results.get(active.get(i)).k == CompletionCode.TERMINATE) {
-        active.remove(i);
-        i--;
+  public void reduceActive() {
+    for(int i = 0; i < par.size(); i++) {
+      if (!results.get(i).k.isInternal()) {
+        active.remove(new Integer(i));
       }
     }
   }
@@ -118,7 +124,9 @@ public abstract class Parallel extends ASTNode implements Statement
   public StmtResult execute(int layersRemaining, Layer layer) {
     activeProcesses((i,s) -> results.set(i, s.execute(layersRemaining, layer)));
     reduceActive();
-    return mergeRes();
+    StmtResult res = mergeRes();
+    // System.out.println("Result of parallel : " + res.k);
+    return res;
   }
 
   public CanWriteOnResult canWriteOn(int layersRemaining, Layer layer, String uid, boolean inSurface) {
@@ -136,10 +144,13 @@ public abstract class Parallel extends ASTNode implements Statement
   }
 
   public void schedule(Schedulable from) {
+    // System.out.println("Parallel.schedule");
     for (int i = 0; i < par.size(); i++) {
       Statement proc = par.get(i);
       if (proc == from) {
+        // System.out.println("Detected from schedulable " + i);
         if (!active.contains(i)) {
+          // System.out.println("Wake up process " + i);
           active.add(i);
         }
         break;

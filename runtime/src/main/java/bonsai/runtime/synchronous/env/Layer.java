@@ -120,4 +120,15 @@ public class Layer
   public HashMap<String, Variable> project(ArrayList<String> varsUIDs) {
     return space.project(varsUIDs);
   }
+
+  private int loopSurface = 0;
+  public boolean isInLoopSurface() {
+    return loopSurface > 0;
+  }
+  public void enterLoopSurface() {
+    loopSurface++;
+  }
+  public void exitLoopSurface() {
+    loopSurface--;
+  }
 }

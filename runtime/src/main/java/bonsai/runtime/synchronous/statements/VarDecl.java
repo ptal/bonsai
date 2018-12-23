@@ -78,7 +78,6 @@ public abstract class VarDecl extends ASTNode implements Statement
   }
 
   protected void terminate(Layer layer) {
-    // System.out.println("VarDecl.terminate: exitScope(" + uid + ")");
     layer.exitScope(uid);
     // Free the pointed value of the variable.
     exprResult = new ExprResult();
@@ -87,6 +86,7 @@ public abstract class VarDecl extends ASTNode implements Statement
   public void prepare() {
     init();
     body.prepare();
+    body.setParent(this);
   }
 
   public boolean canTerminate() {
@@ -134,6 +134,7 @@ public abstract class VarDecl extends ASTNode implements Statement
 
   private void executeState1(Layer layer) {
     if (state1()) {
+      // System.out.println("VarDecl.executeState1");
       exprResult = initValue.execute(layer);
       if (!exprResult.isSuspended()) {
         initValue.terminate(layer);
@@ -144,6 +145,7 @@ public abstract class VarDecl extends ASTNode implements Statement
 
   private void executeState2(Layer layer) {
     if (state2()) {
+      // System.out.println("VarDecl.executeState2");
       res = body.execute(0, layer);
       if (state3()) {
         terminate(layer);

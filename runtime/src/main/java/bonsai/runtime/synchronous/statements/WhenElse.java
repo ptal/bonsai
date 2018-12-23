@@ -52,6 +52,8 @@ public class WhenElse extends ASTNode implements Statement
   public void prepare() {
     then.prepare();
     els.prepare();
+    then.setParent(this);
+    els.setParent(this);
     init();
   }
 

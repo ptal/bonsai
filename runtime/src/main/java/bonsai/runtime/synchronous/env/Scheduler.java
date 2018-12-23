@@ -43,6 +43,7 @@ public class Scheduler
   }
 
   public void subscribe(Event event, Schedulable process) {
+    // System.out.println("Subscribe on event " + event);
     waitingList
       .computeIfAbsent(event, k -> new ArrayList<>())
       .add(process);
@@ -50,6 +51,7 @@ public class Scheduler
 
   // When `schedule` is called, the processes registered on this event are removed from the `waitingList`;
   public void schedule(Event event) {
+    // System.out.println("Schedule event " + event);
     ArrayList<Schedulable> processes = waitingList.get(event);
     if (processes != null) {
       for (Schedulable s: processes) {

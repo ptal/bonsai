@@ -49,6 +49,7 @@ public class Loop extends ASTNode implements Statement
 
   public void prepare() {
     body.prepare();
+    body.setParent(this);
     init();
   }
 
@@ -57,7 +58,9 @@ public class Loop extends ASTNode implements Statement
     body.canInstant(layersRemaining, layer);
     if (layersRemaining == 0 && body.canTerminate()) {
       canSurface = true;
+      layer.enterLoopSurface();
       surfaceBody.canInstant(layersRemaining, layer);
+      layer.exitLoopSurface();
     }
   }
 
@@ -94,6 +97,7 @@ public class Loop extends ASTNode implements Statement
     body = surfaceBody;
     surfaceBody = tmp;
     surfaceBody.prepare();
+    canSurface = false;
   }
 
   public StmtResult execute(int layersRemaining, Layer layer){

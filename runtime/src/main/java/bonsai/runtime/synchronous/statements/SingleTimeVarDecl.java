@@ -36,16 +36,19 @@ public class SingleTimeVarDecl extends VarDecl implements Statement
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
     checkExpressionStateEOI("Var decl", state1());
+    CompletionCode k = super.endOfInstant(layersRemaining, layer);
     if (layersRemaining == 0 && state2()) {
       terminate(layer);
     }
-    return super.endOfInstant(layersRemaining, layer);
+    return k;
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
+      // System.out.println("SingleTimeVarDecl.canInstant: register " + uid);
       layer.register(uid, true);
       initValue.canInstant(layer);
+      exprResult = new ExprResult();
     }
     body.canInstant(layersRemaining, layer);
   }

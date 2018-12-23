@@ -17,9 +17,9 @@ package bonsai.runtime.synchronous;
 public enum CompletionCode {
   PAUSE_DOWN,
   WAIT,
-  PAUSE,
-  PAUSE_UP,
   STOP,
+  PAUSE_UP,
+  PAUSE,
   TERMINATE;
 
   public String toString() {

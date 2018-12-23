@@ -27,6 +27,9 @@
 #[run(UniverseT.sequenceUniverse2, "12345")]
 #[run(UniverseT.nestedUniverse, "123456")]
 #[run(UniverseT.sequenceNested, "123")]
+#[run(UniverseT.captureSingleTime, "255e")]
+#[run(UniverseT.stopAfterOneChild, "1")]
+#[debug(UniverseT.pauseUpAfterOneChild, "1")]
 
 package test;
 
@@ -244,5 +247,52 @@ public class UniverseT
       System.out.print("unreachable");
     end;
     System.out.print(3);
+  end
+
+  public proc captureSingleTime() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      world_line LMax x = new LMax(2);
+      single_time LMax y = new LMax(5);
+      space x <- y end;
+      space x <- y end;
+      System.out.print(read x);
+      pause;
+      System.out.print(read x);
+      pause;
+      System.out.print(read x);
+      pause;
+      System.out.print("unreachable");
+    end;
+    System.out.print("e");
+  end
+
+  public proc stopAfterOneChild() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      space System.out.print("2") end;
+      System.out.print("1");
+      par
+      || stop
+      || pause
+      end;
+      System.out.print("unreachable");
+    end
+  end
+
+  public proc pauseUpAfterOneChild() =
+    single_space StackLR stack = new StackLR();
+    par
+    || universe with stack in
+        space System.out.print("2") end;
+        System.out.print("1");
+        par
+        || pause up
+        || pause
+        end;
+        System.out.print("unreachable");
+      end
+    || stop
+    end
   end
 }

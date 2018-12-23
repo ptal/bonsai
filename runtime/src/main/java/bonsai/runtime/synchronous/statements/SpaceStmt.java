@@ -64,6 +64,7 @@ public class SpaceStmt extends ASTNode implements Statement
   public void abort(Layer layer) {}
 
   public StmtResult execute(int layersRemaining, Layer layer) {
+    // System.out.println("Create space branch.");
     checkNoSubLayer(layersRemaining, "SpaceStmt.execute");
     HashMap<String, Variable> projection = layer.project(capturedUIDs);
     CapturedSpace capturedSpace = new CapturedSpace(projection);

@@ -240,9 +240,11 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn loop_stmt(&mut self, body: Box<Stmt>) {
-    self.fmt.push("new Loop(");
+    self.fmt.push_line("new Loop(");
+    self.fmt.indent();
     self.compile(*body);
     self.fmt.push(")");
+    self.fmt.unindent();
   }
 
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)

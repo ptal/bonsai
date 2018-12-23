@@ -36,6 +36,11 @@ public class FunctionCall extends NAryCall implements Expression
     return new FunctionCall(ASTNode.copyList(args), function);
   }
 
+  public void terminate(Layer layer) {
+    super.terminate(layer);
+    result = new ExprResult();
+  }
+
   public void canInstant(Layer layer) {
     super.canInstant(layer);
     result = new ExprResult();

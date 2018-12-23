@@ -51,6 +51,7 @@ public class Sequence extends ASTNode implements Statement
   public void prepare() {
     for(Statement p : seq) {
       p.prepare();
+      p.setParent(this);
     }
     init();
   }

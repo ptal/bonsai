@@ -33,12 +33,19 @@ public abstract class NAryCall extends ASTNode
   }
 
   protected void canInstant(Layer layer) {
+    System.out.println("NAryCall.canInstant");
     argsEval.clear();
     for(int i=0; i < args.size(); i++) {
       argsEval.add(null);
     }
     for (Access access : args) {
       access.canInstant(layer);
+    }
+  }
+
+  public void prepare() {
+    for (Access access : args) {
+      access.setParent(this);
     }
   }
 
@@ -49,6 +56,7 @@ public abstract class NAryCall extends ASTNode
   }
 
   protected boolean executeArgs(Layer layer) {
+    System.out.println("NAryCall.executeArgs");
     boolean ready = true;
     for(int i=0; i < args.size(); i++) {
       ExprResult res = args.get(i).execute(layer);

@@ -37,9 +37,17 @@ public class SpaceMachine
   // Returns `true` if the program is paused (through a `stop` or `pause up` statement).
   // If the program is terminated, it returns `false`.
   public boolean execute() {
-    StmtResult res = executeLayer();
-    // This part is useful for the automatic tests (because mvn exec does not flush automatically).
-    System.out.flush();
+    StmtResult res;
+    try {
+      res = executeLayer();
+    }
+    catch (Exception e) {
+      throw e;
+    }
+    finally {
+      // This part is useful for the automatic tests (because mvn exec does not flush automatically).
+      System.out.flush();
+    }
     return res.k != CompletionCode.TERMINATE;
   }
 

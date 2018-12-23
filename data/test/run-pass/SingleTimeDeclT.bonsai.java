@@ -20,12 +20,15 @@
 #[run(SingleTimeDeclT.severalInstant, "121")]
 #[run(SingleTimeDeclT.pauseUpInUniverse, "21")]
 #[run(SingleTimeDeclT.reinitValue, "012")]
+#[run(SingleTimeDeclT.scopeBug, "2")]
+#[run(SingleTimeDeclT.initSingleTimeBug, "1")]
 
 package test;
 
 import java.lang.System;
 import java.util.*;
 import bonsai.runtime.lattices.LMax;
+import bonsai.runtime.queueing.*;
 
 public class SingleTimeDeclT
 {
@@ -85,6 +88,31 @@ public class SingleTimeDeclT
     System.out.print(read a);
     pause;
     System.out.print(read a);
+  end
+
+  public proc scopeBug() =
+    single_time ES consistent = unknown;
+    consistent <- true;
+    loop
+      single_time ES unk = unknown;
+      when unk |= consistent then
+        stop
+      else
+        System.out.print(2);
+      end;
+      pause;
+    end
+  end
+
+  public proc initSingleTimeBug() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      single_time LMax a = new LMax(1);
+      space nothing end;
+      pause;
+      a <- 3;
+      System.out.print("1");
+    end
   end
 
   static int i = 0;

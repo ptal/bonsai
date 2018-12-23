@@ -40,6 +40,7 @@ public class QFUniverse extends ASTNode implements Statement
 
   public void prepare() {
     prepareInstant();
+    body.setParent(this);
   }
 
   public void prepareInstant() {

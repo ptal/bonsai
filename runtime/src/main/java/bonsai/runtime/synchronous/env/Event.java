@@ -49,4 +49,12 @@ public class Event {
       return kind == e.kind && uid.equals(e.uid);
     }
   }
+
+  public String toString() {
+    String kindS = "invalid";
+    if (kind == ANY) { kindS = "ANY"; }
+    else if (kind == CAN_READ) { kindS = "CAN_READ"; }
+    else if (kind == CAN_READWRITE) { kindS = "CAN_READWRITE"; }
+    return kindS + "(" + uid + ")";
+  }
 }

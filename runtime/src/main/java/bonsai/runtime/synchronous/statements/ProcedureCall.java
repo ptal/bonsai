@@ -39,6 +39,7 @@ public class ProcedureCall extends NAryCall implements Statement
 
   public void prepare() {
     k = CompletionCode.WAIT;
+    super.prepare();
   }
 
   public void canInstant(int layersRemaining, Layer layer) {

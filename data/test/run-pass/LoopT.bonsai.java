@@ -15,6 +15,7 @@
 #[run(LoopT.loopOne, "1e")]
 #[run(LoopT.loopTwo, "10e")]
 #[run(LoopT.loopJoinSpace, "210-1e")]
+#[run(LoopT.loopScopeBug, "bot")]
 
 package test;
 
@@ -73,5 +74,18 @@ public class LoopT
       System.out.print("unreachable");
     end;
     System.out.print("e")
+  end
+
+  public proc loopScopeBug() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      space nothing end;
+      loop
+        single_time LMax x = bot;
+        x <- 1;
+        pause;
+        System.out.print(read x);
+      end
+    end
   end
 }

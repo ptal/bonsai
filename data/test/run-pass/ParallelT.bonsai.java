@@ -27,6 +27,7 @@
 #[run(ParallelT.spacePrune2, "")]
 #[run(ParallelT.pruneSpace2, "")]
 #[run(ParallelT.prunePrune2, "")]
+#[run(ParallelT.bugPauseParallel, "")]
 
 package test;
 
@@ -164,5 +165,15 @@ public class ParallelT
       pause;
       System.out.print("unreachable");
     end
+  end
+
+  public proc bugPauseParallel() =
+    single_time ES consistent = unknown;
+    par
+    || unknown |= consistent
+    || consistent <- true
+    || pause
+    end;
+    consistent <- false
   end
 }

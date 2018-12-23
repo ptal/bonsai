@@ -41,4 +41,10 @@ public abstract class Access extends ASTNode implements Expression
       layer.subscribe(event, this);
     }
   }
+
+  public void schedule(Schedulable from) {
+    System.out.println("Schedule from access on " + uid);
+    hasSubscribed = false;
+    super.schedule(from);
+  }
 }

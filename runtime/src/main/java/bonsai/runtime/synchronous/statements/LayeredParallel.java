@@ -71,6 +71,7 @@ public class LayeredParallel extends ASTNode implements Statement
   public void prepare() {
     for(Statement p : layeredPar) {
       p.prepare();
+      p.setParent(this);
     }
   }
 
