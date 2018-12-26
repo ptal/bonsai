@@ -67,8 +67,8 @@ public class StmtResult {
           .collect(Collectors.toCollection(ArrayList::new));
         res.branchesPerQueue.put(queue, join.apply(bas));
       }
+      processes.stream().forEach(p -> p.branchesPerQueue.clear());
     }
-    processes.stream().forEach(p -> p.branchesPerQueue.clear());
     return res;
   }
 

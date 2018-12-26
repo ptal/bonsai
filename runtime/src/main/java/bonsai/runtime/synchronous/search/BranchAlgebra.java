@@ -146,4 +146,17 @@ public class BranchAlgebra {
   public void registerWL(Variable var, boolean exitScope) {
     space.registerWL(var, exitScope);
   }
+
+  public String toString() {
+    String res = branches.size() + " branches: ";
+    for(Optional<Statement> s : branches) {
+      if (!s.isPresent()) {
+        res += "_";
+      }
+      else {
+        res += "*";
+      }
+    }
+    return res;
+  }
 }

@@ -56,6 +56,7 @@ public class Prune extends ASTNode implements Statement
   public StmtResult execute(int layersRemaining, Layer layer) {
     checkNoSubLayer(layersRemaining, "Prune.execute");
     BranchAlgebra ba = BranchAlgebra.prunedBranch();
+    // System.out.println("Reached pruned branch.");
     return new StmtResult(CompletionCode.TERMINATE, layer.currentQueue(), ba);
   }
 

@@ -28,6 +28,7 @@
 #[run(ParallelT.pruneSpace2, "")]
 #[run(ParallelT.prunePrune2, "")]
 #[run(ParallelT.bugPauseParallel, "")]
+#[debug(ParallelT.prunePar, "0ca1cb1")]
 
 package test;
 
@@ -175,5 +176,24 @@ public class ParallelT
     || pause
     end;
     consistent <- false
+  end
+
+  public proc prunePar() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      world_line LMax depth = new LMax(0);
+      loop
+        par
+        <> when depth |= 1 then prune else space System.out.print("c"); readwrite depth.inc(); end end
+        <>
+          par
+          || System.out.print(read depth)
+          || space System.out.print("a"); end;
+             space System.out.print("b"); end
+          || pause
+          end
+        end
+      end
+    end
   end
 }

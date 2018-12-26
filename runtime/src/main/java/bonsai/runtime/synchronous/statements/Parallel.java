@@ -20,6 +20,7 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.env.*;
+import bonsai.runtime.synchronous.search.*;
 
 public abstract class Parallel extends ASTNode implements Statement
 {
@@ -125,7 +126,6 @@ public abstract class Parallel extends ASTNode implements Statement
     activeProcesses((i,s) -> results.set(i, s.execute(layersRemaining, layer)));
     reduceActive();
     StmtResult res = mergeRes();
-    // System.out.println("Result of parallel : " + res.k);
     return res;
   }
 

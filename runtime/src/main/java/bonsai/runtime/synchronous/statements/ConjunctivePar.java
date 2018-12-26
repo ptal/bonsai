@@ -41,11 +41,9 @@ public class ConjunctivePar extends Parallel
     for(StmtResult s : results) {
       if (s.k == CompletionCode.TERMINATE) {
         terminated = true;
-        break;
       }
     }
     if (terminated) {
-      k = CompletionCode.PAUSE;
       for(StmtResult s : results) {
         s.k = CompletionCode.TERMINATE;
       }
