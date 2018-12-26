@@ -28,7 +28,7 @@
 #[run(ParallelT.pruneSpace2, "")]
 #[run(ParallelT.prunePrune2, "")]
 #[run(ParallelT.bugPauseParallel, "")]
-#[debug(ParallelT.prunePar, "0ca1cb1")]
+#[run(ParallelT.prunePar, "0ca1cb1")]
 
 package test;
 

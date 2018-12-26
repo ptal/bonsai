@@ -16,6 +16,7 @@
 #[run(LoopT.loopTwo, "10e")]
 #[run(LoopT.loopJoinSpace, "210-1e")]
 #[run(LoopT.loopScopeBug, "bot")]
+#[run(LoopT.loopInnerDeclaration, "1")]
 
 package test;
 
@@ -85,6 +86,20 @@ public class LoopT
         x <- 1;
         pause;
         System.out.print(read x);
+      end
+    end
+  end
+
+  public proc loopInnerDeclaration() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      loop
+        single_space LMax x = new LMax(0);
+        x <- 1;
+        space nothing end;
+        pause;
+        System.out.print(read x);
+        when x |= 1 then stop end;
       end
     end
   end

@@ -23,6 +23,7 @@ mod instantaneous;
 mod causality;
 mod recursive_call;
 mod search_tree_wf;
+mod rewrite_reincarnation;
 mod add_local_drop;
 
 use context::*;
@@ -38,6 +39,7 @@ use middle::instantaneous::*;
 use middle::causality::*;
 use middle::recursive_call::*;
 use middle::search_tree_wf::*;
+use middle::rewrite_reincarnation::*;
 // use middle::add_local_drop::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
@@ -54,4 +56,5 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_next(search_tree_wf)
     // .and_next(where_is_the_drop)
     .and_next(causality_analysis)
+    .and_next(rewrite_reincarnation)
 }

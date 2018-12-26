@@ -23,7 +23,6 @@ import bonsai.runtime.synchronous.env.*;
 
 public class Loop extends ASTNode implements Statement
 {
-
   // We use two bodies: this is only useful when we must "link" the end of the loop with its beginning (when the pause is not at the end, e.g. loop S; pause; S' end).
   // When we reach the end of the loop, we switch between `body` and `surfaceBody`.
   private Statement body;
@@ -57,10 +56,7 @@ public class Loop extends ASTNode implements Statement
     init();
     body.canInstant(layersRemaining, layer);
     if (layersRemaining == 0 && body.canTerminate()) {
-      canSurface = true;
-      layer.enterLoopSurface();
       surfaceBody.canInstant(layersRemaining, layer);
-      layer.exitLoopSurface();
     }
   }
 
