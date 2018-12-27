@@ -46,18 +46,39 @@ public class LayeredParallel extends ASTNode implements Statement
     }
   }
 
-  private Statement createPar(List<Statement> processes, int kind, int layer) {
+  private Statement createPar(List<Statement> processes, int kind, int layerIdx) {
+    List<Statement> filtered = filterStatementInLayer(processes, layerIdx);
     Statement layerPar;
-    if (kind == CONJUNCTIVE_PAR) {
-      layerPar = new ConjunctivePar(processes, layer);
+    if (filtered.size() > 1) {
+      if (kind == CONJUNCTIVE_PAR) {
+        layerPar = new ConjunctivePar(processes, layerIdx);
+      }
+      else if (kind == DISJUNCTIVE_PAR) {
+        layerPar = new DisjunctivePar(processes, layerIdx);
+      }
+      else {
+        throw new RuntimeException("`kind` must be either `CONJUNCTIVE_PAR` or `DISJUNCTIVE_PAR`.");
+      }
     }
-    else if (kind == DISJUNCTIVE_PAR) {
-      layerPar = new DisjunctivePar(processes, layer);
+    else if (filtered.size() == 1) {
+      layerPar = processes.get(0);
     }
     else {
-      throw new RuntimeException("`kind` must be either `CONJUNCTIVE_PAR` or `DISJUNCTIVE_PAR`.");
+      layerPar = new Nothing();
     }
     return layerPar;
+  }
+
+  // It is useless to keep the processes that do not have layers greater or equal to layerIdx.
+  // It is also necessary to preserve the invariant "checkNoSubLayer".
+  private List<Statement> filterStatementInLayer(List<Statement> processes, int layerIdx) {
+    ArrayList<Statement> filtered = new ArrayList();
+    for(Statement s : processes) {
+      if (s.countLayers() >= layerIdx) {
+        filtered.add(s);
+      }
+    }
+    return filtered;
   }
 
   private Statement top() {

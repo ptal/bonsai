@@ -23,15 +23,17 @@ public class Simple
 {
   public proc test() =
     single_space StackLR stack = new StackLR();
-    universe with stack in
-      loop
-        single_space LMax x = new LMax(0);
-        x <- 1;
-        space nothing end;
-        pause;
-        System.out.print(read x);
-        when x |= 1 then stop end;
+    par
+    || universe with stack in
+        space System.out.print("2") end;
+        System.out.print("1");
+        par
+        || pause up
+        || pause
+        end;
+        System.out.print("unreachable");
       end
+    || stop
     end
   end
 }

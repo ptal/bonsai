@@ -39,6 +39,7 @@ public abstract class Parallel extends ASTNode implements Statement
     init();
   }
 
+
   private CompletionCode mergeK() {
     return results.stream()
       .map(r -> r.k)
