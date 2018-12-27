@@ -25,6 +25,7 @@ public class WriteAccess extends Access
 {
   public WriteAccess(String uid) {
     super(uid);
+    // System.out.println("write " + uid);
   }
 
   public WriteAccess copy() {

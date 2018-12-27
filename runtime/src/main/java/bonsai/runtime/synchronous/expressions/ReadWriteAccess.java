@@ -25,6 +25,7 @@ public class ReadWriteAccess extends Access
 {
   public ReadWriteAccess(String uid) {
     super(uid);
+    // System.out.println("readwrite " + uid);
   }
 
   public ReadWriteAccess copy() {

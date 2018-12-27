@@ -29,7 +29,7 @@
 #[run(UniverseT.sequenceNested, "123")]
 #[run(UniverseT.captureSingleTime, "255e")]
 #[run(UniverseT.stopAfterOneChild, "1")]
-#[debug(UniverseT.pauseUpAfterOneChild, "1")]
+#[run(UniverseT.pauseUpAfterOneChild, "1")]
 
 package test;
 

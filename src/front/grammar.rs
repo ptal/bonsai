@@ -492,9 +492,9 @@ grammar! bonsai {
   }
 
   permission
-    = READ > make_read_permission
+    = READWRITE > make_readwrite_permission
     / WRITE > make_write_permission
-    / READWRITE > make_readwrite_permission
+    / READ > make_read_permission
 
   fn make_read_permission() -> Permission { Permission::Read }
   fn make_write_permission() -> Permission { Permission::Write }

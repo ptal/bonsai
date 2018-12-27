@@ -14,7 +14,8 @@
 
 /// For each variable, depending on its context, we infer its permission if not explicitly written by the user.
 /// Permissions can either be `Read`, `Write` or `ReadWrite` if the variable is accessed in read-only, write-only or both.
-/// For arguments of external methods, we do not know how the method is actually modifying the variable so we infer it to `ReadWrite` (which is the safest choice).
+/// For arguments of external methods, we do not know how the method is actually modifying the variable, it is the responsibility of the user to use them according to the permission.
+/// By default, if not precised, the permission is `Read`.
 /// In a tell statement `x <- e`, `x` is write only.
 /// In an entailment condition `e |= e'`, every variable appearing in `e` or `e'` are supposed to be read-only.
 
@@ -199,7 +200,12 @@ impl VisitorMut<JClass> for InferPermission
     if self.check_pre_on_variable(var) {
       match var.permission.clone() {
         Some(p) => self.check_permission(var, p),
-        None => var.permission = Some(self.perm_context)
+        None =>
+          // By default variable has the permission `Read` unless they are in a `Write` only context (e.g. a tell).
+          match self.perm_context.clone() {
+            Write => var.permission = Some(Write),
+            _ => var.permission = Some(Read)
+          }
       }
     }
   }

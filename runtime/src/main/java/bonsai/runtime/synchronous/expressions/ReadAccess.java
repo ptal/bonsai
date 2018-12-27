@@ -27,6 +27,7 @@ public class ReadAccess extends Access
 
   public ReadAccess(String uid) {
     super(uid);
+    // System.out.println("read " + uid);
     this.hasSubscribed = false;
   }
 
