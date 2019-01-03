@@ -235,7 +235,7 @@ impl SymbolicExecution
   }
 
   /// We first compute all the distinct set of locations states in which `current` could stop.
-  /// Then, we each possible set of locations, we compute its residual statement.
+  /// Then, for each possible set of locations, we compute its residual statement.
   fn compute_residual(&mut self, current: Stmt) {
     let states_set = self.next_states_stmt(current.clone());
     for state in states_set.next_states() {
@@ -262,7 +262,7 @@ impl SymbolicExecution
         self.next_states_when(cond, *then_branch, *else_branch),
       OrPar(branches) => self.next_states_par(branches, CausalModel::term_or),
       AndPar(branches) => self.next_states_par(branches, CausalModel::term_and),
-      // Loop(body) => self.next_states_loop(*body),
+      Loop(body) => self.next_states_loop(*body),
       Space(_)
     | Prune
     | LocalDrop(_)
@@ -320,9 +320,10 @@ impl SymbolicExecution
     next
   }
 
-  // fn next_states_loop(&self, body: Stmt) -> StatesSet
-  // {
-  // }
+  fn next_states_loop(&self, body: Stmt) -> StatesSet
+  {
+    self.next_states_stmt(body)
+  }
 
   fn reduce_stmt(&self, stmt: Stmt, state: State) -> ResidualStmt
   {
@@ -336,6 +337,7 @@ impl SymbolicExecution
         self.reduce_when(cond, *then_branch, *else_branch, state),
       OrPar(branches) => self.reduce_or_par(span, branches, state),
       AndPar(branches) => self.reduce_and_par(span, branches, state),
+      Loop(body) => self.reduce_loop(*body, state),
       Space(_)
     | Prune
     | LocalDrop(_)
@@ -345,7 +347,6 @@ impl SymbolicExecution
       _ => ResidualStmt::Terminated
       // Suspend(cond, body) => self.reduce_suspend(cond, *body, model, state),
       // Abort(cond, body) => self.reduce_abort(cond, *body, model, state),
-      // Loop(body) => self.reduce_loop(*body),
       // ProcCall(var, process, args) => self.reduce_proc_call(var, process, args),
       // QFUniverse(body) => self.reduce_qf_universe(*body),
     }
@@ -465,6 +466,23 @@ impl SymbolicExecution
         ResidualStmt::Next(
           Stmt::new(span, build_par(next))
         )
+      }
+    }
+  }
+
+  fn reduce_loop(&self, body: Stmt, state: State) -> ResidualStmt
+  {
+    use middle::causality::symbolic_execution::ResidualStmt::*;
+    let next_body = self.reduce_stmt(body.clone(), state.clone());
+    match next_body {
+      // No instruction pointer currently inside the loop.
+      Terminated => Terminated,
+      // We go back to the beginning of the loop.
+      Paused => Next(body),
+      // We rewrite `P` into `P; loop P end`.
+      Next(stmt) => {
+        let sp = stmt.span;
+        Next(Stmt::new(sp, StmtKind::Seq(vec![stmt, Stmt::new(sp, StmtKind::Loop(Box::new(body)))])))
       }
     }
   }

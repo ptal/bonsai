@@ -24,7 +24,7 @@ mod causality;
 mod recursive_call;
 mod search_tree_wf;
 mod rewrite_reincarnation;
-mod add_local_drop;
+// mod add_local_drop;
 
 use context::*;
 use session::*;

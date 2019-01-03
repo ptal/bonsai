@@ -110,10 +110,10 @@ impl CausalStmt {
       ExprStmt(expr) => self.visit_expr_stmt(expr, model, continuation),
       OrPar(branches) => self.visit_or_par(branches, model, continuation),
       AndPar(branches) => self.visit_and_par(branches, model, continuation),
+      Loop(body) => self.visit_loop(*body, model, continuation),
       _ => vec![]
       // Suspend(cond, body) => self.visit_suspend(cond, *body, model, continuation),
       // Abort(cond, body) => self.visit_abort(cond, *body, model, continuation),
-      // Loop(body) => self.visit_loop(*body),
       // ProcCall(var, process, args) => self.visit_proc_call(var, process, args),
       // QFUniverse(body) => self.visit_qf_universe(*body),
     }
@@ -215,6 +215,12 @@ impl CausalStmt {
     self.visit_par(children, model, continuation, CausalModel::term_and)
   }
 
+  fn visit_loop(&self, body: Stmt, model: CausalModel,
+    continuation: Cont) -> Vec<CausalModel>
+  {
+    self.visit_stmt(body, model, continuation)
+  }
+
   // fn visit_suspend(&self, condition: Expr, child: Stmt,
   //   model: CausalModel, continuation: Cont) -> Vec<CausalModel>
   // {
@@ -235,10 +241,6 @@ impl CausalStmt {
   //   let mut m2 = continuation(else_m);
   //   m1.extend(&mut m2);
   //   m1
-  // }
-
-  // fn visit_loop(&self, child: Stmt) {
-  //   self.visit_stmt(child)
   // }
 
   // fn visit_proc_call(&self, var: Option<Variable>, _process: Ident, args: Vec<Variable>) {
