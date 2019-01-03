@@ -44,8 +44,8 @@ impl Undeclared {
     }
   }
 
-  fn session<'a>(&'a self) -> &'a Session {
-    &self.session
+  fn session<'a>(&'a mut self) -> &'a mut Session {
+    &mut self.session
   }
 
   fn analyse(mut self) -> Env<Context> {

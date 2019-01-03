@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Given a process P, we iterate over all the instansts of a spacetime program, and all the possible execution paths of these instants.
+/// Given a process P, we iterate over all the instants of P, and all the possible execution paths of these instants.
 
 use context::*;
 use session::*;
@@ -256,12 +256,13 @@ impl SymbolicExecution
     use ast::StmtKind::*;
     match stmt.node {
       DelayStmt(delay) => self.next_states_delay(delay),
-      Let(stmt) => self.next_states_let(stmt),
+      Let(body) => self.next_states_let(body),
       Seq(branches) => self.next_states_seq(branches),
       When(cond, then_branch, else_branch) =>
         self.next_states_when(cond, *then_branch, *else_branch),
       OrPar(branches) => self.next_states_par(branches, CausalModel::term_or),
       AndPar(branches) => self.next_states_par(branches, CausalModel::term_and),
+      // Loop(body) => self.next_states_loop(*body),
       Space(_)
     | Prune
     | LocalDrop(_)
@@ -271,7 +272,6 @@ impl SymbolicExecution
       _ => StatesSet::terminated_state(),
       // Suspend(cond, body) => self.next_states_suspend(cond, *body, model),
       // Abort(cond, body) => self.next_states_abort(cond, *body, model),
-      // Loop(body) => self.next_states_loop(*body),
       // ProcCall(var, process, args) => self.next_states_proc_call(var, process, args),
       // QFUniverse(body) => self.next_states_qf_universe(*body),
     }
@@ -319,6 +319,10 @@ impl SymbolicExecution
     }
     next
   }
+
+  // fn next_states_loop(&self, body: Stmt) -> StatesSet
+  // {
+  // }
 
   fn reduce_stmt(&self, stmt: Stmt, state: State) -> ResidualStmt
   {

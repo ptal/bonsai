@@ -39,8 +39,8 @@ impl Constructor {
     }
   }
 
-  fn session<'a>(&'a self) -> &'a Session {
-    &self.session
+  fn session<'a>(&'a mut self) -> &'a mut Session {
+    &mut self.session
   }
 
   fn analyse(mut self) -> Env<Context> {
@@ -69,7 +69,7 @@ impl Constructor {
     }
   }
 
-  fn constructor(&self, module: &JModule) {
+  fn constructor(&mut self, module: &JModule) {
     let ref_fields = module.ref_fields();
     // There are requirements on the constructors only if the module has `ref` fields.
     if ref_fields.len() > 0 {
@@ -86,7 +86,7 @@ impl Constructor {
     }
   }
 
-  fn match_constructor_ref(&self, ref_fields: Vec<ModuleField>, constructor: JConstructor) {
+  fn match_constructor_ref(&mut self, ref_fields: Vec<ModuleField>, constructor: JConstructor) {
     for ref_field in ref_fields {
       let param = constructor.parameters.iter().find(|p| p.name == ref_field.binding.name);
       match param {
@@ -101,40 +101,44 @@ impl Constructor {
   }
 
   /// Design rational: It simplifies the verification of module. Otherwise, we would need to look if the contructor calls other constructors (`this(...)` call inside a constructor) with the same `ref` parameters.
-  fn err_multiple_constructor(&self, module: &JModule) {
+  fn err_multiple_constructor(&mut self, module: &JModule) {
     let constructors = module.host.java_constructors.clone();
+    let help_msg = self.constructor_help_msg();
     self.session().struct_span_err_with_code(constructors[1].span,
       &format!("multiple constructors in the module `{}`.", module.host.class_name),
       "E0012")
     .span_label(constructors[0].span, &"previous constructor here")
-    .help(&self.constructor_help_msg())
+    .help(&help_msg)
     .emit();
   }
 
-  fn err_missing_constructor(&self, module: &JModule) {
+  fn err_missing_constructor(&mut self, module: &JModule) {
+    let help_msg = self.constructor_help_msg();
     self.session().struct_span_err_with_code(module.host.class_name.span,
       &format!("missing constructor in the module `{}`.", module.host.class_name),
       "E0013")
-    .help(&self.constructor_help_msg())
+    .help(&help_msg)
     .emit();
   }
 
-  fn err_missing_ref_param(&self, ref_field: &ModuleField, constructor: &JConstructor) {
+  fn err_missing_ref_param(&mut self, ref_field: &ModuleField, constructor: &JConstructor) {
+    let help_msg = self.constructor_help_msg();
     self.session().struct_span_err_with_code(constructor.span,
       &format!("missing parameter in the constructor for initializing the field `{}`.", ref_field.binding.name),
       "E0014")
     .span_label(ref_field.binding.name.span, &"declared here")
-    .help(&self.constructor_help_msg())
+    .help(&help_msg)
     .emit();
   }
 
-  fn err_mismatch_ref_type(&self, ref_field: &ModuleField, param: &JParameter) {
+  fn err_mismatch_ref_type(&mut self, ref_field: &ModuleField, param: &JParameter) {
     let binding = ref_field.binding.clone();
+    let help_msg = self.constructor_help_msg();
     self.session().struct_span_err_with_code(param.span,
       &format!("Module field `{}` has type `{}` but was referenced with type `{}` in the constructor.",
         binding.name, binding.ty, param.ty),
       "E0015")
-    .help(&self.constructor_help_msg())
+    .help(&help_msg)
     .emit();
   }
 

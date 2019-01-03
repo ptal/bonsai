@@ -21,6 +21,7 @@ use syntex_errors::emitter::{ColorConfig, Emitter};
 use syntex_syntax::codemap::{FileMap, CodeMap};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::collections::hash_set::HashSet;
 use ast::CompilerTest;
 use ast::ExecutionTest;
 use partial::*;
@@ -35,6 +36,11 @@ pub struct Session {
   pub span_diagnostic: SpanDiagnostic,
   pub compiler_tests: Vec<CompilerTest>,
   pub execution_tests: Vec<ExecutionTest>,
+  // We uniquely identify an error and a warning with its span and error/warning code.
+  // This is to avoid registering duplicated errors more than one time.
+  // Rational: The body of the loop statement is duplicated which can generate the same error twice. (see `rewrite_reincarnation.rs`).
+  errors: HashSet<(MultiSpan, String)>,
+  warnings: HashSet<(MultiSpan, String)>,
 }
 
 impl Session
@@ -47,7 +53,9 @@ impl Session
       codemap: codemap,
       span_diagnostic: span_diagnostic,
       compiler_tests: vec![],
-      execution_tests: vec![]
+      execution_tests: vec![],
+      errors: HashSet::new(),
+      warnings: HashSet::new(),
     }
   }
 
@@ -91,6 +99,17 @@ impl Session
     self.codemap.load_file(path).unwrap()
   }
 
+  fn record_error<S: Into<MultiSpan>>(&mut self, sp: S, code: &str) -> bool {
+    let code = format!("{}",code);
+    // TODO: E0033: To remove when the causality analysis is more precise on the span.
+    // TODO: E0014: We should aggregate the errors on reference arguments into a single error.
+    code == "E0033" || code == "E0014" || self.errors.insert((sp.into(), code.clone()))
+  }
+
+  fn record_warning<S: Into<MultiSpan>>(&mut self, sp: S, code: &str) -> bool {
+    self.warnings.insert((sp.into(), format!("{}",code)))
+  }
+
   pub fn diagnostic<'a>(&'a self) -> &'a SpanDiagnostic {
     &self.span_diagnostic
   }
@@ -102,12 +121,17 @@ impl Session
                                                 -> DiagnosticBuilder<'a>  {
     self.diagnostic().struct_span_warn(sp, msg)
   }
-  pub fn struct_span_warn_with_code<'a, S: Into<MultiSpan>>(&'a self,
+  pub fn struct_span_warn_with_code<'a, S: Clone + Into<MultiSpan>>(&'a mut self,
                                                           sp: S,
                                                           msg: &str,
                                                           code: &str)
                                                           -> DiagnosticBuilder<'a>  {
-    self.diagnostic().struct_span_warn_with_code(sp, msg, code)
+    if self.record_warning(sp.clone(), code) {
+      self.diagnostic().struct_span_warn_with_code(sp, msg, code)
+    }
+    else {
+      self.diagnostic().struct_dummy()
+    }
   }
   pub fn struct_warn<'a>(&'a self, msg: &str) -> DiagnosticBuilder<'a>  {
     self.diagnostic().struct_warn(msg)
@@ -118,12 +142,17 @@ impl Session
                                                -> DiagnosticBuilder<'a>  {
     self.diagnostic().struct_span_err(sp, msg)
   }
-  pub fn struct_span_err_with_code<'a, S: Into<MultiSpan>>(&'a self,
+  pub fn struct_span_err_with_code<'a, S: Clone + Into<MultiSpan>>(&'a mut self,
                                                          sp: S,
                                                          msg: &str,
                                                          code: &str)
                                                          -> DiagnosticBuilder<'a>  {
-    self.diagnostic().struct_span_err_with_code(sp, msg, code)
+    if self.record_error(sp.clone(), code) {
+      self.diagnostic().struct_span_err_with_code(sp, msg, code)
+    }
+    else {
+      self.diagnostic().struct_dummy()
+    }
   }
   pub fn struct_err<'a>(&'a self, msg: &str) -> DiagnosticBuilder<'a>  {
     self.diagnostic().struct_err(msg)
@@ -158,8 +187,10 @@ impl Session
   pub fn span_err<S: Into<MultiSpan>>(&self, sp: S, msg: &str) {
     self.diagnostic().span_err(sp, msg)
   }
-  pub fn span_err_with_code<S: Into<MultiSpan>>(&self, sp: S, msg: &str, code: &str) {
-    self.diagnostic().span_err_with_code(sp, &msg, code)
+  pub fn span_err_with_code<S: Clone + Into<MultiSpan>>(&mut self, sp: S, msg: &str, code: &str) {
+    if self.record_error(sp.clone(), code) {
+      self.diagnostic().span_err_with_code(sp, &msg, code);
+    }
   }
   pub fn err(&self, msg: &str) {
     self.diagnostic().err(msg)
@@ -177,8 +208,10 @@ impl Session
   pub fn span_warn<S: Into<MultiSpan>>(&self, sp: S, msg: &str) {
     self.diagnostic().span_warn(sp, msg)
   }
-  pub fn span_warn_with_code<S: Into<MultiSpan>>(&self, sp: S, msg: &str, code: &str) {
-    self.diagnostic().span_warn_with_code(sp, msg, code)
+  pub fn span_warn_with_code<S: Clone + Into<MultiSpan>>(&mut self, sp: S, msg: &str, code: &str) {
+    if self.record_warning(sp.clone(),code) {
+      self.diagnostic().span_warn_with_code(sp, msg, code)
+    }
   }
   pub fn warn(&self, msg: &str) {
     self.diagnostic().warn(msg)

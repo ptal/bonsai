@@ -76,7 +76,7 @@ impl Solver {
     }
   }
 
-  fn err_unsatisfiable_model(&self) {
+  fn err_unsatisfiable_model(&mut self) {
     self.session.struct_span_err_with_code(DUMMY_SP,
       &format!("causality error: a write access happens after a read access on the same variable."),
       "E0033")
@@ -120,7 +120,7 @@ impl Solver {
     else { Some(model) }
   }
 
-  fn err_two_readwrite_accesses(&self, v1: Variable, v2: Variable) {
+  fn err_two_readwrite_accesses(&mut self, v1: Variable, v2: Variable) {
     self.session.struct_span_err_with_code(v2.span,
       &format!("second readwrite access to this variable."),
       "E0032")

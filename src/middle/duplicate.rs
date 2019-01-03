@@ -45,8 +45,8 @@ impl Duplicate {
     }
   }
 
-  fn session<'a>(&'a self) -> &'a Session {
-    &self.session
+  fn session<'a>(&'a mut self) -> &'a mut Session {
+    &mut self.session
   }
 
   fn analyse(mut self) -> Env<Context> {
@@ -71,8 +71,8 @@ impl Duplicate {
     self.dup_procs.clear();
   }
 
-  // Note: Due to the borrowing of session, we cannot take `dups` as mutable (both are owned by `self`).
-  fn duplicate(dups: &HashMap<String, Span>, session: &Session,
+  // Note: Due to the borrowing of session, we cannot take `dups` as reference (both are owned by `self`).
+  fn duplicate(dups: HashMap<String, Span>, session: &mut Session,
     name: Ident, code: &str, what: &str) -> bool
   {
     match dups.get(&*name) {
@@ -92,7 +92,7 @@ impl Duplicate {
   fn duplicate_field(&mut self, field: ModuleField) {
     let binding = field.binding.clone();
     let name = binding.name.clone();
-    let err = Self::duplicate(&self.dup_mod_fields, self.session(),
+    let err = Self::duplicate(self.dup_mod_fields.clone(), self.session(),
       name.clone(), "E0002", "field");
     if !err { self.dup_mod_fields.insert(name.unwrap(), field.span); }
   }
@@ -100,14 +100,14 @@ impl Duplicate {
   fn duplicate_local_var(&mut self, let_stmt: &LetStmt) {
     let binding = let_stmt.binding.clone();
     let name = binding.name.clone();
-    let err = Self::duplicate(&self.dup_local_vars, self.session(),
+    let err = Self::duplicate(self.dup_local_vars.clone(), self.session(),
       name.clone(), "E0003", "local variable");
     if !err { self.dup_local_vars.insert(name.unwrap(), let_stmt.span); }
   }
 
   fn duplicate_proc(&mut self, process: &Process) {
     let name = process.name.clone();
-    let err = Self::duplicate(&self.dup_procs, self.session(),
+    let err = Self::duplicate(self.dup_procs.clone(), self.session(),
       name.clone(), "E0004", "process");
     if !err { self.dup_procs.insert(name.unwrap(), process.span); }
   }

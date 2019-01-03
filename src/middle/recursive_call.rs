@@ -66,8 +66,8 @@ impl RecursiveCall {
     }
   }
 
-  fn check_entry_points(&self) {
-    for uid in self.entry_points.iter().cloned() {
+  fn check_entry_points(&mut self) {
+    for uid in self.entry_points.clone() {
       let process = self.context.find_proc(uid);
       if process.visibility == JVisibility::Private {
         self.warn_private_entry_point(process);
@@ -75,7 +75,7 @@ impl RecursiveCall {
     }
   }
 
-  fn warn_private_entry_point(&self, process: Process) {
+  fn warn_private_entry_point(&mut self, process: Process) {
     self.session.struct_span_warn_with_code(process.name.span,
       "private process never called.",
       "W0001")
@@ -85,6 +85,7 @@ impl RecursiveCall {
   }
 
   fn err_forbid_recursive_call(&mut self, process: Process) {
+    let cycle = self.display_path_cycle();
     self.session.struct_span_err_with_code(process.name.span,
       "forbidden recursive process call.",
       "E0030")
@@ -92,7 +93,7 @@ impl RecursiveCall {
            "Processes cannot be called recursively due to strong static analysis ensuring determinism of the computation.\n\
             Detected cycle: {}\n\
             Solution: Rewrite your recursive program into an iterative version by using the statement `loop` and the `world_line` variables.",
-            self.display_path_cycle()))
+            cycle))
     .emit();
   }
 

@@ -44,6 +44,7 @@ use middle::rewrite_reincarnation::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
   env
+    .and_next(rewrite_reincarnation)
     .and_then(duplicate)
     .and_then(undeclared)
     .and_then(resolve)
@@ -56,5 +57,4 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_next(search_tree_wf)
     // .and_next(where_is_the_drop)
     .and_next(causality_analysis)
-    .and_next(rewrite_reincarnation)
 }

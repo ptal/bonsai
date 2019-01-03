@@ -56,8 +56,9 @@ impl InstantaneousAnalysis {
     }
   }
 
-  fn err_instantaneous_loop(&self) {
-    self.session.struct_span_err_with_code(self.context_span,
+  fn err_instantaneous_loop(&mut self) {
+    let sp = self.context_span;
+    self.session.struct_span_err_with_code(sp,
       &format!("forbidden loop with an instantaneous body."),
       "E0028")
     .help(&"Every path of the body of a `loop` statement must at least contain one delay statement (`pause`, `pause up` and `stop`).\n\
@@ -65,8 +66,9 @@ impl InstantaneousAnalysis {
     .emit();
   }
 
-  fn err_non_instantaneous_space(&self) {
-    self.session.struct_span_err_with_code(self.context_span,
+  fn err_non_instantaneous_space(&mut self) {
+    let sp = self.context_span;
+    self.session.struct_span_err_with_code(sp,
       &format!("process not instantaneous in a `space` statement."),
       "E0029")
     .help(&"Process in `space` statement must be instantaneous, that is it must not contain delay (`pause`, `pause up` and `stop`) or `suspend` statements.")

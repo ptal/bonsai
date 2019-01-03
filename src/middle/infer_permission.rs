@@ -49,8 +49,8 @@ impl InferPermission {
     }
   }
 
-  fn session<'a>(&'a self) -> &'a Session {
-    &self.session
+  fn session<'a>(&'a mut self) -> &'a mut Session {
+    &mut self.session
   }
 
   fn compute(mut self) -> Env<Context> {
@@ -65,7 +65,7 @@ impl InferPermission {
   }
 
   // Returns false if an error occurred.
-  fn check_pre_on_variable(&self, var: &Variable) -> bool {
+  fn check_pre_on_variable(&mut self, var: &Variable) -> bool {
     if var.past == 0 {
       true
     }
@@ -89,7 +89,7 @@ impl InferPermission {
     }
   }
 
-  fn check_permission(&self, var: &Variable, perm: Permission) {
+  fn check_permission(&mut self, var: &Variable, perm: Permission) {
     match (perm, self.perm_context) {
       // Read is allowed in read and readwrite contexts.
       (Read, Write)
@@ -101,7 +101,7 @@ impl InferPermission {
     }
   }
 
-  fn check_host_function(&self) -> bool {
+  fn check_host_function(&mut self) -> bool {
     if self.perm_context == Read {
       self.err_forbid_host_in_read_context();
       false
@@ -123,8 +123,9 @@ impl InferPermission {
     }
   }
 
-  fn err_forbid_host_in_read_context(&self) {
-    self.session().struct_span_err_with_code(self.context_span,
+  fn err_forbid_host_in_read_context(&mut self) {
+    let sp = self.context_span;
+    self.session().struct_span_err_with_code(sp,
       &format!("illegal host function in a read only context."),
       "E0027")
     .help(&"Host function cannot be called inside an entailment expression.\n\
@@ -132,7 +133,7 @@ impl InferPermission {
     .emit();
   }
 
-  fn err_forbid_write_on_pre(&self, var: &Variable) {
+  fn err_forbid_write_on_pre(&mut self, var: &Variable) {
     self.session().struct_span_err_with_code(var.span,
       &format!("forbidden write on `pre` variable."),
       "E0016")
@@ -141,7 +142,7 @@ impl InferPermission {
     .emit();
   }
 
-  fn err_forbid_pre_on(&self, var: &Variable, kind: &str) {
+  fn err_forbid_pre_on(&mut self, var: &Variable, kind: &str) {
     self.session().struct_span_err_with_code(var.span,
       &format!("illegal kind of the variable `{}`.", var.last()),
       "E0017")
@@ -150,24 +151,24 @@ impl InferPermission {
     .emit();
   }
 
-  fn err_illegal_permission_in_context(&self, var: &Variable, perm: Permission) {
+  fn err_illegal_permission_in_context(&mut self, var: &Variable, perm: Permission) {
     let context_msg = match self.perm_context {
       Write => "The operator `<-` only accept write permission on its left.",
       Read => "The operator `|=` only accept variables with a `read` permission.\n\
                Solution: write on the variables before the entailment test (outside the conditional statement).",
       ReadWrite => unreachable!("errors are not generated with a readwrite context because it is the most general."),
     };
-
+    let perm_context = self.perm_context;
     self.session().struct_span_err_with_code(var.span,
       &format!("illegal permission of the variable `{}`.", var.last()),
       "E0026")
     .span_label(var.last().span, &format!(
-      "this variables is accessed with the permission `{}` in a `{}` context.", perm, self.perm_context))
+      "this variables is accessed with the permission `{}` in a `{}` context.", perm, perm_context))
     .help(&context_msg)
     .emit();
   }
 
-  fn err_forbid_permission_on_host_path(&self, var: &Variable) {
+  fn err_forbid_permission_on_host_path(&mut self, var: &Variable) {
     self.session().struct_span_err_with_code(var.span,
       &format!("illegal permission on this path."),
       "E0034")

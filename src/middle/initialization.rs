@@ -56,8 +56,8 @@ impl Initialization {
     }
   }
 
-  fn session<'a>(&'a self) -> &'a Session {
-    &self.session
+  fn session<'a>(&'a mut self) -> &'a mut Session {
+    &mut self.session
   }
 
   fn analyse(mut self) -> Env<Context> {
@@ -70,7 +70,7 @@ impl Initialization {
     }
   }
 
-  fn ref_fields(&self, module: &JModule) {
+  fn ref_fields(&mut self, module: &JModule) {
     for ref_field in module.ref_fields() {
       if ref_field.binding.expr.is_some() {
         self.err_initialized_ref_field(&ref_field);
@@ -87,7 +87,7 @@ impl Initialization {
     self.context.module_by_name(binding.ty.name.clone()).has_refs()
   }
 
-  fn module_field(&self, binding: &Binding) {
+  fn module_field(&mut self, binding: &Binding) {
     if binding.expr.is_some() {
       if self.is_module_ref(binding) {
         self.err_module_ref_in_field(binding)
@@ -95,14 +95,14 @@ impl Initialization {
     }
   }
 
-  fn module_local_var(&self, binding: &Binding) {
+  fn module_local_var(&mut self, binding: &Binding) {
     match binding.expr.clone() {
       Some(expr) => self.module_refs_initializer(binding, expr),
       None => self.err_module_missing_initializer(binding)
     }
   }
 
-  fn module_refs_initializer(&self, binding: &Binding, expr: Expr) {
+  fn module_refs_initializer(&mut self, binding: &Binding, expr: Expr) {
     if self.is_module_ref(binding) {
       match expr.node {
         ExprKind::NewInstance(new_instance) => {
@@ -113,7 +113,7 @@ impl Initialization {
     }
   }
 
-  fn module_initialization_list(&self, binding: &Binding, ty: JType, args: Vec<Expr>) {
+  fn module_initialization_list(&mut self, binding: &Binding, ty: JType, args: Vec<Expr>) {
     let mod_info = self.context.module_by_name(ty.name);
     if mod_info.cons_len != args.len() {
       self.err_param_list_differ(binding, &mod_info, &args)
@@ -125,7 +125,7 @@ impl Initialization {
     }
   }
 
-  fn ref_instantiation(&self, expr: &Expr, uid: usize) {
+  fn ref_instantiation(&mut self, expr: &Expr, uid: usize) {
     let ref_info = self.context.var_by_uid(uid);
     match expr.node.clone() {
       ExprKind::Var(var) => {
@@ -151,24 +151,26 @@ impl Initialization {
     format!("expected variable of type `{}` and kind `{}`.", var_info.ty, var_info.kind)
   }
 
-  fn err_param_list_differ(&self, binding: &Binding, mod_info: &ModuleInfo, args: &Vec<Expr>) {
+  fn err_param_list_differ(&mut self, binding: &Binding, mod_info: &ModuleInfo, args: &Vec<Expr>) {
     self.session().struct_span_err_with_code(binding.expr.as_ref().unwrap().span,
       &format!("constructor has size {} but was called with {} arguments.", mod_info.cons_len, args.len()),
       "E0024")
     .emit();
   }
 
-  fn err_mismatch_kind_type(&self, sp: Span, var_info: &VarInfo, ref_info: &VarInfo) {
+  fn err_mismatch_kind_type(&mut self, sp: Span, var_info: &VarInfo, ref_info: &VarInfo) {
+    let msg = self.msg_expected_var(ref_info);
     self.session().struct_span_err_with_code(sp,
-      &self.msg_expected_var(ref_info),
+      &msg,
       "E0023")
     .span_label(sp, &format!("has type `{}` and kind `{}`.", var_info.ty, var_info.kind))
     .emit();
   }
 
-  fn err_instantiate_ref_with_expr(&self, var_info: &VarInfo, expr: &Expr) {
+  fn err_instantiate_ref_with_expr(&mut self, var_info: &VarInfo, expr: &Expr) {
+    let msg = self.msg_expected_var(var_info);
     self.session().struct_span_err_with_code(expr.span,
-      &self.msg_expected_var(var_info),
+      &msg,
       "E0022")
     .span_help(expr.span,
       &format!("Illegal instantiation of a `ref` variable with an expression.\n\
@@ -176,20 +178,22 @@ impl Initialization {
     .emit();
   }
 
-  fn err_ref_var_in_field(&self, var: &Variable, first_ref: Ident) {
+  fn err_ref_var_in_field(&mut self, var: &Variable, first_ref: Ident) {
+    let msg = self.msg_ref_field();
     self.session().struct_span_err_with_code(var.span,
       &format!("forbidden occurrence of `ref` variable `{}` when initializing a field.", first_ref),
       "E0005")
     .span_label(first_ref.span, &format!("illegal occurrence"))
-    .help(&self.msg_ref_field())
+    .help(&msg)
     .emit();
   }
 
-  fn err_module_ref_in_field(&self, binding: &Binding) {
+  fn err_module_ref_in_field(&mut self, binding: &Binding) {
+    let msg = self.msg_ref_field();
     self.session().struct_span_err_with_code(binding.span,
       &format!("forbidden initialization of the module `{}` in a field.", binding.ty.name),
       "E0021")
-    .help(&self.msg_ref_field())
+    .help(&msg)
     .emit();
   }
 
@@ -198,7 +202,7 @@ impl Initialization {
              You can initialize this field in the constructor.")
   }
 
-  fn err_initialized_ref_field(&self, ref_field: &ModuleField) {
+  fn err_initialized_ref_field(&mut self, ref_field: &ModuleField) {
     let binding = ref_field.binding.clone();
     self.session().struct_span_err_with_code(ref_field.span,
       &format!("illegal initialization of `ref` field `{}`.", binding.name),
@@ -208,7 +212,7 @@ impl Initialization {
     .emit();
   }
 
-  fn err_kind_ref_field(&self, ref_field: &ModuleField) {
+  fn err_kind_ref_field(&mut self, ref_field: &ModuleField) {
     let binding = ref_field.binding.clone();
     self.session().struct_span_err_with_code(ref_field.span,
       &format!("illegal kind for the `ref` field `{}`.", binding.name),
@@ -217,20 +221,22 @@ impl Initialization {
     .emit();
   }
 
-  fn err_module_illegal_initializer(&self, binding: &Binding) {
+  fn err_module_illegal_initializer(&mut self, binding: &Binding) {
+    let msg = self.msg_module_initializer();
     self.session().struct_span_err_with_code(binding.span,
       &format!("illegal initialization of the module variable `{}`.", binding.name),
       "E0018")
     .span_label(binding.expr.as_ref().unwrap().span, &"illegal initializer")
-    .help(&self.msg_module_initializer())
+    .help(&msg)
     .emit();
   }
 
-  fn err_module_missing_initializer(&self, binding: &Binding) {
+  fn err_module_missing_initializer(&mut self, binding: &Binding) {
+    let msg = self.msg_module_initializer();
     self.session().struct_span_err_with_code(binding.span,
       &format!("missing initialization of the module variable `{}`.", binding.name),
       "E0019")
-    .help(&self.msg_module_initializer())
+    .help(&msg)
     .emit();
   }
 
@@ -239,7 +245,7 @@ impl Initialization {
              (module field can be left uninitialized).")
   }
 
-  fn err_host_local_var(&self, binding: &Binding) {
+  fn err_host_local_var(&mut self, binding: &Binding) {
     self.session().struct_span_err_with_code(binding.span,
       &format!("missing spacetime specifier for the variable `{}`.", binding.name),
       "E0025")

@@ -53,8 +53,9 @@ impl SearchTreeWellFormedness {
     }
   }
 
-  fn err_ill_formed_search_tree(&self) {
-    let mut db = self.session.struct_span_err_with_code(self.context_span,
+  fn err_ill_formed_search_tree(&mut self) {
+    let sp = self.context_span;
+    let mut db = self.session.struct_span_err_with_code(sp,
       &format!("contains search tree statements (`space` or `prune`)."),
       "E0031");
     for span in self.search_statements.iter() {
