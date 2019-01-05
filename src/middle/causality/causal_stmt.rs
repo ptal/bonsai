@@ -100,7 +100,6 @@ impl CausalStmt {
       DelayStmt(_) => self.visit_delay(model, continuation),
       Space(_)
     | Prune
-    | LocalDrop(_)
     | Nothing => continuation.call(self, model),
       Seq(branches) => self.visit_seq(branches, model, continuation),
       Let(stmt) => self.visit_let(stmt, model, continuation),

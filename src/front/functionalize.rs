@@ -62,7 +62,6 @@ fn lift_stmt(stmt: Stmt) -> Stmt {
     ProcCall(target, name, args) => ProcCall(target, name, args),
     ExprStmt(e) => ExprStmt(e),
     Nothing => Nothing,
-    LocalDrop(path) => LocalDrop(path)
   };
   Stmt::new(stmt.span, node)
 }

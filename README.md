@@ -7,7 +7,7 @@
 -->
 
 Spacetime programming is a programming language on top of Java to describe search strategies exploring combinatorial state-space such as in constraint satisfaction problems.
-Please consult the [Spacetime manual](http://hyc.io/spacetime) for more information.
+Please consult the [spacetime manual](http://hyc.io/spacetime) for more information.
 
 ## Build the manual
 

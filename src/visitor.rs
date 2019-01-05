@@ -112,8 +112,6 @@ pub trait Visitor<H>
     self.visit_stmt(child)
   }
 
-  fn visit_drop(&mut self, _var_path: VarPath) {}
-
   fn visit_binding(&mut self, binding: Binding) {
     walk_binding(self, binding)
   }
@@ -203,7 +201,6 @@ pub fn walk_stmt<H, V: ?Sized>(visitor: &mut V, stmt: Stmt) where
     QFUniverse(body) => visitor.visit_qf_universe(*body),
     Universe(queue, body) => visitor.visit_universe(queue, *body),
     Nothing => visitor.visit_nothing(),
-    LocalDrop(var_path) => visitor.visit_drop(var_path),
   }
 }
 
@@ -371,8 +368,6 @@ pub trait VisitorMut<H>
     self.visit_stmt(child)
   }
 
-  fn visit_drop(&mut self, _var_path: &mut VarPath) {}
-
   fn visit_binding(&mut self, binding: &mut Binding) {
     walk_binding_mut(self, binding);
   }
@@ -462,7 +457,6 @@ pub fn walk_stmt_mut<H, V: ?Sized>(visitor: &mut V, stmt: &mut Stmt) where
     &mut QFUniverse(ref mut body) => visitor.visit_qf_universe(&mut **body),
     &mut Universe(ref mut queue, ref mut body) => visitor.visit_universe(queue, &mut **body),
     &mut Nothing => visitor.visit_nothing(),
-    &mut LocalDrop(ref mut var_path) => visitor.visit_drop(var_path),
   }
 }
 

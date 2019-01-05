@@ -269,7 +269,6 @@ impl SymbolicExecution
       QFUniverse(body) => self.next_states_qf_universe(*body),
       Space(_)
     | Prune
-    | LocalDrop(_)
     | Nothing
     | ExprStmt(_)
     | Tell(_, _) => StatesSet::terminated_state(),
@@ -355,7 +354,6 @@ impl SymbolicExecution
       QFUniverse(body) => self.reduce_qf_universe(*body, state),
       Space(_)
     | Prune
-    | LocalDrop(_)
     | Nothing
     | ExprStmt(_)
     | Tell(_, _) => ResidualStmt::Terminated,
