@@ -6,8 +6,7 @@
 [travis]: https://travis-ci.org/ptal/bonsai
 -->
 
-Spacetime programming is a programming language on top of Java to describe search strategy when exploring a state-space, for example in constraint satisfaction problems.
-Bonsai is the name of the compiler and runtime of this language.
+Spacetime programming is a programming language on top of Java to describe search strategies exploring combinatorial state-space such as in constraint satisfaction problems.
 Please consult the [Spacetime manual](http://hyc.io/spacetime) for more information.
 
 ## Build the manual
