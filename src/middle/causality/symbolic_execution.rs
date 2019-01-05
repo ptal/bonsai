@@ -16,7 +16,6 @@
 
 use context::*;
 use session::*;
-use middle::causality::causal_model::CausalModel;
 use gcollections::VectorStack;
 use gcollections::ops::*;
 use std::collections::{HashSet};
@@ -251,6 +250,9 @@ impl SymbolicExecution
     }
   }
 
+  fn term_and(a: bool, b: bool) -> bool { a && b }
+  fn term_or(a: bool, b: bool) -> bool { a || b }
+
   fn next_states_stmt(&self, stmt: Stmt) -> StatesSet
   {
     use ast::StmtKind::*;
@@ -260,9 +262,11 @@ impl SymbolicExecution
       Seq(branches) => self.next_states_seq(branches),
       When(cond, then_branch, else_branch) =>
         self.next_states_when(cond, *then_branch, *else_branch),
-      OrPar(branches) => self.next_states_par(branches, CausalModel::term_or),
-      AndPar(branches) => self.next_states_par(branches, CausalModel::term_and),
+      OrPar(branches) => self.next_states_par(branches, Self::term_or),
+      AndPar(branches) => self.next_states_par(branches, Self::term_and),
       Loop(body) => self.next_states_loop(*body),
+      Universe(queue, body) => self.next_states_universe(queue, *body),
+      QFUniverse(body) => self.next_states_qf_universe(*body),
       Space(_)
     | Prune
     | LocalDrop(_)
@@ -273,7 +277,6 @@ impl SymbolicExecution
       // Suspend(cond, body) => self.next_states_suspend(cond, *body, model),
       // Abort(cond, body) => self.next_states_abort(cond, *body, model),
       // ProcCall(var, process, args) => self.next_states_proc_call(var, process, args),
-      // QFUniverse(body) => self.next_states_qf_universe(*body),
     }
   }
 
@@ -325,6 +328,16 @@ impl SymbolicExecution
     self.next_states_stmt(body)
   }
 
+  fn next_states_universe(&self, _queue: Variable, body: Stmt) -> StatesSet
+  {
+    self.next_states_stmt(body)
+  }
+
+  fn next_states_qf_universe(&self, body: Stmt) -> StatesSet
+  {
+    self.next_states_stmt(body)
+  }
+
   fn reduce_stmt(&self, stmt: Stmt, state: State) -> ResidualStmt
   {
     use ast::StmtKind::*;
@@ -338,6 +351,8 @@ impl SymbolicExecution
       OrPar(branches) => self.reduce_or_par(span, branches, state),
       AndPar(branches) => self.reduce_and_par(span, branches, state),
       Loop(body) => self.reduce_loop(*body, state),
+      Universe(queue, body) => self.reduce_universe(queue, *body, state),
+      QFUniverse(body) => self.reduce_qf_universe(*body, state),
       Space(_)
     | Prune
     | LocalDrop(_)
@@ -348,7 +363,6 @@ impl SymbolicExecution
       // Suspend(cond, body) => self.reduce_suspend(cond, *body, model, state),
       // Abort(cond, body) => self.reduce_abort(cond, *body, model, state),
       // ProcCall(var, process, args) => self.reduce_proc_call(var, process, args),
-      // QFUniverse(body) => self.reduce_qf_universe(*body),
     }
   }
 
@@ -485,5 +499,15 @@ impl SymbolicExecution
         Next(Stmt::new(sp, StmtKind::Seq(vec![stmt, Stmt::new(sp, StmtKind::Loop(Box::new(body)))])))
       }
     }
+  }
+
+  fn reduce_universe(&self, _queue: Variable, body: Stmt, state: State) -> ResidualStmt
+  {
+    self.reduce_stmt(body, state)
+  }
+
+  fn reduce_qf_universe(&self, body: Stmt, state: State) -> ResidualStmt
+  {
+    self.reduce_stmt(body, state)
   }
 }

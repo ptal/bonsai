@@ -111,11 +111,12 @@ impl CausalStmt {
       OrPar(branches) => self.visit_or_par(branches, model, continuation),
       AndPar(branches) => self.visit_and_par(branches, model, continuation),
       Loop(body) => self.visit_loop(*body, model, continuation),
+      Universe(_, body)
+    | QFUniverse(body) => self.visit_stmt(*body, model, continuation),
       _ => vec![]
       // Suspend(cond, body) => self.visit_suspend(cond, *body, model, continuation),
       // Abort(cond, body) => self.visit_abort(cond, *body, model, continuation),
       // ProcCall(var, process, args) => self.visit_proc_call(var, process, args),
-      // QFUniverse(body) => self.visit_qf_universe(*body),
     }
   }
 
@@ -175,9 +176,8 @@ impl CausalStmt {
     continuation.call(self, m)
   }
 
-  fn visit_par<F>(&self, children: Vec<Stmt>, model: CausalModel,
-    continuation: Cont, join_termination: F) -> Vec<CausalModel>
-   where F: Clone + Fn(bool, bool) -> bool
+  fn visit_par(&self, children: Vec<Stmt>, model: CausalModel,
+    continuation: Cont) -> Vec<CausalModel>
   {
     // We create the model of every branch without calling the current continuation.
     let mut models = vec![];
@@ -187,7 +187,7 @@ impl CausalStmt {
     // We merge by Cartesian product the models created by every branch.
     let first = models.remove(0);
     let models = models.into_iter().fold(first, |accu, m| {
-      CausalModel::cartesian_product(accu, m, join_termination.clone())
+      CausalModel::cartesian_product(accu, m)
     });
     // We call the continuation on models that are instantaneous.
     let mut result = vec![];
@@ -206,13 +206,13 @@ impl CausalStmt {
   fn visit_or_par(&self, children: Vec<Stmt>, model: CausalModel,
     continuation: Cont) -> Vec<CausalModel>
   {
-    self.visit_par(children, model, continuation, CausalModel::term_or)
+    self.visit_par(children, model, continuation)
   }
 
   fn visit_and_par(&self, children: Vec<Stmt>, model: CausalModel,
     continuation: Cont) -> Vec<CausalModel>
   {
-    self.visit_par(children, model, continuation, CausalModel::term_and)
+    self.visit_par(children, model, continuation)
   }
 
   fn visit_loop(&self, body: Stmt, model: CausalModel,

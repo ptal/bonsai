@@ -63,13 +63,13 @@ impl CausalModel {
   ///   2. The constraint stores are completely different.
   ///   3. The model parameters can be joined (see `ModelParameters::join`).
   /// The second assumption implies that we do not check for identical constraints.
-  pub fn join_constraints<F>(mut self, other: CausalModel, join_termination: F) -> CausalModel
-    where F: Fn(bool, bool) -> bool
+  pub fn join_constraints(mut self, other: CausalModel) -> CausalModel
   {
     assert_eq!(self.space.vstore.size(), other.space.vstore.size(),
       "join_constraints: The variables store must be identical.");
     self.latest_ops.extend(other.latest_ops.into_iter());
-    self.instantaneous = join_termination(self.instantaneous, other.instantaneous);
+    // NOTE: the conjunctive parallel statement <> is a weak preemption so during an instant, it behaves like ||.
+    self.instantaneous = self.instantaneous && other.instantaneous;
     let cstore = other.space.cstore;
     for i in 0..cstore.size() {
       self.space.cstore.alloc(cstore[i].bclone());
@@ -78,24 +78,20 @@ impl CausalModel {
     self
   }
 
-  pub fn cartesian_product<F>(left: Vec<CausalModel>, right: Vec<CausalModel>,
-      join_termination: F) -> Vec<CausalModel>
-    where F: Clone + Fn(bool, bool) -> bool
+  pub fn cartesian_product(left: Vec<CausalModel>, right: Vec<CausalModel>)
+   -> Vec<CausalModel>
   {
     let mut res = vec![];
     for s1 in left {
       for s2 in right.clone() {
-        res.push(s1.clone().join_constraints(s2, join_termination.clone()));
+        res.push(s1.clone().join_constraints(s2));
       }
     }
     res
   }
 
-  pub fn term_and(a: bool, b: bool) -> bool { a && b }
-  pub fn term_or(a: bool, b: bool) -> bool { a || b }
-
   pub fn fold(self, models: Vec<CausalModel>) -> CausalModel {
-    models.into_iter().fold(self, |a, m| a.join_constraints(m, Self::term_and))
+    models.into_iter().fold(self, |a, m| a.join_constraints(m))
   }
 
   pub fn add_simultaneous_ops_constraint(&mut self, ops: Vec<usize>) {

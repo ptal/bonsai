@@ -14,6 +14,10 @@
 
 #[error(E0033, 1, 0)]
 #[error(E0033, 1, 0)]
+// To fix when we have proper error message for causality errors.
+#[error(E0033, 1, 0)]
+#[error(E0033, 1, 0)]
+#[error(E0033, 1, 0)]
 
 package test;
 

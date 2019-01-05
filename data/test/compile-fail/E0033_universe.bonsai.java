@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2019 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Variation of example 4.5, Section 4.5.5 in the dissertation (Talbot, 2018).
-
+#[error(E0033, 1, 0)]
 #[error(E0033, 1, 0)]
 
 package test;
 
-public class E0033_example4_5bis2
+public class E0033_nonreactive
 {
   public proc test() =
-    single_time LMax x = new LMax(0);
-    single_time LMax y = new LMax(0);
-    par
-    <> x <- 2
-    <> when y |= x then y <- 3; pause end
-    end;
-    x <- 3;
+    universe
+      single_time LMax x = new LMax(0);
+      when x |= 1 then nothing else x <- 1 end
+    end
+
+  public proc test2() =
+    single_space Queue q = new Queue();
+    universe with q in
+      single_time LMax x = new LMax(0);
+      when x |= 1 then nothing else x <- 1 end
+    end
   end
 }

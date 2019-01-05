@@ -22,18 +22,12 @@ import bonsai.runtime.core.*;
 public class Simple
 {
   public proc test() =
-    single_space StackLR stack = new StackLR();
-    par
-    || universe with stack in
-        space System.out.print("2") end;
-        System.out.print("1");
-        par
-        || pause up
-        || pause
-        end;
-        System.out.print("unreachable");
+    single_space LMax nodes = new LMax(0);
+    loop
+      par
+      <> pause
+      <> readwrite nodes.inc()
       end
-    || stop
     end
   end
 }

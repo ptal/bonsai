@@ -1,9 +1,10 @@
 # bonsai
 
-[![ptal on Travis CI][travis-image]][travis]
+<!--- [![ptal on Travis CI][travis-image]][travis]
 
 [travis-image]: https://travis-ci.org/ptal/bonsai.png
 [travis]: https://travis-ci.org/ptal/bonsai
+-->
 
 Bonsai is a programming language on top of Java inspired by synchronous programming and aims at be used to solve Constraint Satisfaction Problems (CSP).
 This is a work-in-progress to implement the language formally described in [this dissertation](http://hyc.io/papers/dissertation-talbot.pdf).
