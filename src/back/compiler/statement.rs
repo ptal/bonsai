@@ -261,22 +261,6 @@ impl<'a> StatementCompiler<'a>
   //   }
   // }
 
-  // fn spacetime_binding(&mut self,
-  //   binding: Binding, spacetime: Spacetime, is_field: bool, uid_fn: &str)
-  // {
-  //   let spacetime = self.spacetime(spacetime);
-  //   let stream_bound = context.stream_bound_of(&binding.name);
-  //   self.fmt.push("new SpacetimeVar(");
-  //   if is_field { self.fmt.push(&binding.name); }
-  //   else { self.bottom(fmt, binding.ty.clone()); }
-  //   self.fmt.push(&format!(",\"{}\", {}(\"{}\"), {}, {}, {},",
-  //     binding.name, uid_fn, binding.name, spacetime,
-  //     binding.is_transient(), stream_bound));
-  //   self.closure(true,
-  //     binding.expr.expect("BUG: Generate binding without an expression."));
-  //   self.fmt.push(")");
-  // }
-
   // fn module_binding(&mut self, binding: Binding, uid_fn: &str)
   // {
   //   self.fmt.push(&format!("new ModuleVar(\"{}\", {}(\"{}\"), ",

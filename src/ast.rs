@@ -491,14 +491,6 @@ impl VarPath {
     VarPath::new(DUMMY_SP, vec![Ident::gen(value)])
   }
 
-  pub fn empty() -> Self {
-    VarPath::new(DUMMY_SP, vec![])
-  }
-
-  pub fn is_empty(&self) -> bool {
-    self.len() == 0
-  }
-
   pub fn len(&self) -> usize {
     self.fragments.len()
   }
@@ -630,9 +622,9 @@ impl Variable {
     Self::new(span, path, 0, permission)
   }
 
-  pub fn proc_arg(span: Span, path: VarPath) -> Self {
-    Self::new(span, path, 0, None)
-  }
+  // pub fn proc_arg(span: Span, path: VarPath) -> Self {
+  //   Self::new(span, path, 0, None)
+  // }
 
   pub fn first(&self) -> Ident {
     self.path.first()

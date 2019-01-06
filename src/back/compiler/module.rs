@@ -187,39 +187,39 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.terminate_line(";");
   }
 
-  fn runtime_init_method(&mut self, module: &JModule) {
-    self.fmt.push_line("public void __init(Layer senv)");
-    self.fmt.open_block();
-    self.fmt.push_line("__num_instances++;");
-    self.fmt.push_line("__object_instance = __num_instances;");
-    for field in module.fields.clone() {
-      let binding = field.binding;
-      if binding.is_module() {
-        self.fmt.push_line(&format!("{}.__init(senv);", binding.name));
-      }
-      else {
-        self.fmt.push("senv.enterScope(");
-        // self.binding(binding, true, "__uid");
-        self.fmt.terminate_line(");");
-      }
-    }
-    self.fmt.close_block();
-  }
+  // fn runtime_init_method(&mut self, module: &JModule) {
+  //   self.fmt.push_line("public void __init(Layer senv)");
+  //   self.fmt.open_block();
+  //   self.fmt.push_line("__num_instances++;");
+  //   self.fmt.push_line("__object_instance = __num_instances;");
+  //   for field in module.fields.clone() {
+  //     let binding = field.binding;
+  //     if binding.is_module() {
+  //       self.fmt.push_line(&format!("{}.__init(senv);", binding.name));
+  //     }
+  //     else {
+  //       self.fmt.push("senv.enterScope(");
+  //       // self.binding(binding, true, "__uid");
+  //       self.fmt.terminate_line(");");
+  //     }
+  //   }
+  //   self.fmt.close_block();
+  // }
 
-  fn runtime_destroy_method(&mut self, module: &JModule) {
-    self.fmt.push_line("public void __destroy(Layer senv)");
-    self.fmt.open_block();
-    for field in module.fields.clone() {
-      let binding = field.binding;
-      if binding.is_module() {
-        self.fmt.push_line(&format!("{}.__destroy(senv);", binding.name));
-      }
-      else {
-        self.fmt.push_line(&format!("senv.exitScope(__uid(\"{}\"));", binding.name));
-      }
-    }
-    self.fmt.close_block();
-  }
+  // fn runtime_destroy_method(&mut self, module: &JModule) {
+  //   self.fmt.push_line("public void __destroy(Layer senv)");
+  //   self.fmt.open_block();
+  //   for field in module.fields.clone() {
+  //     let binding = field.binding;
+  //     if binding.is_module() {
+  //       self.fmt.push_line(&format!("{}.__destroy(senv);", binding.name));
+  //     }
+  //     else {
+  //       self.fmt.push_line(&format!("senv.exitScope(__uid(\"{}\"));", binding.name));
+  //     }
+  //   }
+  //   self.fmt.close_block();
+  // }
 
   fn runtime_object_uid(&mut self, module: &JModule) {
     self.fmt.push_line("private static int __num_instances = -1;");

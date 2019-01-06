@@ -45,19 +45,15 @@ static LOCAL_UID_FN: &str = "__proc_uid.apply";
 static FIELD_UID_PREFIX: &str = "__uid_";
 
 struct ExpressionCompiler<'a> {
-  session: &'a Session,
+  _session: &'a Session,
   context: &'a Context,
   fmt: &'a mut CodeFormatter
 }
 
 impl<'a> ExpressionCompiler<'a>
 {
-  fn new(session: &'a Session, context: &'a Context, fmt: &'a mut CodeFormatter) -> Self {
-    ExpressionCompiler {
-      session: session,
-      context: context,
-      fmt: fmt
-    }
+  fn new(_session: &'a Session, context: &'a Context, fmt: &'a mut CodeFormatter) -> Self {
+    ExpressionCompiler { _session, context, fmt }
   }
 
   fn compile_fun_expr (&mut self, expr: Expr, ty: Option<JType>) {

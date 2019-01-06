@@ -91,9 +91,9 @@ impl StatesSet {
     self.states
   }
 
-  fn is_instantaneous(&self) -> bool {
-    self.states.len() == 1 && self.states[0].is_empty()
-  }
+  // fn is_instantaneous(&self) -> bool {
+  //   self.states.len() == 1 && self.states[0].is_empty()
+  // }
 
   fn cartesian_product<F>(self, other: StatesSet, term_join: F) -> Self
     where F: Fn(bool, bool) -> bool
