@@ -55,8 +55,8 @@ impl<'a> StatementCompiler<'a>
       OrPar(branches) => self.or_parallel(branches),
       AndPar(branches) => self.and_parallel(branches),
       Loop(body) => self.loop_stmt(body),
+      ProcCall(target, process, args) => self.process_call(target, process, args),
       // Suspend(entailment, body) => self.suspend(entailment, body),
-      // ProcCall(process, args) => self.fun_call(process, args),
       // ModuleCall(run_expr) => self.module_call(run_expr),
       // LocalDrop(_) => (), // It is not used in the runtime.
       stmt => unimplemented!("statement unimplemented: {:?}.", stmt)
@@ -245,6 +245,16 @@ impl<'a> StatementCompiler<'a>
     self.compile(*body);
     self.fmt.push(")");
     self.fmt.unindent();
+  }
+
+  fn process_call(&mut self, target: Option<Variable>, name: Ident, args: Vec<Variable>) {
+    if target.is_some() {
+      unimplemented!("process call on module is not yet supported.");
+    }
+    if args.len() > 0 {
+      unimplemented!("process call with arguments is not yet supported.");
+    }
+    self.fmt.push(&format!("{}()", name));
   }
 
   // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
