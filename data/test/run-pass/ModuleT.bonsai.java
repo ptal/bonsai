@@ -1,4 +1,4 @@
-// Copyright 2018 Pierre Talbot (IRCAM)
+// Copyright 2018 Pierre Talbot
 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,34 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.examples;
+#[run(ModuleT.incNodes, "12")]
+#[run(ModuleT.incNodes2, "1234")]
+
+package test;
 
 import java.lang.System;
 import java.util.*;
-import bonsai.runtime.queueing.*;
-import bonsai.runtime.core.*;
+import bonsai.runtime.lattices.LMax;
 
-import java.lang.System;
-import java.util.*;
-import bonsai.runtime.queueing.*;
-
-public class Simple
+public class ModuleT
 {
   single_space LMax nodes = new LMax(0);
-  public proc test() =
-    single_space LMax depth = new LMax(0);
-    par
-    <> pause
-    <> readwrite nodes.inc()
-    end;
-    System.out.println(read nodes);
-    run test2();
-  end
-
-  public proc test2() =
-    System.out.println(read nodes);
+  public proc incNodes() =
+    readwrite nodes.inc();
+    System.out.print(nodes);
     pause;
     readwrite nodes.inc();
-    System.out.println(read nodes);
+    System.out.print(nodes);
+  end
+
+  public proc incNodes2() =
+    run incNodes();
+    pause;
+    run incNodes();
   end
 }

@@ -32,17 +32,13 @@ pub fn compile_closure(session: &Session, context: &Context, fmt: &mut CodeForma
   ExpressionCompiler::new(session, context, fmt).closure(expr, return_expr, None)
 }
 
-pub fn compile_local_var(session: &Session, context: &Context, fmt: &mut CodeFormatter, var_name: Ident) {
-  ExpressionCompiler::new(session, context, fmt).local_var(var_name)
-}
-
-pub fn generate_var_uid(session: &Session, context: &Context, fmt: &mut CodeFormatter, var: Variable) {
+pub fn compile_var_uid(session: &Session, context: &Context, fmt: &mut CodeFormatter, var: Variable) {
   ExpressionCompiler::new(session, context, fmt).var_uid(var)
 }
 
 static CLOSURE_ARGS: &str = "__args";
 static LOCAL_UID_FN: &str = "__proc_uid.apply";
-static FIELD_UID_PREFIX: &str = "__uid_";
+pub static FIELD_UID_PREFIX: &str = "__uid_";
 
 struct ExpressionCompiler<'a> {
   _session: &'a Session,

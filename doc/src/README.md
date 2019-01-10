@@ -10,13 +10,13 @@ In this tutorial, we walk you through the syntax and semantics of spacetime with
 Our goal is to keep the tutorial accessible to programmers and computer scientists, and to give you an idea of the kind of problems this language can solve.
 
 Independently of your background, a first step is to read the [Getting Started](getting-started.md) chapter.
-We first introduce the concepts of [Synchronous Programming](synchronous-programming.md) and the syntax of spacetime through several small examples.
+We introduce the concepts of [Synchronous Programming](synchronous-programming.md) and the syntax of spacetime through several small examples.
 We make sure the build system is working out for you.
 Secondly, we introduce some novelties of [Spacetime Programming](learn-spacetime.md) with examples stemming from constraint satisfaction problems such as Sudoku.
 We next consider the more advanced concept of [Universe](universe.md) which is useful to design restarting search strategies.
 Finally, we go through a full application of this language by designing a interactive search strategy for an [application of musical composition](application-composition.md).
 
-The code is available on [github](https://github.com/ptal/oak).
+The code is available on [github](https://github.com/ptal/bonsai).
 
 ### Syntax cheat sheet
 

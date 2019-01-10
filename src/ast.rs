@@ -405,6 +405,16 @@ impl Binding
     self.kind == Kind::Host
   }
 
+  pub fn is_single_time(&self) -> bool {
+    self.kind == Kind::Spacetime(Spacetime::SingleTime)
+  }
+
+  pub fn to_field_var(self) -> Variable {
+    let mut path = VarPath::new(self.span, vec![self.name]);
+    path.uids[0] = self.uid;
+    Variable { op_no: 0, path, with_this: true, past: 0, permission: None, span: self.span }
+  }
+
   #[allow(dead_code)]
   pub fn example() -> Self {
     Binding::new(DUMMY_SP, Ident::gen("<name>"), Kind::example(),

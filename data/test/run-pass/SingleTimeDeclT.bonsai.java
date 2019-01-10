@@ -19,7 +19,7 @@
 #[run(SingleTimeDeclT.oneInstant, "12")]
 #[run(SingleTimeDeclT.severalInstant, "121")]
 #[run(SingleTimeDeclT.pauseUpInUniverse, "21")]
-#[run(SingleTimeDeclT.reinitValue, "012")]
+#[run(SingleTimeDeclT.reinitValue, "123")]
 #[run(SingleTimeDeclT.scopeBug, "2")]
 #[run(SingleTimeDeclT.initSingleTimeBug, "1")]
 
@@ -115,8 +115,9 @@ public class SingleTimeDeclT
     end
   end
 
-  static int i = 0;
-  private static LMax init() {
-    return new LMax(i++);
+  single_space LMax i = new LMax(0);
+  private LMax init() {
+    i.inc();
+    return i;
   }
 }

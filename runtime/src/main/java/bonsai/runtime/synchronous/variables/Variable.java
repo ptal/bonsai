@@ -58,7 +58,7 @@ public class Variable
         throw new RuntimeException("[BUG] The current value in `Variable` is `null` but some refUpdater are registered " +
           "(uid: " + uid + ").");
       }
-      this.value = refValue;
+      updateRefValue(refValue);
     }
     else {
       if (this.value != refValue) {

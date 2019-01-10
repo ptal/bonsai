@@ -19,6 +19,8 @@ use back::code_formatter::*;
 use back::compiler::expression::*;
 use back::compiler::statement::*;
 
+static MODULE_UID_FN: &str = "__uid";
+
 pub fn compile_module(env: Env<Context>, module: JModule) -> Env<(Context, String)> {
   env.and_next(|session, context| {
     let mod_name = module.mod_name();
@@ -72,7 +74,8 @@ impl<'a> ModuleCompiler<'a>
     self.class_decl(&module.host);
     self.fmt.open_block();
     for field in module.fields.clone() {
-      self.field(field);
+      self.field(field.clone());
+      self.field_uid(field);
     }
     self.runtime_boilerplate(&module);
     self.main_method(module.host.class_name);
@@ -90,8 +93,9 @@ impl<'a> ModuleCompiler<'a>
 
   fn runtime_boilerplate(&mut self, module: &JModule) {
     self.runtime_object_uid(module);
-    // self.runtime_init_method(module);
-    // self.runtime_destroy_method(module);
+    self.runtime_init_method(module);
+    self.runtime_destroy_method(module);
+    self.runtime_wrap_process(module);
   }
 
   fn class_decl(&mut self, jclass: &JClass) {
@@ -101,32 +105,29 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn interfaces(&mut self, interfaces: Vec<JType>) {
-    if !interfaces.is_empty() {
-      self.fmt.push(" implements ");
-      let len = interfaces.len();
-      for (i, interface) in interfaces.into_iter().enumerate() {
-        self.fmt.push(&format!("{}", interface));
-        if i != len - 1 {
-          self.fmt.push(", ");
-        }
-      }
+    self.fmt.push(" implements Module");
+    for interface in interfaces {
+      self.fmt.push(", ");
+      self.fmt.push(&format!("{}", interface));
     }
   }
 
   fn main_method(&mut self, class_name: Ident) {
-    let main_expr = match self.session.config().main_method.clone() {
-      Some(MainMethod { ref class, ref method }) if *class == *class_name => {
-        Some(format!("new {}().{}()", class, method))
+    let main_expr = match self.session.config().main_method {
+      Some(MainMethod { ref class, ref method }) if class == &*class_name => {
+        Some((class.clone(), method.clone()))
       },
       _ => None
     };
-    if let Some(main_expr) = main_expr {
+    if let Some((class, method)) = main_expr {
       self.fmt.push_line("public static void main(String[] args)");
       self.fmt.open_block();
       self.fmt.push_block(format!("\
-        Statement program = {};\n\
-        SpaceMachine machine = new SpaceMachine(program,{});\n\
-        machine.execute();", main_expr, self.session.config().debug));
+        {} __data = new {}();\n\
+        SpaceMachine<{}> machine = new SpaceMachine<>(__data, (__data_) -> __data_.{}(), {});\n\
+        machine.execute();",
+        class, class,
+        class, method, self.session.config().debug));
       self.fmt.close_block();
       self.fmt.newline();
     }
@@ -168,7 +169,12 @@ impl<'a> ModuleCompiler<'a>
 
   fn field(&mut self, field: ModuleField) {
     let code: String = vec![
-      Self::string_from_final(field.is_final),
+        if field.binding.is_single_time() {
+          String::new()
+        }
+        else {
+          Self::string_from_final(field.is_final)
+        },
       format!("{} ", field.visibility),
       Self::string_from_static(field.is_static),
       format!("{} ", field.binding.ty),
@@ -187,39 +193,83 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.terminate_line(";");
   }
 
-  // fn runtime_init_method(&mut self, module: &JModule) {
-  //   self.fmt.push_line("public void __init(Layer senv)");
-  //   self.fmt.open_block();
-  //   self.fmt.push_line("__num_instances++;");
-  //   self.fmt.push_line("__object_instance = __num_instances;");
-  //   for field in module.fields.clone() {
-  //     let binding = field.binding;
-  //     if binding.is_module() {
-  //       self.fmt.push_line(&format!("{}.__init(senv);", binding.name));
-  //     }
-  //     else {
-  //       self.fmt.push("senv.enterScope(");
-  //       // self.binding(binding, true, "__uid");
-  //       self.fmt.terminate_line(");");
-  //     }
-  //   }
-  //   self.fmt.close_block();
-  // }
+  // We generate a field `String __uid_<name_field>` to store the `uid` of the fields.
+  fn field_uid(&mut self, field: ModuleField) {
+    if !field.binding.is_module() {
+      self.field_uid_decl(field);
+      self.fmt.terminate_line(";");
+    }
+  }
 
-  // fn runtime_destroy_method(&mut self, module: &JModule) {
-  //   self.fmt.push_line("public void __destroy(Layer senv)");
-  //   self.fmt.open_block();
-  //   for field in module.fields.clone() {
-  //     let binding = field.binding;
-  //     if binding.is_module() {
-  //       self.fmt.push_line(&format!("{}.__destroy(senv);", binding.name));
-  //     }
-  //     else {
-  //       self.fmt.push_line(&format!("senv.exitScope(__uid(\"{}\"));", binding.name));
-  //     }
-  //   }
-  //   self.fmt.close_block();
-  // }
+  fn fuid(&self, field: &ModuleField) -> String {
+    format!("{}{}", FIELD_UID_PREFIX, field.binding.name)
+  }
+
+  fn field_uid_decl(&mut self, field: ModuleField) {
+    let uid = self.fuid(&field);
+    self.fmt.push(&format!("String {}", uid));
+  }
+
+  fn runtime_init_method(&mut self, module: &JModule) {
+    self.fmt.push("public void __init(Layer __layer");
+    for field in module.ref_fields() {
+      self.fmt.push(", ");
+      self.field_uid_decl(field);
+    }
+    self.fmt.terminate_line(")");
+    self.fmt.open_block();
+    for field in module.fields.clone() {
+      if field.binding.is_module() {
+        unimplemented!("module field are not supported yet.");
+        // self.fmt.push(&format!("{}.__init(__layer", binding.name));
+        // self.fmt.push(");");
+      }
+      else {
+        let field_name = field.binding.name.clone();
+        let uid = self.fuid(&field);
+        let uid_assignment = format!("this.{} = {}(\"{}\");", uid, MODULE_UID_FN, field_name);
+        if field.is_ref.is_some() {
+          // It generates the following code:
+          //   if (__uid_field == null) { this.__uid_field = __uid.apply("field"); } else { this.__uid_field = __uid_field; }
+          self.fmt.push(&format!("if({} == null) {{", uid));
+          self.fmt.terminate_line(&format!("{} }}", uid_assignment));
+          self.fmt.push("else {");
+          self.fmt.terminate_line(&format!("this.{} = {}; }}", uid, uid));
+
+          // We only create reference updater for single_time variables.
+          // The other variables are final so their references cannot be changed.
+          self.fmt.push(&format!("__layer.enterScope({}, {}, ",
+            uid, field_name.clone()));
+          if field.binding.is_single_time() {
+            self.fmt.push(&format!("(Object o) -> this.{} = ({}) o", field_name.clone(), field.binding.ty));
+          }
+          else {
+            self.fmt.push(&format!("(Object o) -> {{}}"));
+          }
+          self.fmt.terminate_line(");");
+        }
+        else {
+          self.fmt.push_line(&uid_assignment);
+        }
+      }
+    }
+    self.fmt.close_block();
+  }
+
+  fn runtime_destroy_method(&mut self, module: &JModule) {
+    self.fmt.push_line("public void __destroy(Layer __layer)");
+    self.fmt.open_block();
+    for field in module.fields.clone() {
+      if field.binding.is_module() {
+        self.fmt.push_line(&format!("{}.__destroy(__layer);", field.binding.name));
+      }
+      else {
+        let uid = self.fuid(&field);
+        self.fmt.push_line(&format!("__layer.exitScope({});", uid));
+      }
+    }
+    self.fmt.close_block();
+  }
 
   fn runtime_object_uid(&mut self, module: &JModule) {
     self.fmt.push_line("private static int __num_instances = -1;");
@@ -255,6 +305,26 @@ impl<'a> ModuleCompiler<'a>
       String::from("static ")
     }
     else { String::new() }
+  }
+
+  fn runtime_wrap_process(&mut self, module: &JModule) {
+    self.fmt.push_line("public Statement __wrap_process(Statement __process)");
+    self.fmt.open_block();
+    let mut num_fields = 0;
+    self.fmt.push("return ");
+    for field in module.fields.clone() {
+      if !field.binding.is_module() && !field.is_ref.is_some() {
+        num_fields += 1;
+        compile_field(self.session, self.context, &mut self.fmt, self.mod_name.clone(), field.binding);
+      }
+    }
+    self.fmt.push("__process");
+    for _ in 0..num_fields {
+      self.fmt.push(")");
+      self.fmt.unindent();
+    }
+    self.fmt.terminate_line(";");
+    self.fmt.close_block();
   }
 
   fn process(&mut self, process: Process) {

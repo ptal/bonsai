@@ -29,16 +29,21 @@ public class Environment
   private ArrayList<Layer> layers;
   private int targetIdx;
 
-  public Environment(int numLayers)
+  public Environment(Layer first, int numLayers)
   {
     layers = new ArrayList(numLayers);
-    for(int i=0; i < numLayers; i++) {
+    layers.add(first);
+    for(int i=1; i < numLayers; i++) {
       layers.add(new Layer());
     }
     for(int i=1; i <numLayers; i++) {
       layers.get(i).setParent(layers.get(i-1));
     }
     targetIdx = OUTERMOST_LAYER;
+  }
+
+  public Environment(int numLayers) {
+    this(new Layer(), numLayers);
   }
 
   public void incTargetLayer() {

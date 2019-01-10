@@ -23,6 +23,11 @@ pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFor
   StatementCompiler::new(session, context, mod_name, fmt).compile(stmt)
 }
 
+// See `open_decl`.
+pub fn compile_field(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, binding: Binding) {
+  StatementCompiler::new(session, context, mod_name, fmt).open_decl(binding)
+}
+
 struct StatementCompiler<'a> {
   session: &'a Session,
   context: &'a Context,
@@ -58,7 +63,6 @@ impl<'a> StatementCompiler<'a>
       ProcCall(target, process, args) => self.process_call(target, process, args),
       // Suspend(entailment, body) => self.suspend(entailment, body),
       // ModuleCall(run_expr) => self.module_call(run_expr),
-      // LocalDrop(_) => (), // It is not used in the runtime.
       stmt => unimplemented!("statement unimplemented: {:?}.", stmt)
     }
   }
@@ -73,44 +77,50 @@ impl<'a> StatementCompiler<'a>
     self.fmt.push(")");
   }
 
-  fn let_decl(&mut self, let_decl: LetStmt) {
+  // We compile binding to `new SingleSpaceVarDecl(v, val, ` without terminating the statement with the body of the "let".
+  // It is useful to compile the field in `module.rs`.
+  fn open_decl(&mut self, binding: Binding) {
     use ast::Kind::*;
     use ast::Spacetime::*;
-    match let_decl.kind() {
-      Spacetime(SingleSpace) => self.single_space_local_decl(let_decl),
-      Spacetime(SingleTime) => self.single_time_local_decl(let_decl),
-      Spacetime(WorldLine) => self.world_line_local_decl(let_decl),
-      Product => unimplemented!("Kind::Product in let_decl"),
-      Host => unimplemented!("Kind::Host in let_decl")
+    match binding.kind {
+      Spacetime(SingleSpace) => self.single_space_local_decl(binding),
+      Spacetime(SingleTime) => self.single_time_local_decl(binding),
+      Spacetime(WorldLine) => self.world_line_local_decl(binding),
+      Product => unimplemented!("Kind::Product in open_decl"),
+      Host => unimplemented!("Kind::Host in open_decl")
     }
   }
 
-  fn local_decl(&mut self, let_decl: LetStmt, decl_class: &str) {
-    self.fmt.push(&format!("new {}(", decl_class));
-    compile_local_var(self.session, self.context, self.fmt, let_decl.binding.name);
-    self.fmt.push(",");
-    self.fmt.indent();
-    let ty = Some(let_decl.binding.ty);
-    match let_decl.binding.expr.clone() {
-      Some(expr) => compile_functional_expr(self.session, self.context, self.fmt, expr, ty),
-      None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
-    }
-    self.fmt.push(",");
+  fn let_decl(&mut self, let_decl: LetStmt) {
+    self.open_decl(let_decl.binding);
     self.compile(*let_decl.body);
     self.fmt.push(")");
     self.fmt.unindent();
   }
 
-  fn single_space_local_decl(&mut self, let_decl: LetStmt) {
-    self.local_decl(let_decl, "SingleSpaceVarDecl");
+  fn local_decl(&mut self, binding: Binding, decl_class: &str) {
+    self.fmt.push(&format!("new {}(", decl_class));
+    compile_var_uid(self.session, self.context, self.fmt, binding.clone().to_field_var());
+    self.fmt.terminate_line(",");
+    self.fmt.indent();
+    let ty = Some(binding.ty);
+    match binding.expr.clone() {
+      Some(expr) => compile_functional_expr(self.session, self.context, self.fmt, expr, ty),
+      None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
+    }
+    self.fmt.terminate_line(",");
   }
 
-  fn single_time_local_decl(&mut self, let_decl: LetStmt) {
-    self.local_decl(let_decl, "SingleTimeVarDecl");
+  fn single_space_local_decl(&mut self, binding: Binding) {
+    self.local_decl(binding, "SingleSpaceVarDecl");
   }
 
-  fn world_line_local_decl(&mut self, let_decl: LetStmt) {
-    self.local_decl(let_decl, "WorldLineVarDecl");
+  fn single_time_local_decl(&mut self, binding: Binding) {
+    self.local_decl(binding, "SingleTimeVarDecl");
+  }
+
+  fn world_line_local_decl(&mut self, binding: Binding) {
+    self.local_decl(binding, "WorldLineVarDecl");
   }
 
   fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>, extra: Option<&str>)
@@ -159,7 +169,7 @@ impl<'a> StatementCompiler<'a>
     self.fmt.indent();
     let n = free_vars.len();
     for (i, var) in free_vars.into_iter().enumerate() {
-      generate_var_uid(self.session, self.context, self.fmt, var);
+      compile_var_uid(self.session, self.context, self.fmt, var);
       if i != n - 1 {
         self.fmt.push(", ")
       }
@@ -185,7 +195,7 @@ impl<'a> StatementCompiler<'a>
   fn universe(&mut self, queue: Variable, body: Box<Stmt>) {
     self.fmt.push_line("new Universe(");
     self.fmt.indent();
-    generate_var_uid(self.session, self.context, self.fmt, queue);
+    compile_var_uid(self.session, self.context, self.fmt, queue);
     self.fmt.terminate_line(", ");
     self.compile(*body);
     self.fmt.unindent();

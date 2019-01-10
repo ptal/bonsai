@@ -15,18 +15,33 @@
 package bonsai.runtime.synchronous;
 
 import java.util.*;
+import java.util.function.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.search.*;
 
-public class SpaceMachine
+public class SpaceMachine<T extends Module>
 {
   private Statement program;
   private Environment env;
   private boolean debug;
+  private T rootModule;
 
+  // `data` is the module from which we obtain the process to execute with `process`.
+  public SpaceMachine(T data, Function<T, Statement> process, boolean debug) {
+    Layer first = new Layer();
+    this.rootModule = data;
+    this.rootModule.__init(first);
+    this.program = process.apply(rootModule);
+    this.program = rootModule.__wrap_process(this.program);
+    this.program.prepare();
+    this.env = new Environment(first, program.countLayers()+1);
+    this.debug = debug;
+  }
+
+  // Precondition: `program` must not use or capture fields of a class.
   public SpaceMachine(Statement program, boolean debug) {
     this.env = new Environment(program.countLayers()+1);
     this.program = program;
