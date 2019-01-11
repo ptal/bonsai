@@ -17,6 +17,9 @@
 #[run(LoopT.loopJoinSpace, "210-1e")]
 #[run(LoopT.loopScopeBug, "bot")]
 #[run(LoopT.loopInnerDeclaration, "1")]
+#[run(LoopT.flowOne, "1e")]
+#[run(LoopT.flowTwo, "10e")]
+#[run(LoopT.flowProcOneInner, "1e")]
 
 package test;
 
@@ -103,4 +106,42 @@ public class LoopT
       end
     end
   end
+
+  public proc flowOne() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      flow System.out.print(1) end;
+      System.out.print("unreachable");
+    end;
+    System.out.print("e");
+  end
+
+  public proc flowTwo() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      single_space LMin nodes = new LMin(2);
+      flow
+        readwrite nodes.dec();
+        when nodes |= 0 then
+          nothing
+        else
+          space nothing end
+        end;
+        System.out.print(read nodes);
+      end;
+      System.out.print("unreachable");
+    end;
+    System.out.print("e")
+  end
+
+  public proc flowProcOneInner() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      run flowProcOne();
+      System.out.print("unreachable");
+    end;
+    System.out.print("e");
+  end
+
+  flow flowProcOne() = System.out.print(1)
 }

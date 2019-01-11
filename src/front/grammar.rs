@@ -16,10 +16,11 @@
 #![allow(non_snake_case)]
 grammar! bonsai {
 
+  // #![debug_api]
+
   /// Convention: `_os` means that the rule is not parsing trailing space (os = open space).
   ///             This is required to avoid reporting error with trailing space included.
 
-  // #![debug_api]
   use std::str::FromStr;
   use ast::*;
   use syntex_pos::Span;
@@ -108,10 +109,12 @@ grammar! bonsai {
 
   item
     = module_field
-    / (.. java_visibility? PROC identifier java_param_list) EQ open_sequence > make_process_item
+    / (.. java_visibility? (.. proc_or_flow) identifier java_param_list) EQ open_sequence > make_process_item
     / java_field
     / java_method
     / java_constructor
+
+  proc_or_flow = PROC > make_false / FLOW > make_true
 
   module_field = (.. java_visibility? (.. REF)? bonsai_binding) SEMI_COLON > make_module_field
 
@@ -122,9 +125,14 @@ grammar! bonsai {
       span, visibility, binding, is_ref))
   }
 
-  fn make_process_item(span: Span, visibility: Option<JVisibility>, name: Ident,
-    params: JParameters, body: Stmt) -> Item
+  fn make_process_item(span: Span, visibility: Option<JVisibility>, flow_kw_sp: Span, is_flow: bool,
+    name: Ident, params: JParameters, body: Stmt) -> Item
   {
+    let body = if is_flow {
+      let sp = body.span.clone();
+      Stmt::new(sp, make_flow(flow_kw_sp, body))
+    }
+    else { body };
     Item::Proc(Process::new(span, visibility, name, params, body))
   }
 
@@ -230,6 +238,7 @@ grammar! bonsai {
     / PAUSE_OS > make_pause
     / NOTHING_OS > make_nothing
     / LOOP close_sequence END_OS > make_loop
+    / (.. FLOW) close_sequence END_OS > make_flow
     / UNIVERSE close_sequence END_OS > make_qf_universe
     / UNIVERSE WITH variable IN close_sequence END_OS > make_universe
     / RUN proc_call_os > make_proc_call
@@ -318,6 +327,14 @@ grammar! bonsai {
 
   fn make_loop(body: Stmt) -> StmtKind {
     StmtKind::Loop(Box::new(body))
+  }
+
+  // We desugare `flow p end` into `loop p; pause end`.
+  fn make_flow(flow_kw_sp: Span, body: Stmt) -> StmtKind {
+    let pause = Stmt::new(flow_kw_sp, make_pause());
+    let sp = body.span.clone();
+    let desugared = Stmt::new(sp, StmtKind::Seq(vec![body,pause]));
+    StmtKind::Loop(Box::new(desugared))
   }
 
   fn make_tell(var: Variable, expr: Expr) -> StmtKind {
@@ -572,7 +589,7 @@ grammar! bonsai {
   keyword
     = "proc" / "par" / "space" / "prune" / "end" / "pre" / "nothing"
     / "when" / "then" / "else"
-    / "loop" / "pause up" / "pause" / "stop" / "in" / "world_line"
+    / "loop" / "flow" /  "pause up" / "pause" / "stop" / "in" / "world_line"
     / "single_time" / "single_space" / "bot" / "top" / "ref" / "module"
     / "readwrite" / "read" / "write"
     / "or" / "and" / "not"
@@ -601,6 +618,7 @@ grammar! bonsai {
   SUSPEND = "suspend" kw_tail
   ABORT = "abort" kw_tail
   LOOP = "loop" kw_tail
+  FLOW = "flow" kw_tail
   IN = "in" kw_tail
   WITH = "with" kw_tail
   WORLD_LINE = "world_line" kw_tail

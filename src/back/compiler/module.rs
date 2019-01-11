@@ -218,9 +218,10 @@ impl<'a> ModuleCompiler<'a>
     }
     self.fmt.terminate_line(")");
     self.fmt.open_block();
+    self.fmt.push_line("this.__object_instance = ++this.__num_instances;");
     for field in module.fields.clone() {
       if field.binding.is_module() {
-        unimplemented!("module field are not supported yet.");
+        unimplemented!("fields of type `module` are not supported yet.");
         // self.fmt.push(&format!("{}.__init(__layer", binding.name));
         // self.fmt.push(");");
       }
@@ -263,7 +264,7 @@ impl<'a> ModuleCompiler<'a>
       if field.binding.is_module() {
         self.fmt.push_line(&format!("{}.__destroy(__layer);", field.binding.name));
       }
-      else {
+      else if field.is_ref.is_some() {
         let uid = self.fuid(&field);
         self.fmt.push_line(&format!("__layer.exitScope({});", uid));
       }
