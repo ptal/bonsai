@@ -32,17 +32,12 @@ public class WorldLineVarDecl extends SingleSpaceVarDecl
 
   public WorldLineVarDecl copy() {
     // throw new CannotCopyException("WorldLineVarDecl");
-    return new WorldLineVarDecl(uid, initValue.copy(), body.copy());
-  }
-
-  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
-    checkExpressionStateEOI("Var decl", state1());
-    return super.endOfInstant(layersRemaining, layer);
+    return new WorldLineVarDecl(uid.get(), initValue.copy(), body.copy());
   }
 
   public StmtResult execute(int layersRemaining, Layer layer) {
     // Save the current variable before we remove it in case the body terminates (we still need to add it in the StmtResult).
-    Variable v = layer.lookUpVar(uid);
+    Variable v = layer.lookUpVar(uid.get());
     StmtResult res = super.execute(layersRemaining, layer);
     if (layersRemaining == 0 && !res.k.isInternal()) {
       res.registerWL(layer.currentQueue(), v, state3());

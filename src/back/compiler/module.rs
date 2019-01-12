@@ -78,15 +78,16 @@ impl<'a> ModuleCompiler<'a>
       self.field_uid(field);
     }
     self.runtime_boilerplate(&module);
-    self.main_method(module.host.class_name);
+    self.main_method(module.host.class_name.clone());
+    self.java_empty_constructor(module.host.class_name);
+    for constructor in module.host.java_constructors {
+      self.java_constructor(constructor);
+    }
     for process in module.processes {
       self.process(process);
     }
     for method in module.host.java_methods {
       self.java_method(method);
-    }
-    for constructor in module.host.java_constructors {
-      self.java_constructor(constructor);
     }
     self.fmt.close_block();
   }
@@ -94,8 +95,9 @@ impl<'a> ModuleCompiler<'a>
   fn runtime_boilerplate(&mut self, module: &JModule) {
     self.runtime_object_uid(module);
     self.runtime_init_method(module);
-    self.runtime_destroy_method(module);
+    self.runtime_root_init_method(module);
     self.runtime_wrap_process(module);
+    self.runtime_fields_get_set(module);
   }
 
   fn class_decl(&mut self, jclass: &JClass) {
@@ -145,14 +147,19 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.push_java_block(method.body);
   }
 
+  fn java_empty_constructor(&mut self, class_name: Ident) {
+    self.fmt.push_line(&format!("public {}() {{}}", class_name));
+  }
+
   fn java_constructor(&mut self, constructor: JConstructor) {
-    let header: String = vec![
-      format!("{} ", constructor.visibility),
-      constructor.name.unwrap()
-    ].iter().flat_map(|x| x.chars()).collect();
-    self.fmt.push(&header);
+    self.fmt.push(&format!("{} Object __construct", constructor.visibility));
     self.params_list(constructor.parameters);
+    self.fmt.push("{");
+    self.fmt.indent();
     self.fmt.push_java_block(constructor.body);
+    self.fmt.push_line("return this;");
+    self.fmt.unindent();
+    self.fmt.push("}");
   }
 
   fn params_list(&mut self, parameters: JParameters) {
@@ -169,12 +176,12 @@ impl<'a> ModuleCompiler<'a>
 
   fn field(&mut self, field: ModuleField) {
     let code: String = vec![
-        if field.binding.is_single_time() {
-          String::new()
-        }
-        else {
-          Self::string_from_final(field.is_final)
-        },
+        // if field.binding.is_single_time() {
+        //   String::new()
+        // }
+        // else {
+        //   Self::string_from_final(field.is_final)
+        // },
       format!("{} ", field.visibility),
       Self::string_from_static(field.is_static),
       format!("{} ", field.binding.ty),
@@ -210,11 +217,32 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.push(&format!("String {}", uid));
   }
 
+  // This `init` is useful if a root module contains ref fields.
+  // In this case, these fields are treated as normal fields.
+  fn runtime_root_init_method(&mut self, module: &JModule) {
+    let num_ref_fields = module.ref_fields().len();
+    if num_ref_fields > 0 {
+      self.fmt.push("public void __init()");
+      self.fmt.open_block();
+      self.fmt.push("this.__init(null");
+      for _ in 1..num_ref_fields {
+        self.fmt.push(", null");
+      }
+      self.fmt.terminate_line(");");
+      self.fmt.close_block();
+    }
+  }
+
   fn runtime_init_method(&mut self, module: &JModule) {
-    self.fmt.push("public void __init(Layer __layer");
+    self.fmt.push("public void __init(");
+    let mut i = 0;
+    let n = module.ref_fields().len();
     for field in module.ref_fields() {
-      self.fmt.push(", ");
       self.field_uid_decl(field);
+      if i < (n - 1) {
+        self.fmt.push(", ");
+      }
+      i += 1;
     }
     self.fmt.terminate_line(")");
     self.fmt.open_block();
@@ -222,8 +250,6 @@ impl<'a> ModuleCompiler<'a>
     for field in module.fields.clone() {
       if field.binding.is_module() {
         unimplemented!("fields of type `module` are not supported yet.");
-        // self.fmt.push(&format!("{}.__init(__layer", binding.name));
-        // self.fmt.push(");");
       }
       else {
         let field_name = field.binding.name.clone();
@@ -236,37 +262,10 @@ impl<'a> ModuleCompiler<'a>
           self.fmt.terminate_line(&format!("{} }}", uid_assignment));
           self.fmt.push("else {");
           self.fmt.terminate_line(&format!("this.{} = {}; }}", uid, uid));
-
-          // We only create reference updater for single_time variables.
-          // The other variables are final so their references cannot be changed.
-          self.fmt.push(&format!("__layer.enterScope({}, {}, ",
-            uid, field_name.clone()));
-          if field.binding.is_single_time() {
-            self.fmt.push(&format!("(Object o) -> this.{} = ({}) o", field_name.clone(), field.binding.ty));
-          }
-          else {
-            self.fmt.push(&format!("(Object o) -> {{}}"));
-          }
-          self.fmt.terminate_line(");");
         }
         else {
           self.fmt.push_line(&uid_assignment);
         }
-      }
-    }
-    self.fmt.close_block();
-  }
-
-  fn runtime_destroy_method(&mut self, module: &JModule) {
-    self.fmt.push_line("public void __destroy(Layer __layer)");
-    self.fmt.open_block();
-    for field in module.fields.clone() {
-      if field.binding.is_module() {
-        self.fmt.push_line(&format!("{}.__destroy(__layer);", field.binding.name));
-      }
-      else if field.is_ref.is_some() {
-        let uid = self.fuid(&field);
-        self.fmt.push_line(&format!("__layer.exitScope({});", uid));
       }
     }
     self.fmt.close_block();
@@ -284,6 +283,93 @@ impl<'a> ModuleCompiler<'a>
     self.fmt.close_block();
   }
 
+  // fn string_from_final(is_final: bool) -> String {
+  //   if is_final {
+  //     String::from("final ")
+  //   }
+  //   else { String::new() }
+  // }
+
+  fn string_from_static(is_static: bool) -> String {
+    if is_static {
+      String::from("static ")
+    }
+    else { String::new() }
+  }
+
+  fn compile_wrapped_fields(&mut self, module: &JModule, is_ref: bool, body: &str) {
+    let mut num_fields = 0;
+    for field in module.fields.clone() {
+      if !field.binding.is_module() && field.is_ref.is_some() == is_ref {
+        num_fields += compile_field(self.session, self.context, &mut self.fmt, self.mod_name.clone(), field.binding.clone());
+        if field.binding.is_single_time() {
+          self.fmt.push(&format!("(Object __o) -> this.{} = ({}) __o, ", field.binding.name, field.binding.ty));
+        }
+      }
+    }
+    self.fmt.push(body);
+    for _ in 0..num_fields {
+      self.fmt.push(")");
+      self.fmt.unindent();
+    }
+    self.fmt.terminate_line(";");
+  }
+
+  fn runtime_wrap_process(&mut self, module: &JModule) {
+    self.fmt.push_line("public Statement __wrap_process(boolean __root, Statement __process)");
+    self.fmt.open_block();
+    self.fmt.push("Statement __fields = ");
+    self.compile_wrapped_fields(module, false, "__process");
+    self.fmt.push_line("if (__root)");
+    self.fmt.open_block();
+      self.fmt.push("__fields = ");
+      self.compile_wrapped_fields(module, true, "__fields");
+    self.fmt.close_block();
+    self.fmt.push_line("return __fields;");
+    self.fmt.close_block();
+  }
+
+  fn runtime_fields_get_set(&mut self, module: &JModule) {
+    for field in module.fields.clone() {
+      if field.is_ref.is_some() || field.binding.is_single_time() {
+        let name = field.binding.name.clone();
+        let ty = field.binding.ty.clone();
+        if field.binding.is_single_time() {
+          self.fmt.push_line(&format!("public void __set_{}(Object __o)", name));
+          self.fmt.open_block();
+          self.fmt.push_line(&format!("this.{} = ({}) __o;", name, ty));
+          self.fmt.close_block();
+        }
+        self.fmt.push_line(&format!("public {} __get_{}(Object __o)", ty, name));
+        self.fmt.open_block();
+        self.fmt.push_line(&format!("return this.{};", name));
+        self.fmt.close_block();
+      }
+    }
+  }
+
+  fn process(&mut self, process: Process) {
+    let proc_instance = format!("__proc_{}_instance", process.name);
+    self.fmt.push_line(&format!("static int {} = -1;", proc_instance));
+    self.fmt.push(&format!(
+      "{} Statement {}(", process.visibility, process.name));
+    if process.params.len() > 0 {
+      unimplemented!("process arguments are not supported yet.");
+    }
+    self.fmt.push(")");
+    self.fmt.open_block();
+    self.proc_uid(&process, proc_instance);
+    self.proc_local_modules(&process);
+    self.fmt.push_line("return");
+    self.fmt.indent();
+    compile_statement(self.session, self.context, &mut self.fmt,
+      ProcessUID::new(self.mod_name.clone(), process.name), process.body);
+    self.fmt.unindent();
+    self.fmt.terminate_line(";");
+    self.fmt.close_block();
+    self.fmt.newline();
+  }
+
   fn proc_uid(&mut self, process: &Process, proc_instance: String) {
     self.fmt.push_line(&format!("{}++;", proc_instance));
     // Avoid the capture of the static variable `__proc_{}_instance` in the closure `__proc_uid`: we need its current value.
@@ -294,54 +380,24 @@ impl<'a> ModuleCompiler<'a>
       process.name));
   }
 
-  fn string_from_final(is_final: bool) -> String {
-    if is_final {
-      String::from("final ")
-    }
-    else { String::new() }
-  }
-
-  fn string_from_static(is_static: bool) -> String {
-    if is_static {
-      String::from("static ")
-    }
-    else { String::new() }
-  }
-
-  fn runtime_wrap_process(&mut self, module: &JModule) {
-    self.fmt.push_line("public Statement __wrap_process(Statement __process)");
-    self.fmt.open_block();
-    let mut num_fields = 0;
-    self.fmt.push("return ");
-    for field in module.fields.clone() {
-      if !field.binding.is_module() && !field.is_ref.is_some() {
-        num_fields += 1;
-        compile_field(self.session, self.context, &mut self.fmt, self.mod_name.clone(), field.binding);
+  fn proc_local_modules(&mut self, process: &Process) {
+    let proc_uid = ProcessUID::new(self.mod_name.clone(), process.name.clone());
+    let process_info = self.context.process_by_uid(proc_uid);
+    for module_decl in process_info.local_module_vars {
+      let var_info = self.context.var_by_uid(module_decl.target);
+      let ty = var_info.ty.clone();
+      let name = var_info.name.clone();
+      self.fmt.push_line(&format!("{} {} = new {}();",
+        ty.clone(), name.clone(), ty.clone()));
+      self.fmt.push(&format!("{}.__init(", name));
+      let target_module = self.context.ast
+        .find_mod_by_name(&ty.name)
+        .expect(&format!("module {} undeclared", ty.name));
+      for field in target_module.ref_fields() {
+        let var = module_decl.find_var_by_field_uid(field.binding.uid);
+        compile_var_uid(self.session, self.context, &mut self.fmt, var);
       }
+      self.fmt.push(");");
     }
-    self.fmt.push("__process");
-    for _ in 0..num_fields {
-      self.fmt.push(")");
-      self.fmt.unindent();
-    }
-    self.fmt.terminate_line(";");
-    self.fmt.close_block();
-  }
-
-  fn process(&mut self, process: Process) {
-    let proc_instance = format!("__proc_{}_instance", process.name);
-    self.fmt.push_line(&format!("static int {} = -1;", proc_instance));
-    self.fmt.push(&format!(
-      "{} Statement {}", process.visibility, process.name));
-    self.params_list(process.params.clone());
-    self.fmt.open_block();
-    self.proc_uid(&process, proc_instance);
-    self.fmt.push_line("return");
-    self.fmt.indent();
-    compile_statement(self.session, self.context, &mut self.fmt, self.mod_name.clone(), process.body);
-    self.fmt.unindent();
-    self.fmt.terminate_line(";");
-    self.fmt.close_block();
-    self.fmt.newline();
   }
 }

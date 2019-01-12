@@ -25,17 +25,31 @@ import bonsai.runtime.synchronous.env.*;
 
 public class SingleTimeVarDecl extends VarDecl implements Statement
 {
+  private Consumer<Object> refUpdater;
+
+  // For local single_time variable.
   public SingleTimeVarDecl(String uid, Expression initValue, Statement body) {
+    this(uid, initValue, (Object o) -> {}, body);
+  }
+
+  // For field single_time variable.
+  public SingleTimeVarDecl(String uid, Expression initValue,
+   Consumer<Object> refUpdater, Statement body)
+  {
     super(uid, initValue, body);
+    this.refUpdater = refUpdater;
   }
 
   public SingleTimeVarDecl copy() {
     // throw new CannotCopyException("SingleTimeVarDecl");
-    return new SingleTimeVarDecl(uid, initValue.copy(), body.copy());
+    return new SingleTimeVarDecl(uid.get(), initValue.copy(), body.copy());
+  }
+
+  protected void enterScope(Layer layer) {
+    layer.enterScope(uid.get(), exprResult.unwrap(), refUpdater);
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
-    checkExpressionStateEOI("Var decl", state1());
     CompletionCode k = super.endOfInstant(layersRemaining, layer);
     if (layersRemaining == 0 && state2()) {
       terminate(layer);
@@ -46,7 +60,7 @@ public class SingleTimeVarDecl extends VarDecl implements Statement
   public void canInstant(int layersRemaining, Layer layer) {
     if(layersRemaining == 0) {
       // System.out.println("SingleTimeVarDecl.canInstant: register " + uid);
-      layer.register(uid, true);
+      layer.register(uid.get(), true);
       initValue.canInstant(layer);
       exprResult = new ExprResult();
     }

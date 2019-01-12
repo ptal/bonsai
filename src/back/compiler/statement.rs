@@ -19,27 +19,28 @@ use back::free_variables::*;
 use back::compiler::expression::*;
 use trilean::SKleene;
 
-pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, stmt: Stmt) {
-  StatementCompiler::new(session, context, mod_name, fmt).compile(stmt)
+pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFormatter, proc_uid: ProcessUID, stmt: Stmt) {
+  StatementCompiler::new(session, context, proc_uid, fmt).compile(stmt)
 }
 
 // See `open_decl`.
-pub fn compile_field(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, binding: Binding) {
-  StatementCompiler::new(session, context, mod_name, fmt).open_decl(binding)
+pub fn compile_field(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, binding: Binding) -> usize {
+  let proc_uid = ProcessUID::new(mod_name, Ident::gen("<not_in_process>"));
+  StatementCompiler::new(session, context, proc_uid, fmt).open_decl(binding)
 }
 
 struct StatementCompiler<'a> {
   session: &'a Session,
   context: &'a Context,
-  mod_name: Ident,
+  proc_uid: ProcessUID,
   fmt: &'a mut CodeFormatter
 }
 
 impl<'a> StatementCompiler<'a>
 {
-  pub fn new(session: &'a Session, context: &'a Context, mod_name: Ident, fmt: &'a mut CodeFormatter) -> Self {
+  pub fn new(session: &'a Session, context: &'a Context, proc_uid: ProcessUID, fmt: &'a mut CodeFormatter) -> Self {
     StatementCompiler {
-      session, context, mod_name, fmt
+      session, context, proc_uid, fmt
     }
   }
 
@@ -79,48 +80,114 @@ impl<'a> StatementCompiler<'a>
 
   // We compile binding to `new SingleSpaceVarDecl(v, val, ` without terminating the statement with the body of the "let".
   // It is useful to compile the field in `module.rs`.
-  fn open_decl(&mut self, binding: Binding) {
+  // Returns the number of parenthesis to close.
+  fn open_decl(&mut self, binding: Binding) -> usize {
     use ast::Kind::*;
     use ast::Spacetime::*;
     match binding.kind {
       Spacetime(SingleSpace) => self.single_space_local_decl(binding),
       Spacetime(SingleTime) => self.single_time_local_decl(binding),
       Spacetime(WorldLine) => self.world_line_local_decl(binding),
-      Product => unimplemented!("Kind::Product in open_decl"),
+      Product => self.module_local_decl(binding),
       Host => unimplemented!("Kind::Host in open_decl")
     }
   }
 
-  fn let_decl(&mut self, let_decl: LetStmt) {
-    self.open_decl(let_decl.binding);
-    self.compile(*let_decl.body);
-    self.fmt.push(")");
-    self.fmt.unindent();
+  fn local_decl_init_expr(&mut self, binding: Binding) {
+    let ty = Some(binding.ty);
+    match binding.expr {
+      Some(expr) => compile_functional_expr(self.session, self.context, self.fmt, expr, ty),
+      None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
+    }
   }
 
-  fn local_decl(&mut self, binding: Binding, decl_class: &str) {
+  // We transform the module declaration `T a = new T(args)` (with `T` a module) to `a.__construct(args)`.
+  fn module_local_decl_init_expr(&mut self, binding: Binding) {
+    if let Some(expr) = binding.expr.clone() {
+      let new_object = match expr.node {
+        ExprKind::NewInstance(new_object) => new_object,
+        _ => unreachable!("Local declaration of module must always be initialized with a `new` operator [E0018].")
+      };
+      let construct_fn = Ident::new(new_object.span.clone(), format!("__construct"));
+      let mut target = binding.to_field_var();
+      target.with_this = false;
+      let construct_call = MethodCall::new(expr.span, Some(target), construct_fn, new_object.args);
+      let init_expr = Expr::new(expr.span, ExprKind::Call(construct_call));
+      compile_functional_expr(self.session, self.context, self.fmt, init_expr, None);
+    }
+    else {
+      unreachable!("Local declaration of module must always be initialized [E0018].");
+    }
+  }
+
+  fn module_local_one_ref_field(&mut self, binding: Binding, field_name: Ident) {
+    self.fmt.push("new ModuleVarDecl.ReferenceField(");
+    self.fmt.push(&format!("{}.{}{}, ", binding.name, FIELD_UID_PREFIX, field_name));
+    self.fmt.push(&format!("(Object __o) -> {}.__set_{}(__o), ", binding.name, field_name));
+    self.fmt.push(&format!("() -> {{ return {}.__get_{}() }}", binding.name, field_name));
+    self.fmt.push(")");
+  }
+
+  fn module_local_decl_ref_fields(&mut self, binding: Binding) {
+    let module_info = self.context.module_by_name(self.proc_uid.module.clone());
+    self.fmt.push("Arrays.asList(");
+    let mut i = 0;
+    let n = module_info.constructor.len();
+    for (_, ref_uid) in module_info.constructor {
+      let var_info = self.context.var_by_uid(ref_uid);
+      self.module_local_one_ref_field(binding.clone(), var_info.name);
+      if i < (n - 1) {
+        self.fmt.push(", ");
+      }
+      i = i + 1;
+    }
+    self.fmt.terminate_line("),");
+  }
+
+  fn module_local_decl(&mut self, binding: Binding) -> usize
+  {
+    self.fmt.push_line("new ModuleVarDecl(");
+    self.fmt.indent();
+    // First is the list of reference fields.
+    self.module_local_decl_ref_fields(binding.clone());
+    // Then the initialization expression
+    self.module_local_decl_init_expr(binding.clone());
+    self.fmt.terminate_line(",");
+    // And the wrapping of the body.
+    self.fmt.indent();
+    self.fmt.push(&format!("{}.__wrap_process(false, ", binding.name));
+    2
+  }
+
+  fn let_decl(&mut self, let_decl: LetStmt) {
+    let p = self.open_decl(let_decl.binding);
+    self.compile(*let_decl.body);
+    for _ in 0..p {
+      self.fmt.unindent();
+      self.fmt.push(")");
+    }
+  }
+
+  fn local_decl(&mut self, binding: Binding, decl_class: &str) -> usize {
     self.fmt.push(&format!("new {}(", decl_class));
     compile_var_uid(self.session, self.context, self.fmt, binding.clone().to_field_var());
     self.fmt.terminate_line(",");
     self.fmt.indent();
-    let ty = Some(binding.ty);
-    match binding.expr.clone() {
-      Some(expr) => compile_functional_expr(self.session, self.context, self.fmt, expr, ty),
-      None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
-    }
+    self.local_decl_init_expr(binding);
     self.fmt.terminate_line(",");
+    1
   }
 
-  fn single_space_local_decl(&mut self, binding: Binding) {
-    self.local_decl(binding, "SingleSpaceVarDecl");
+  fn single_space_local_decl(&mut self, binding: Binding) -> usize {
+    self.local_decl(binding, "SingleSpaceVarDecl")
   }
 
-  fn single_time_local_decl(&mut self, binding: Binding) {
-    self.local_decl(binding, "SingleTimeVarDecl");
+  fn single_time_local_decl(&mut self, binding: Binding) -> usize {
+    self.local_decl(binding, "SingleTimeVarDecl")
   }
 
-  fn world_line_local_decl(&mut self, binding: Binding) {
-    self.local_decl(binding, "WorldLineVarDecl");
+  fn world_line_local_decl(&mut self, binding: Binding) -> usize {
+    self.local_decl(binding, "WorldLineVarDecl")
   }
 
   fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>, extra: Option<&str>)
@@ -162,7 +229,7 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn space(&mut self, branch: Box<Stmt>) {
-    let free_vars = free_variables(self.context, self.mod_name.clone(), (*branch).clone());
+    let free_vars = free_variables(self.context, self.proc_uid.module.clone(), (*branch).clone());
     self.fmt.push_line("new SpaceStmt(");
     self.fmt.indent();
     self.fmt.push_line("new ArrayList<>(Arrays.asList(");
@@ -238,7 +305,6 @@ impl<'a> StatementCompiler<'a>
     self.procedure(Expr::new(span, node));
   }
 
-
   fn or_parallel(&mut self, branches: Vec<Stmt>) {
     self.nary_operator("LayeredParallel", branches,
       Some("LayeredParallel.CONJUNCTIVE_PAR"));
@@ -258,37 +324,15 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn process_call(&mut self, target: Option<Variable>, name: Ident, args: Vec<Variable>) {
-    if target.is_some() {
-      unimplemented!("process call on module is not yet supported.");
+    if let Some(target) = target {
+      self.fmt.push(&format!("{}.", target.path));
     }
+    self.fmt.push(&format!("{}(", name));
     if args.len() > 0 {
       unimplemented!("process call with arguments is not yet supported.");
     }
-    self.fmt.push(&format!("{}()", name));
+    self.fmt.push(")");
   }
-
-  // fn binding(&mut self, binding: Binding, is_field: bool, uid_fn: &str)
-  // {
-  //   match binding.kind {
-  //     Kind::Spacetime(spacetime) =>
-  //       self.spacetime_binding(binding,
-  //         spacetime, is_field, uid_fn),
-  //     Kind::Product =>
-  //       self.module_binding(binding, uid_fn),
-  //     Kind::Host => panic!(
-  //       "BUG: Host variables are not stored inside the \
-  //        environment, and therefore binding cannot be generated.")
-  //   }
-  // }
-
-  // fn module_binding(&mut self, binding: Binding, uid_fn: &str)
-  // {
-  //   self.fmt.push(&format!("new ModuleVar(\"{}\", {}(\"{}\"), ",
-  //     binding.name, uid_fn, binding.name));
-  //   self.closure(true,
-  //     binding.expr.expect("BUG: Generate binding without an expression."));
-  //   self.fmt.push(")");
-  // }
 
   // fn suspend(&mut self, condition: Condition, body: Box<Stmt>) {
   //   self.fmt.push("new SuspendWhen(");
@@ -298,12 +342,5 @@ impl<'a> StatementCompiler<'a>
   //   self.compile(*body);
   //   self.fmt.push(")");
   //   self.fmt.unindent();
-  // }
-
-  // fn module_call(&mut self, run_expr: RunExpr) {
-  //   self.fmt.push(&format!("new CallProcess("));
-  //   let expr = run_expr.to_expr();
-  //   self.closure(true, expr);
-  //   self.fmt.push(")");
   // }
 }

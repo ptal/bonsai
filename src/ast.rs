@@ -632,10 +632,6 @@ impl Variable {
     Self::new(span, path, 0, permission)
   }
 
-  // pub fn proc_arg(span: Span, path: VarPath) -> Self {
-  //   Self::new(span, path, 0, None)
-  // }
-
   pub fn first(&self) -> Ident {
     self.path.first()
   }

@@ -27,17 +27,14 @@ public class SpaceMachine<T extends Module>
   private Statement program;
   private Environment env;
   private boolean debug;
-  private T rootModule;
 
-  // `data` is the module from which we obtain the process to execute with `process`.
-  public SpaceMachine(T data, Function<T, Statement> process, boolean debug) {
-    Layer first = new Layer();
-    this.rootModule = data;
-    this.rootModule.__init(first);
+  // `rootModule` is the module from which we obtain the process to execute with `process`.
+  public SpaceMachine(T rootModule, Function<T, Statement> process, boolean debug) {
+    rootModule.__init();
     this.program = process.apply(rootModule);
-    this.program = rootModule.__wrap_process(this.program);
+    this.program = rootModule.__wrap_process(true, this.program);
     this.program.prepare();
-    this.env = new Environment(first, program.countLayers()+1);
+    this.env = new Environment(program.countLayers()+1);
     this.debug = debug;
   }
 

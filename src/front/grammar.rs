@@ -16,8 +16,6 @@
 #![allow(non_snake_case)]
 grammar! bonsai {
 
-  // #![debug_api]
-
   /// Convention: `_os` means that the rule is not parsing trailing space (os = open space).
   ///             This is required to avoid reporting error with trailing space included.
 
@@ -109,12 +107,12 @@ grammar! bonsai {
 
   item
     = module_field
-    / (.. java_visibility? (.. proc_or_flow) identifier java_param_list) EQ open_sequence > make_process_item
+    / (.. java_visibility? proc_or_flow identifier java_param_list) EQ open_sequence > make_process_item
     / java_field
     / java_method
     / java_constructor
 
-  proc_or_flow = PROC > make_false / FLOW > make_true
+  proc_or_flow = (.. (PROC > make_false / FLOW > make_true))
 
   module_field = (.. java_visibility? (.. REF)? bonsai_binding) SEMI_COLON > make_module_field
 

@@ -18,10 +18,9 @@ import bonsai.runtime.synchronous.env.Layer;
 
 public interface Module
 {
-  /// Enter the scope of field variables in `layer`.
-  public void __init(Layer layer);
+  /// Initialize the UIDs of field variables.
+  public void __init();
   /// Wrap the process `proc` into variable declarations (such as `SingleSpaceVarDecl`) representing the fields of the class.
-  public Statement __wrap_process(Statement proc);
-  /// Exit the scope of field variables in `layer`.
-  public void __destroy(Layer layer);
+  /// If the current module is root (directly passed to `SpaceMachine`), then the reference fields are treated as normal fields.
+  public Statement __wrap_process(boolean isRoot, Statement proc);
 }

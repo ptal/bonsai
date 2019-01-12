@@ -24,6 +24,7 @@ mod causality;
 mod recursive_call;
 mod search_tree_wf;
 mod rewrite_reincarnation;
+mod collect_module_in_proc;
 
 use context::*;
 use session::*;
@@ -39,6 +40,7 @@ use middle::causality::*;
 use middle::recursive_call::*;
 use middle::search_tree_wf::*;
 use middle::rewrite_reincarnation::*;
+use middle::collect_module_in_proc::*;
 
 pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
   env
@@ -54,4 +56,5 @@ pub fn analyse_bonsai(env: Env<Context>) -> Env<Context> {
     .and_next(instantaneous_analysis)
     .and_next(search_tree_wf)
     .and_next(causality_analysis)
+    .and_next(collect_module_in_proc)
 }

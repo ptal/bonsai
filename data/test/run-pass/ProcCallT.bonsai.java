@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[debug(ProcCallT.printNothing, "")]
-#[debug(ProcCallT.printOne, "1")]
+#[run(ProcCallT.printNothing, "")]
+#[run(ProcCallT.printOne, "1")]
 
 package test;
 

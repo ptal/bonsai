@@ -24,18 +24,24 @@ import bonsai.runtime.synchronous.env.*;
 
 public abstract class VarDecl extends ASTNode implements Statement
 {
-  protected String uid;
+  // Module variable does not have an UID, thus must not be registered in the space.
+  protected Optional<String> uid;
   protected Expression initValue;
   protected Statement body;
 
   protected StmtResult res;
   protected ExprResult exprResult;
 
-  public VarDecl(String uid, Expression initValue, Statement body) {
-    this.uid = uid;
+  public VarDecl(Expression initValue, Statement body) {
     this.initValue = initValue;
     this.body = body;
+    this.uid = Optional.empty();
     init();
+  }
+
+  public VarDecl(String uid, Expression initValue, Statement body) {
+    this(initValue, body);
+    this.uid = Optional.of(uid);
   }
 
   private void init() {
@@ -53,6 +59,7 @@ public abstract class VarDecl extends ASTNode implements Statement
   }
 
   public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
+    checkExpressionStateEOI("Var decl", state1());
     checkNonTerminatedEOI("Var decl", res.k);
     if (state2()) {
       return body.endOfInstant(layersRemaining, layer);
@@ -79,7 +86,9 @@ public abstract class VarDecl extends ASTNode implements Statement
 
   protected void terminate(Layer layer) {
     // System.out.println("VarDecl.terminate");
-    layer.exitScope(uid);
+    if (uid.isPresent()) {
+      layer.exitScope(uid.get());
+    }
     // Free the pointed value of the variable.
     exprResult = new ExprResult();
   }
@@ -133,15 +142,20 @@ public abstract class VarDecl extends ASTNode implements Statement
     }
   }
 
-  private void executeState1(Layer layer) {
+  protected abstract void enterScope(Layer layer);
+
+  // Return `true` if we moved from state1 to state2.
+  protected boolean executeState1(Layer layer) {
     if (state1()) {
       // System.out.println("VarDecl.executeState1");
       exprResult = initValue.execute(layer);
       if (!exprResult.isSuspended()) {
         initValue.terminate(layer);
-        layer.enterScope(uid, exprResult.unwrap(), (Object o) -> {});
+        enterScope(layer);
+        return true;
       }
     }
+    return false;
   }
 
   private void executeState2(Layer layer) {

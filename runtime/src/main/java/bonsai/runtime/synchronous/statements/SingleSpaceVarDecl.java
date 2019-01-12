@@ -31,12 +31,11 @@ public class SingleSpaceVarDecl extends VarDecl implements Statement
 
   public SingleSpaceVarDecl copy() {
     // throw new CannotCopyException("SingleSpaceVarDecl");
-    return new SingleSpaceVarDecl(uid, initValue.copy(), body.copy());
+    return new SingleSpaceVarDecl(uid.get(), initValue.copy(), body.copy());
   }
 
-  public CompletionCode endOfInstant(int layersRemaining, Layer layer) {
-    checkExpressionStateEOI("Var decl", state1());
-    return super.endOfInstant(layersRemaining, layer);
+  protected void enterScope(Layer layer) {
+    layer.enterScope(uid.get(), exprResult.unwrap(), (Object o) -> {});
   }
 
   public void canInstant(int layersRemaining, Layer layer) {
@@ -44,7 +43,7 @@ public class SingleSpaceVarDecl extends VarDecl implements Statement
       if (state1()) {
         // System.out.println("SingleSpaceVarDecl.canInstant: register(" + uid + ")");
         initValue.canInstant(layer);
-        layer.register(uid, false);
+        layer.register(uid.get(), false);
       }
     }
     body.canInstant(layersRemaining, layer);

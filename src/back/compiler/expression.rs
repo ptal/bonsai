@@ -135,7 +135,7 @@ impl<'a> ExpressionCompiler<'a>
     let access_class =
       if free_access { format!("FreeAccess") }
       else {
-        match var.permission.expect("All variables must have a permission at generation stage.") {
+        match var.permission.expect(&format!("All variables must have a permission at generation stage ({}).", var)) {
           Permission::Read => format!("ReadAccess"),
           Permission::Write => format!("WriteAccess"),
           Permission::ReadWrite => format!("ReadWriteAccess")
@@ -185,9 +185,9 @@ impl<'a> ExpressionCompiler<'a>
       }
       Call(call) => {
         if let Some(target) = call.target {
-          let uid = target.first_uid();
+          let uid = target.last_uid();
           // Host variables can only appear as fields, and thus do not need to be retrieved from the environment.
-          if !self.context.var_by_uid(uid).is_host() {
+          if self.context.var_by_uid(uid).is_spacetime() {
             variables.push(target);
           }
         }
@@ -195,7 +195,12 @@ impl<'a> ExpressionCompiler<'a>
           self.collect_variables(variables, arg);
         }
       }
-      Var(var) => { variables.push(var); }
+      Var(var) => {
+        let var_info = self.context.var_by_uid(var.last_uid());
+        if var_info.is_spacetime() {
+          variables.push(var);
+        }
+      }
       And(e1, e2)
     | Or(e1, e2) => {
         self.collect_variables(variables, *e1);

@@ -16,6 +16,7 @@ pub use ast::*;
 pub use visitor::*;
 pub use partial::*;
 use std::fmt::{Display, Error, Formatter};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct VarInfo {
@@ -65,8 +66,11 @@ impl VarInfo {
     }
   }
 
-  pub fn is_host(&self) -> bool {
-    self.kind == Kind::Host
+  pub fn is_spacetime(&self) -> bool {
+    match self.kind {
+      Kind::Spacetime(_) => true,
+      _ => false
+    }
   }
 }
 
@@ -125,6 +129,42 @@ impl Display for ProcessUID {
   }
 }
 
+#[derive(Clone, Debug)]
+pub struct LocalModuleVarInfo {
+  pub target: usize,
+  /// Maps the reference fields to the variable they are instantiated with.
+  pub instantiated_refs: HashMap<usize, Variable>
+}
+
+impl LocalModuleVarInfo {
+  pub fn new(target: usize, instantiated_refs: HashMap<usize, Variable>) -> Self {
+    LocalModuleVarInfo { target, instantiated_refs }
+  }
+
+  pub fn find_var_by_field_uid(&self, field_uid: usize) -> Variable {
+    self.instantiated_refs
+      .get(&field_uid)
+      .expect(&format!("Local module vars does not contain the field uid {}", field_uid))
+      .clone()
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcessInfo {
+  pub uid: ProcessUID,
+  pub local_module_vars: Vec<LocalModuleVarInfo>,
+}
+
+impl ProcessInfo {
+  pub fn new(uid: ProcessUID) -> Self {
+    ProcessInfo { uid, local_module_vars: vec![] }
+  }
+
+  pub fn push_local_module(&mut self, target: usize, instantiated_refs: HashMap<usize, Variable>) {
+    self.local_module_vars.push(LocalModuleVarInfo::new(target, instantiated_refs));
+  }
+}
+
 pub struct Context {
   pub ast: JCrate,
   /// Indexes of `vars` are referred to as "UIDs", and are contained in the `VarPath` structure.
@@ -134,6 +174,7 @@ pub struct Context {
   /// Basically, everything we cannot access and that is not part of the "bonsai" world.
   pub vars: Vec<VarInfo>,
   pub modules: Vec<ModuleInfo>,
+  pub processes: Vec<ProcessInfo>,
   pub entry_points: Vec<ProcessUID>
 }
 
@@ -144,6 +185,7 @@ impl Context {
       vars: vec![VarInfo::local(Ident::gen("<external-var>"), Kind::Host,
         JType::simple(DUMMY_SP, Ident::gen("<External-Java-type>")))],
       modules: vec![],
+      processes: vec![],
       entry_points: vec![]
     }
   }
@@ -191,6 +233,17 @@ impl Context {
   pub fn var_by_uid_mut<'b>(&'b mut self, uid: usize) -> &'b mut VarInfo {
     assert!(self.vars.len() > uid, "var_by_uid_mut: Variable not declared.");
     &mut self.vars[uid]
+  }
+
+  pub fn alloc_process(&mut self, proc_info: ProcessInfo) {
+    self.processes.push(proc_info);
+  }
+
+  pub fn process_by_uid(&self, process_uid: ProcessUID) -> ProcessInfo {
+    self.processes.iter()
+      .find(|pu| pu.uid == process_uid)
+      .expect("process_by_uid_mut: Process not declared.")
+      .clone()
   }
 
   pub fn alloc_module(&mut self, name: Ident) {
