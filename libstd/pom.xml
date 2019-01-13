@@ -24,11 +24,6 @@
       <artifactId>choco-solver</artifactId>
       <version>4.0.0</version>
      </dependency>
-     <dependency>
-      <groupId>inria.meije.rc</groupId>
-      <artifactId>SugarCubes</artifactId>
-      <version>4.0.0a5</version>
-    </dependency>
     <dependency>
       <groupId>bonsai</groupId>
       <artifactId>runtime</artifactId>
