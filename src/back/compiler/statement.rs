@@ -123,13 +123,18 @@ impl<'a> StatementCompiler<'a>
   fn module_local_one_ref_field(&mut self, binding: Binding, field_name: Ident) {
     self.fmt.push("new ModuleVarDecl.ReferenceField(");
     self.fmt.push(&format!("{}.{}{}, ", binding.name, FIELD_UID_PREFIX, field_name));
-    self.fmt.push(&format!("(Object __o) -> {}.__set_{}(__o), ", binding.name, field_name));
-    self.fmt.push(&format!("() -> {{ return {}.__get_{}() }}", binding.name, field_name));
+    if binding.is_single_time() {
+      self.fmt.push(&format!("(Object __o) -> {}.__set_{}(__o), ", binding.name, field_name));
+    }
+    else {
+      self.fmt.push("(Object __o) -> {}, ");
+    }
+    self.fmt.push(&format!("() -> {{ return {}.__get_{}(); }}", binding.name, field_name));
     self.fmt.push(")");
   }
 
   fn module_local_decl_ref_fields(&mut self, binding: Binding) {
-    let module_info = self.context.module_by_name(self.proc_uid.module.clone());
+    let module_info = self.context.module_by_name(binding.ty.name.clone());
     self.fmt.push("Arrays.asList(");
     let mut i = 0;
     let n = module_info.constructor.len();
@@ -155,7 +160,7 @@ impl<'a> StatementCompiler<'a>
     self.fmt.terminate_line(",");
     // And the wrapping of the body.
     self.fmt.indent();
-    self.fmt.push(&format!("{}.__wrap_process(false, ", binding.name));
+    self.fmt.push_line(&format!("{}.__wrap_process(false, ", binding.name));
     2
   }
 

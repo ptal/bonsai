@@ -61,6 +61,7 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn runtime_imports(&mut self) {
+    self.fmt.push_line("import java.util.*;");
     self.fmt.push_line("import bonsai.runtime.core.*;");
     self.fmt.push_line("import bonsai.runtime.lattices.*;");
     self.fmt.push_line("import bonsai.runtime.synchronous.*;");
@@ -154,12 +155,12 @@ impl<'a> ModuleCompiler<'a>
   fn java_constructor(&mut self, constructor: JConstructor) {
     self.fmt.push(&format!("{} Object __construct", constructor.visibility));
     self.params_list(constructor.parameters);
-    self.fmt.push("{");
+    self.fmt.terminate_line("{");
     self.fmt.indent();
     self.fmt.push_java_block(constructor.body);
     self.fmt.push_line("return this;");
     self.fmt.unindent();
-    self.fmt.push("}");
+    self.fmt.push_line("}");
   }
 
   fn params_list(&mut self, parameters: JParameters) {
@@ -203,6 +204,7 @@ impl<'a> ModuleCompiler<'a>
   // We generate a field `String __uid_<name_field>` to store the `uid` of the fields.
   fn field_uid(&mut self, field: ModuleField) {
     if !field.binding.is_module() {
+      self.fmt.push("public ");
       self.field_uid_decl(field);
       self.fmt.terminate_line(";");
     }
@@ -301,7 +303,16 @@ impl<'a> ModuleCompiler<'a>
     let mut num_fields = 0;
     for field in module.fields.clone() {
       if !field.binding.is_module() && field.is_ref.is_some() == is_ref {
-        num_fields += compile_field(self.session, self.context, &mut self.fmt, self.mod_name.clone(), field.binding.clone());
+        let mut field_binding = field.binding.clone();
+        // If it is a `ref` field, we do not want to initialize it with `new T()` (`T` being the type of the field), because it might be an abstract class.
+        // Moreover, it is already initialized by the constructor of the current object.
+        if is_ref {
+          let mut var = field_binding.clone().to_field_var();
+          var.permission = Some(Permission::Write); // TODO: actually this access should be `FreeAccess`.
+          let this_field = ExprKind::Var(var);
+          field_binding.expr = Some(Expr::new(field_binding.span.clone(), this_field));
+        }
+        num_fields += compile_field(self.session, self.context, &mut self.fmt, self.mod_name.clone(), field_binding);
         if field.binding.is_single_time() {
           self.fmt.push(&format!("(Object __o) -> this.{} = ({}) __o, ", field.binding.name, field.binding.ty));
         }
@@ -340,7 +351,7 @@ impl<'a> ModuleCompiler<'a>
           self.fmt.push_line(&format!("this.{} = ({}) __o;", name, ty));
           self.fmt.close_block();
         }
-        self.fmt.push_line(&format!("public {} __get_{}(Object __o)", ty, name));
+        self.fmt.push_line(&format!("public {} __get_{}()", ty, name));
         self.fmt.open_block();
         self.fmt.push_line(&format!("return this.{};", name));
         self.fmt.close_block();
@@ -393,11 +404,17 @@ impl<'a> ModuleCompiler<'a>
       let target_module = self.context.ast
         .find_mod_by_name(&ty.name)
         .expect(&format!("module {} undeclared", ty.name));
+      let mut i = 0;
+      let n = target_module.ref_fields().len();
       for field in target_module.ref_fields() {
         let var = module_decl.find_var_by_field_uid(field.binding.uid);
         compile_var_uid(self.session, self.context, &mut self.fmt, var);
+        if i < (n-1) {
+          self.fmt.push(",");
+        }
+        i += 1;
       }
-      self.fmt.push(");");
+      self.fmt.terminate_line(");");
     }
   }
 }

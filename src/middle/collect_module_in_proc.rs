@@ -53,18 +53,12 @@ impl CollectModuleInProc {
     }
   }
 
-  fn is_module_ref(&self, binding: &Binding) -> bool {
-    self.context.module_by_name(binding.ty.name.clone()).has_refs()
-  }
-
   fn module_refs_initializer(&mut self, binding: &Binding, expr: Expr) {
-    if self.is_module_ref(binding) {
-      match expr.node {
-        ExprKind::NewInstance(new_instance) => {
-          self.module_initialization_list(binding, new_instance.ty, new_instance.args);
-        }
-        _ => unreachable!("every module variable must be initialized with a new statement.")
+    match expr.node {
+      ExprKind::NewInstance(new_instance) => {
+        self.module_initialization_list(binding, new_instance.ty, new_instance.args);
       }
+      _ => unreachable!("every module variable must be initialized with a new statement.")
     }
   }
 
