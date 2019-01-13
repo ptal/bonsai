@@ -14,10 +14,8 @@
 
 package benchmark.bonsai;
 
-
 import bonsai.cp.Solver;
 import bonsai.statistics.Statistics;
-import bonsai.statistics.SolutionNode;
 
 import java.lang.System;
 import java.util.*;
@@ -26,11 +24,10 @@ import bonsai.runtime.core.*;
 import bonsai.runtime.lattices.*;
 import bonsai.runtime.lattices.choco.*;
 
-import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.nary.alldifferent.*;
 
-public class LatinSquare
+public class NQueen
 {
   public proc solve() =
     single_space StackLR stack = new StackLR();
@@ -41,37 +38,27 @@ public class LatinSquare
       modelChoco(write domains, write constraints, 12);
       module Solver solver = new Solver(domains, constraints, consistent);
       module Statistics stats = new Statistics(consistent);
-      module SolutionNode solutions = new SolutionNode(consistent);
       space nothing end; pause;
       par
       <> run solver.solve();
       <> run stats.count();
-      <> flow when solutions.value |= 1 then stop end end
       end
     end
   end
 
   private static void modelChoco(VarStore domains,
-    ConstraintStore constraints, int m)
+    ConstraintStore constraints, int n)
   {
-    Model model = domains.model();
-    IntVar[] vars = new IntVar[m*m];
-    for (int i = 0; i < m; i++) {
-      for (int j = 0; j < m; j++) {
-        vars[i * m + j] = (IntVar) domains.alloc(new VarStore.IntDomain(0, m - 1));
-      }
+    IntVar[] vars = new IntVar[n];
+    IntVar[] diag1 = new IntVar[n];
+    IntVar[] diag2 = new IntVar[n];
+    for(int i = 0; i < n; i++) {
+      vars[i] = (IntVar) domains.alloc(new VarStore.IntDomain(1, n));
+      diag1[i] = domains.model().intOffsetView(vars[i], i);
+      diag2[i] = domains.model().intOffsetView(vars[i], -i);
     }
-    // Constraints
-    for (int i = 0; i < m; i++) {
-      IntVar[] row = new IntVar[m];
-      IntVar[] col = new IntVar[m];
-      for (int x = 0; x < m; x++) {
-        row[x] = vars[i * m + x];
-        col[x] = vars[x * m + i];
-      }
-      constraints.join_in_place(model.allDifferent(col, "AC"));
-      constraints.join_in_place(model.allDifferent(row, "AC"));
-    }
+    constraints.join_in_place(new AllDifferent(vars, "BC"));
+    constraints.join_in_place(new AllDifferent(diag1, "BC"));
+    constraints.join_in_place(new AllDifferent(diag2, "BC"));
   }
 }
-

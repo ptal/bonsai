@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.solver;
+package bonsai.cp;
 
 import java.lang.System;
 import java.util.*;
@@ -20,6 +20,7 @@ import bonsai.runtime.queueing.*;
 import bonsai.runtime.core.*;
 import bonsai.runtime.lattices.*;
 import bonsai.runtime.lattices.choco.*;
+import bonsai.cp.Branching;
 
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.nary.alldifferent.*;
@@ -40,8 +41,8 @@ public class Solver
 
   public proc solve() =
     par
-    || run failFirstMiddle()
-    || run propagation()
+    <> run failFirstMiddle()
+    <> run propagation()
     end
   end
 
@@ -51,19 +52,18 @@ public class Solver
   end
 
   public proc failFirstMiddle() =
-    single_space VariableSelector<IntVar> var = new FirstFail(domains.model());
-    single_space IntValueSelector val = createValueSelector();
-    flow
-      when unknown |= consistent then
-        single_time IntVar x = readwrite var.getVariable(domains.vars());
-        single_time Integer v = readwrite val.selectValue(x);
-        space constraints <- x.eq(v) end;
-        space constraints <- x.ne(v) end
-      end
-    end
+    single_space VariableSelector<IntVar> var = Branching.firstFail(domains);
+    single_space IntValueSelector val = Branching.middle();
+    module Branching branching = new Branching(domains, constraints, consistent, var, val);
+    space nothing end; pause;
+    run branching.split();
   end
 
-  private static IntValueSelector createValueSelector() {
-    return new IntDomainMiddle​(true);
-  }
+  public proc inputOrderMin() =
+    single_space VariableSelector<IntVar> var = Branching.inputOrder(domains);
+    single_space IntValueSelector val = Branching.min();
+    module Branching branching = new Branching(domains, constraints, consistent, var, val);
+    space nothing end; pause;
+    run branching.assign();
+  end
 }

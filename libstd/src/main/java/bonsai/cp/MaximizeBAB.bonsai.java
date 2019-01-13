@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bonsai.solver;
+package bonsai.cp;
 
 import java.lang.System;
 import java.util.*;
