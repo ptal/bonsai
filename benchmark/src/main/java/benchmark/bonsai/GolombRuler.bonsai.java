@@ -16,7 +16,8 @@ package benchmark.bonsai;
 
 import bonsai.cp.Solver;
 import bonsai.cp.MinimizeBAB;
-import bonsai.statistics.Statistics;
+
+import benchmark.*;
 
 import java.lang.System;
 import java.util.*;
@@ -30,57 +31,36 @@ import org.chocosolver.solver.variables.*;
 
 public class GolombRuler
 {
+  world_line VarStore domains = new VarStore();
+  world_line ConstraintStore constraints = new ConstraintStore();
+  single_time ES consistent = unknown;
+
   public proc solve() =
-    single_space StackLR stack = new StackLR();
-    universe with stack in
-      world_line VarStore domains = new VarStore();
-      world_line ConstraintStore constraints = new ConstraintStore();
-      single_time ES consistent = unknown;
-      single_space int m = 9;
-      modelChoco(write domains, write constraints, m);
-      single_space IntVar x = rulerLengthVar(domains, m);
-      module Solver solver = new Solver(domains, constraints, consistent);
-      module MinimizeBAB bab = new MinimizeBAB(constraints, consistent, x);
-      // module Statistics stats = new Statistics(consistent);
-      space nothing end; pause;
-      par
-      <> run solver.propagation()
-      <> run solver.inputOrderMin()
-      <> run bab.solve();
-      // <> run stats.count();
-      // <> flow
-      //     when consistent |= true then
-      //       when true |= consistent then
-      //         printVariables("Solution", consistent, domains, m);
-      //       end
-      //     end
-      //    end
-      end
+    modelChoco(write domains, write constraints);
+    single_space IntVar x = rulerLengthVar(write domains);
+    module Solver solver = new Solver(write domains, write constraints, write consistent);
+    module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
+    par
+    <> run solver.propagation()
+    <> run solver.inputOrderLB()
+    <> flow when solver.consistent |= true then
+             when true |= solver.consistent then updateBound(domains) end end
+       end
+    <> run bab.solve();
     end
   end
 
-  private static void printHeader(String message,
-    ES consistent)
-  {
-    System.out.print("["+message+"][" + consistent + "]");
-  }
+  public proc solveWithStats() =
+    module BenchStats stats = new BenchStats(write consistent);
+    par
+    <> run solve()
+    <> run stats.record()
+    end
+  end
 
-  private static void printVariables(String message,
-    ES consistent, VarStore domains, int m)
+  private static void modelChoco(VarStore domains, ConstraintStore constraints)
   {
-    printHeader("Objective", consistent);
-    System.out.println(rulerLengthVar(domains, m));
-    printHeader(message, consistent);
-    System.out.print(" Variables = [");
-    for (IntVar v : domains.vars()) {
-      System.out.print(v + ", ");
-    }
-    System.out.println("]");
-  }
-
-  private static void modelChoco(VarStore domains,
-    ConstraintStore constraints, int m)
-  {
+    int m = Config.current.n;
     IntVar[] ticks = new IntVar[m];
     IntVar[] diffs = new IntVar[(m*m -m)/2];
     Model model = domains.model();
@@ -118,11 +98,17 @@ public class GolombRuler
     }
   }
 
-  private static IntVar rulerLengthVar(VarStore domains, int m) {
+  private static IntVar rulerLengthVar(VarStore domains) {
+    int m = Config.current.n;
     return (IntVar)domains.model().getVars()[m - 1];
   }
 
-  private static int rulerLength(VarStore domains, int m) {
-    return rulerLengthVar(domains, m).getLB();
+  private static int rulerLength(VarStore domains) {
+    int m = Config.current.n;
+    return rulerLengthVar(domains).getLB();
+  }
+
+  private static void updateBound(VarStore domains) {
+    Config.current.obj = rulerLength(domains);
   }
 }

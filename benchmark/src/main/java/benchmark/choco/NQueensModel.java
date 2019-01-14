@@ -27,11 +27,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmark.model;
+package benchmark.choco;
 
+import benchmark.*;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.solver.search.measure.MeasuresRecorder;
 
 import static org.chocosolver.solver.search.strategy.Search.minDomLBSearch;
 
@@ -42,49 +44,48 @@ import static org.chocosolver.solver.search.strategy.Search.minDomLBSearch;
  * @since 31/03/11
  */
 public class NQueensModel {
-    int n = 13;
-    IntVar[] vars;
+  int n;
+  IntVar[] vars;
 
-    protected Model model;
+  protected Model model;
 
-    /**
-     * @return the current model
-     */
-    public Model getModel() {
-    return model;
+  public NQueensModel() {
+    this.n = Config.current.n;
+    this.buildModel();
+    this.configureSearch();
+  }
+
+  public void solve() {
+    while(model.getSolver().solve()) {
+      Config.current.time = model.getSolver().getMeasures().getTimeCountInNanoSeconds();
+      if (Config.current.hasTimedOut()) {
+        throw new TimeLimitException();
+      }
     }
+    MeasuresRecorder m = model.getSolver().getMeasures();
+    Config.current.solutions = m.getSolutionCount();
+    Config.current.fails = m.getFailCount();
+    Config.current.nodes = Config.current.fails + m.getNodeCount();
+    Config.current.time = m.getTimeCountInNanoSeconds();
+  }
 
-    public void solve() {
-        this.buildModel();
-        this.configureSearch();
-        while(model.getSolver().solve()) {
-            // System.out.println("Number of solutions: " + sol);
-        }
-        System.out.println(model.getSolver().getMeasures().toString());
+  public void buildModel() {
+    model = new Model("NQueen");
+    vars = new IntVar[n];
+    IntVar[] diag1 = new IntVar[n];
+    IntVar[] diag2 = new IntVar[n];
+    for (int i = 0; i < n; i++) {
+      vars[i] = model.intVar("Q_" + i, 1, n, false);
+      diag1[i] = model.intOffsetView(vars[i], i);
+      diag2[i] = model.intOffsetView(vars[i], -i);
     }
+    model.allDifferent(vars, "BC").post();
+    model.allDifferent(diag1, "BC").post();
+    model.allDifferent(diag2, "BC").post();
+  }
 
-    public void buildModel() {
-        model = new Model("NQueen");
-        vars = new IntVar[n];
-        IntVar[] diag1 = new IntVar[n];
-        IntVar[] diag2 = new IntVar[n];
-
-        for (int i = 0; i < n; i++) {
-            vars[i] = model.intVar("Q_" + i, 1, n, false);
-            diag1[i] = model.intOffsetView(vars[i], i);
-            diag2[i] = model.intOffsetView(vars[i], -i);
-        }
-
-        model.allDifferent(vars, "BC").post();
-        model.allDifferent(diag1, "BC").post();
-        model.allDifferent(diag2, "BC").post();
-    }
-
-    public void configureSearch() {
-        model.getSolver().setSearch(minDomLBSearch(vars));
-    }
-
-    public static void main(String[] args) {
-        new NQueensModel().solve();
-    }
+  public void configureSearch() {
+    model.getSolver().setSearch(minDomLBSearch(vars));
+    model.getSolver().limitTime(Config.timeout + "s");
+  }
 }

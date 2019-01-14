@@ -81,6 +81,7 @@ impl<'a> ModuleCompiler<'a>
     self.runtime_boilerplate(&module);
     self.main_method(module.host.class_name.clone());
     self.java_empty_constructor(module.host.class_name);
+    self.default_construct_method(module.host.java_constructors.is_empty());
     for constructor in module.host.java_constructors {
       self.java_constructor(constructor);
     }
@@ -150,6 +151,12 @@ impl<'a> ModuleCompiler<'a>
 
   fn java_empty_constructor(&mut self, class_name: Ident) {
     self.fmt.push_line(&format!("public {}() {{}}", class_name));
+  }
+
+  fn default_construct_method(&mut self, no_constructor: bool) {
+    if no_constructor {
+      self.fmt.push_line("public Object __construct() { return this; }");
+    }
   }
 
   fn java_constructor(&mut self, constructor: JConstructor) {
@@ -308,7 +315,6 @@ impl<'a> ModuleCompiler<'a>
         // Moreover, it is already initialized by the constructor of the current object.
         if is_ref {
           let mut var = field_binding.clone().to_field_var();
-          var.permission = Some(Permission::Write); // TODO: actually this access should be `FreeAccess`.
           let this_field = ExprKind::Var(var);
           field_binding.expr = Some(Expr::new(field_binding.span.clone(), this_field));
         }

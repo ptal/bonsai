@@ -14,10 +14,10 @@
 
 package benchmark.bonsai;
 
-
 import bonsai.cp.Solver;
-import bonsai.statistics.Statistics;
 import bonsai.statistics.SolutionNode;
+
+import benchmark.Config;
 
 import java.lang.System;
 import java.util.*;
@@ -32,28 +32,34 @@ import org.chocosolver.solver.constraints.nary.alldifferent.*;
 
 public class LatinSquare
 {
+  world_line VarStore domains = new VarStore();
+  world_line ConstraintStore constraints = new ConstraintStore();
+  single_time ES consistent = unknown;
+
   public proc solve() =
-    single_space StackLR stack = new StackLR();
-    universe with stack in
-      world_line VarStore domains = new VarStore();
-      world_line ConstraintStore constraints = new ConstraintStore();
-      single_time ES consistent = unknown;
-      modelChoco(write domains, write constraints, 12);
-      module Solver solver = new Solver(domains, constraints, consistent);
-      module Statistics stats = new Statistics(consistent);
-      module SolutionNode solutions = new SolutionNode(consistent);
-      space nothing end; pause;
-      par
-      <> run solver.solve();
-      <> run stats.count();
-      <> flow when solutions.value |= 1 then stop end end
-      end
+    modelChoco(write domains, write constraints);
+    module Solver solver = new Solver(write domains, write constraints, write consistent);
+    module SolutionNode solutions = new SolutionNode(write consistent);
+    par
+    <> run solver.propagation()
+    <> run solver.inputOrderLB()
+    <> run solutions.count()
+    <> flow when solutions.value |= 1 then stop end end
+    end
+  end
+
+  public proc solveWithStats() =
+    module BenchStats stats = new BenchStats(write consistent);
+    par
+    <> run solve()
+    <> run stats.record()
     end
   end
 
   private static void modelChoco(VarStore domains,
-    ConstraintStore constraints, int m)
+    ConstraintStore constraints)
   {
+    int m = Config.current.n;
     Model model = domains.model();
     IntVar[] vars = new IntVar[m*m];
     for (int i = 0; i < m; i++) {
@@ -74,4 +80,3 @@ public class LatinSquare
     }
   }
 }
-

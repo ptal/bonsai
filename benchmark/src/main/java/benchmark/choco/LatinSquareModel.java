@@ -27,63 +27,66 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmark.model;
+package benchmark.choco;
+
+import benchmark.*;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.solver.search.measure.MeasuresRecorder;
 
 import static org.chocosolver.solver.search.strategy.Search.inputOrderLBSearch;
 
 public class LatinSquareModel {
+  int m;
+  IntVar[] vars;
 
-    private int m = 60;
+  protected Model model;
 
-    IntVar[] vars;
+  public LatinSquareModel() {
+    this.m = Config.current.n;
+    this.buildModel();
+    this.configureSearch();
+  }
 
-    protected Model model;
-
-    /**
-     * @return the current model
-     */
-    public Model getModel() {
-        return model;
+  public void solve() {
+    model.getSolver().solve();
+    Config.current.time = model.getSolver().getMeasures().getTimeCountInNanoSeconds();
+    if (Config.current.hasTimedOut()) {
+      throw new TimeLimitException();
     }
+    MeasuresRecorder m = model.getSolver().getMeasures();
+    // Config.current.nodes = m.getBackTrackCount();
+    Config.current.solutions = m.getSolutionCount();
+    Config.current.fails = m.getFailCount();
+    Config.current.nodes = Config.current.fails + m.getNodeCount();
+    Config.current.time = m.getTimeCountInNanoSeconds();
+  }
 
-    public void buildModel() {
-        model = new Model("Latin square");
-        vars = new IntVar[m * m];
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < m; j++) {
-                vars[i * m + j] = model.intVar("C" + i + "_" + j, 0, m - 1, false);
-            }
-        }
-        // Constraints
-        for (int i = 0; i < m; i++) {
-            IntVar[] row = new IntVar[m];
-            IntVar[] col = new IntVar[m];
-            for (int x = 0; x < m; x++) {
-                row[x] = vars[i * m + x];
-                col[x] = vars[x * m + i];
-            }
-            model.allDifferent(col, "AC").post();
-            model.allDifferent(row, "AC").post();
-        }
+  public void buildModel() {
+    model = new Model("Latin square");
+    vars = new IntVar[m * m];
+    for (int i = 0; i < m; i++) {
+      for (int j = 0; j < m; j++) {
+        vars[i * m + j] = model.intVar("C" + i + "_" + j, 0, m - 1, false);
+      }
     }
+    // Constraints
+    for (int i = 0; i < m; i++) {
+      IntVar[] row = new IntVar[m];
+      IntVar[] col = new IntVar[m];
+      for (int x = 0; x < m; x++) {
+        row[x] = vars[i * m + x];
+        col[x] = vars[x * m + i];
+      }
+      model.allDifferent(col, "AC").post();
+      model.allDifferent(row, "AC").post();
+    }
+  }
 
-    public void configureSearch() {
-        model.getSolver().setSearch(inputOrderLBSearch(vars));
-    }
-
-    public void solve() {
-        buildModel();
-        configureSearch();
-        model.getSolver().solve();
-        // while(model.getSolver().solve()) {
-        // }
-        System.out.println(model.getSolver().getMeasures().toString());
-    }
-
-    public static void main(String[] args) {
-        new LatinSquareModel().solve();
-    }
+  public void configureSearch() {
+    model.getSolver().setSearch(inputOrderLBSearch(vars));
+    model.getSolver().limitTime(Config.timeout + "s");
+  }
 }
+

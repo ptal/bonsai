@@ -63,7 +63,6 @@
             <configuration>
               <executable>bonsai</executable>
               <arguments>
-                <argument>--main=GolombRuler.solve</argument>
                 <argument>--lib=../libstd/src/</argument>
                 <argument>-o ${project.build.directory}/generated-sources</argument>
                 <argument>${project.build.sourceDirectory}</argument>

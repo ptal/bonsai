@@ -97,7 +97,7 @@ def installing_chain():
   install_rust()
   install_bonsai()
   install_bonsai_runtime()
-  # install_bonsai_libstd()
+  install_bonsai_libstd()
   print(ending_message)
 
 installing_chain()

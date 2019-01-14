@@ -569,7 +569,7 @@ impl Hash for VarPath {
 pub enum Permission {
   Read,
   ReadWrite,
-  Write,
+  Write
 }
 
 impl PartialOrd for Permission {
