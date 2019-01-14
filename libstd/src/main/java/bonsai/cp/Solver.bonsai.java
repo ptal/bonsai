@@ -52,18 +52,26 @@ public class Solver
   end
 
   public proc failFirstMiddle() =
-    single_space VariableSelector<IntVar> var = Branching.firstFail(domains);
+    single_space VariableSelector<IntVar> var = Branching.firstFail(write domains);
     single_space IntValueSelector val = Branching.middle();
-    module Branching branching = new Branching(domains, constraints, consistent, var, val);
-    space nothing end; pause;
+    module Branching branching =
+      new Branching(write domains, write constraints, write consistent, write var, write val);
     run branching.split();
   end
 
-  public proc inputOrderMin() =
-    single_space VariableSelector<IntVar> var = Branching.inputOrder(domains);
+  public proc inputOrderLB() =
+    single_space VariableSelector<IntVar> var = Branching.inputOrder(write domains);
     single_space IntValueSelector val = Branching.min();
-    module Branching branching = new Branching(domains, constraints, consistent, var, val);
-    space nothing end; pause;
+    module Branching branching =
+      new Branching(write domains, write constraints, write consistent, write var, write val);
+    run branching.assign();
+  end
+
+  public proc minDomLB() =
+    single_space VariableSelector<IntVar> var = Branching.firstFail(write domains);
+    single_space IntValueSelector val = Branching.min();
+    module Branching branching =
+      new Branching(write domains, write constraints, write consistent, write var, write val);
     run branching.assign();
   end
 }

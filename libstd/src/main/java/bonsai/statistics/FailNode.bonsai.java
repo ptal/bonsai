@@ -26,8 +26,7 @@ public class FailNode
   }
 
   public flow count() =
-    when consistent |= true then
-      when true |= consistent then nothing
-      else readwrite value.inc(); end;
+    when consistent |= false then
+      readwrite value.inc()
     end
 }

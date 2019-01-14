@@ -29,7 +29,7 @@ public class MinimizeBAB
   ref single_time ES consistent;
   ref single_space IntVar x;
 
-  single_space LMin obj = bot;
+  public single_space LMin obj = bot;
   single_space LMax objV = new LMax(0);
   world_line LMax conV = new LMax(1);
 

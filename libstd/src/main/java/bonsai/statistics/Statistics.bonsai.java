@@ -29,8 +29,8 @@ public class Statistics
   public proc count() =
     module Depth depth = new Depth();
     module Node nodes = new Node();
-    module FailNode fails = new FailNode(consistent);
-    module SolutionNode solutions = new SolutionNode(consistent);
+    module FailNode fails = new FailNode(write consistent);
+    module SolutionNode solutions = new SolutionNode(write consistent);
     par
     || run depth.count()
     || run nodes.count()
