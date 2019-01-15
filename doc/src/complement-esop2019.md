@@ -24,7 +24,7 @@ The results are automatically printed in a CSV format.
 
 The results are available in [this file](https://github.com/ptal/bonsai/blob/master/benchmark/data/benches.csv) and also at the end of this page.
 
-The three constraint models are particularly interesting because they test different aspect of solving:
+The three constraint models are particularly interesting because they test different aspects of solving:
 
 1. Latin Square is _propagation intensive_ since it finds the solution without backtracking and for all size of instances tested.
 2. Golomb ruler tests the branch-and-bound algorithm in order to optimize a value, it is a mix between propagation and search.
@@ -41,9 +41,11 @@ The reason is that we explore more nodes, hence we spend more time in the spacet
 The Latin square problem shows that without backtracking spacetime is in par with Choco.
 Finally, the Golomb ruler problem demonstrates that Choco has a more efficient BAB strategy since it explores less nodes.
 
-Overall, we observe that the number of nodes processed per second (n/s) in spacetime stabilized around 35.000 n/s for bigger instances.
+Overall, we observe that the number of nodes processed per second (n/s) in spacetime stabilized around 35.000 n/s for larger instances.
 In NQueens, the overhead compared to Choco is about a factor 6.
 Surprisingly, the number of nodes processed per second in Choco drops of about 25% when the instance size increase (in NQueens), whereas it stays stable in spacetime.
+
+As for correctness, spacetime always find the same number of solutions as Choco, and the same lower bound for optimization problems (Golomb ruler).
 
 ### How to run the benchmark
 
@@ -56,6 +58,18 @@ cd benchmark
 ```
 
 The file [Benchmark.java](https://github.com/ptal/bonsai/blob/master/benchmark/src/main/java/benchmark/Benchmark.java) contains some parameters that can be tweaked such as the size of the instances and the number of trials for each instance.
+
+## Tests
+
+The compiler and runtime of spacetime are well tested, you can run the tests of the compiler with:
+
+```
+cargo test
+cd runtime
+mvn test
+```
+
+There are about 200 tests, ranging from the static analysis of the compiler ([compile-fail](https://github.com/ptal/bonsai/tree/master/data/test/compile-fail) and [compile-pass](https://github.com/ptal/bonsai/tree/master/data/test/compile-pass)) as well as the runtime behavior ([run-pass](https://github.com/ptal/bonsai/tree/master/data/test/run-pass)) to the correctness of the lattice library.
 
 ## Examples
 
