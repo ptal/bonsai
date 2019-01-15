@@ -26,13 +26,13 @@ import org.chocosolver.solver.Model;
 
 public class Benchmark
 {
-  private boolean human = false;
-  private int trials = 5;
-  private int timeLimitSeconds = 60;
+  private boolean human = true;
+  private int trials = 10;
+  private int timeLimitSeconds = 1080;
 
-  private List<Integer> paramsNQueens = Arrays.asList(4,5,6,7,8,9,10,11);//,12,13,14);
-  private List<Integer> paramsGolombRuler = Arrays.asList(4,5,6,7,8,9,10,11);//,12,13,14,15);
-  private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55,60,65,70);//,75,80,85,90,95,100);
+  private List<Integer> paramsNQueens = Arrays.asList(4,5,6,7,8,9,10,11,12,13,14);
+  private List<Integer> paramsGolombRuler = Arrays.asList(4,5,6,7,8,9,10,11,12,13,14);
+  private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55,60,65,70,75,80);
 
   public static void main(String[] args) {
     new Benchmark().start();
@@ -48,31 +48,37 @@ public class Benchmark
 
   private void benchNQueens() {
     for (Integer n : paramsNQueens) {
-      runChocoNQueens(n);
+      runBonsaiNQueens(n);
     }
     for (Integer n : paramsNQueens) {
-      runBonsaiNQueens(n);
+      runChocoNQueens(n);
     }
   }
 
   private void benchGolombRuler() {
     for (Integer n : paramsGolombRuler) {
-      runChocoGolombRuler(n);
-    }
-    for (Integer n : paramsGolombRuler) {
-      runBonsaiGolombRuler(n);
+      runBonsaiGolombRulerIOLB(n);
     }
     // for (Integer n : paramsGolombRuler) {
-    //   runBonsaiGolombRulerReverse(n);
+    //   runBonsaiGolombRulerFFM(n);
+    // }
+    // for (Integer n : paramsGolombRuler) {
+    //   runBonsaiGolombRulerMDLB(n);
+    // }
+    for (Integer n : paramsGolombRuler) {
+      runChocoGolombRulerIOLB(n);
+    }
+    // for (Integer n : paramsGolombRuler) {
+    //   runChocoGolombRulerFFM(n);
     // }
   }
 
   private void benchLatinSquare() {
     for (Integer n : paramsLatinSquare) {
-      runChocoLatinSquare(n);
+      runBonsaiLatinSquare(n);
     }
     for (Integer n : paramsLatinSquare) {
-      runBonsaiLatinSquare(n);
+      runChocoLatinSquare(n);
     }
   }
 
@@ -80,12 +86,16 @@ public class Benchmark
     runBonsai("NQueens", n, (p) -> p.nqueensWithStats(), (p) -> p.nqueens());
   }
 
-  private void runBonsaiGolombRuler(int n) {
-    runBonsai("GolombRuler", n, (p) -> p.golombRulerWithStats(), (p) -> p.golombRuler());
+  private void runBonsaiGolombRulerIOLB(int n) {
+    runBonsai("GolombRulerIOLB", n, (p) -> p.golombRulerIOLBWithStats(), (p) -> p.golombRulerIOLB());
   }
 
-  private void runBonsaiGolombRulerReverse(int n) {
-    runBonsai("GolombRulerReverse", n, (p) -> p.golombRulerWithStatsReverse(), (p) -> p.golombRulerReverse());
+  private void runBonsaiGolombRulerFFM(int n) {
+    runBonsai("GolombRulerFFM", n, (p) -> p.golombRulerFFMWithStats(), (p) -> p.golombRulerFFM());
+  }
+
+  private void runBonsaiGolombRulerMDLB(int n) {
+    runBonsai("GolombRulerMDLB", n, (p) -> p.golombRulerMDLBWithStats(), (p) -> p.golombRulerMDLB());
   }
 
   private void runBonsaiLatinSquare(int n) {
@@ -103,19 +113,18 @@ public class Benchmark
       machine.execute();
     }
     catch (TimeLimitException e) {
+      System.out.println(Config.current.toCSV(human));
       return;
     }
-    // finally {
-    //   System.out.println(Config.current.toCSV());
-    // }
-    long cumulatedTime = 0;
+    ArrayList<Long> cumulatedTime = new ArrayList();
     for (int i = 0; i < trials; ++i) {
       Config.current.time = 0;
+      Config.current.obj = -1;
       machine = new SpaceMachine<>(new Problems(), process, false);
       machine.execute();
-      cumulatedTime += Config.current.time;
+      cumulatedTime.add(Config.current.time);
     }
-    Config.current.time = cumulatedTime / trials;
+    Config.current.time = cumulatedTime.get(cumulatedTime.size()/2);
     System.out.println(Config.current.toCSV(human));
   }
 
@@ -125,18 +134,16 @@ public class Benchmark
       model.get();
     }
     catch (TimeLimitException e) {
+      System.out.println(Config.current.toCSV(human));
       return;
     }
-    // finally {
-    //   System.out.println(Config.current.toCSV());
-    // }
-    long cumulatedTime = 0;
+    ArrayList<Long> cumulatedTime = new ArrayList();
     for (int i = 0; i < trials; ++i) {
       Config.current.time = 0;
       model.get();
-      cumulatedTime += Config.current.time;
+      cumulatedTime.add(Config.current.time);
     }
-    Config.current.time = cumulatedTime / trials;
+    Config.current.time = cumulatedTime.get(cumulatedTime.size()/2);
     System.out.println(Config.current.toCSV(human));
   }
 
@@ -144,8 +151,12 @@ public class Benchmark
     runChoco("NQueensChoco", n, () -> {new NQueensModel().solve(); return true; });
   }
 
-  private void runChocoGolombRuler(int n) {
-    runChoco("GolombRulerChoco", n, () -> {new GolombRulerModel().solve(); return true; });
+  private void runChocoGolombRulerIOLB(int n) {
+    runChoco("GolombRulerChocoIOLB", n, () -> {new GolombRulerModel().solve(); return true; });
+  }
+
+  private void runChocoGolombRulerFFM(int n) {
+    runChoco("GolombRulerChocoFFM", n, () -> {new GolombRulerModel(true).solve(); return true; });
   }
 
   private void runChocoLatinSquare(int n) {

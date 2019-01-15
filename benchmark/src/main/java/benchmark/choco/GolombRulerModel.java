@@ -34,6 +34,10 @@ import benchmark.*;
 import org.chocosolver.solver.search.measure.MeasuresRecorder;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.solver.search.strategy.assignments.*;
+import org.chocosolver.solver.search.strategy.Search;
+import org.chocosolver.solver.search.strategy.selectors.values.*;
+import org.chocosolver.solver.search.strategy.selectors.variables.*;
 
 import static org.chocosolver.solver.ResolutionPolicy.MINIMIZE;
 import static org.chocosolver.solver.search.strategy.Search.inputOrderLBSearch;
@@ -59,11 +63,15 @@ public class GolombRulerModel
 
   protected Model model;
 
-  public GolombRulerModel() {
+  public GolombRulerModel(boolean isFFM) {
     this.m = Config.current.n;
     this.buildModel();
-    this.configureSearch();
+    this.configureSearch(isFFM);
     model.setObjective(false, getObjective());
+  }
+
+  public GolombRulerModel() {
+    this(false);
   }
 
   public IntVar getObjective() {
@@ -112,8 +120,16 @@ public class GolombRulerModel
     }
   }
 
-  public void configureSearch() {
-    model.getSolver().setSearch(inputOrderLBSearch(ticks));
+  public void configureSearch(boolean isFFM) {
+    if (isFFM) {
+      model.getSolver().setSearch(Search.intVarSearch(new FirstFail(model),
+        new IntDomainMiddle(true),
+        DecisionOperator.int_split,
+        model.retrieveIntVars(true)));
+    }
+    else {
+      model.getSolver().setSearch(inputOrderLBSearch(model.retrieveIntVars(true)));
+    }
     model.getSolver().limitTime(Config.timeout + "s");
   }
 }

@@ -35,26 +35,48 @@ public class GolombRuler
   world_line ConstraintStore constraints = new ConstraintStore();
   single_time ES consistent = unknown;
 
-  public proc solve() =
+  public proc solveIOLB() =
     modelChoco(write domains, write constraints);
-    single_space IntVar x = rulerLengthVar(write domains);
     module Solver solver = new Solver(write domains, write constraints, write consistent);
+    single_space IntVar x = rulerLengthVar(write domains);
     module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
     par
-    <> run solver.propagation()
     <> run solver.inputOrderLB()
-    <> flow when solver.consistent |= true then
-             when true |= solver.consistent then updateBound(domains) end end
+    <> run solver.propagation()
+    <> flow when consistent |= true then
+             when true |= consistent then updateBound(domains) end end
        end
     <> run bab.solve();
     end
   end
 
-  public proc solveWithStats() =
-    module BenchStats stats = new BenchStats(write consistent);
+  public proc solveFFM() =
+    modelChoco(write domains, write constraints);
+    module Solver solver = new Solver(write domains, write constraints, write consistent);
+    single_space IntVar x = rulerLengthVar(write domains);
+    module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
     par
-    <> run solve()
-    <> run stats.record()
+    <> run solver.failFirstMiddle()
+    <> run solver.propagation()
+    <> flow when consistent |= true then
+             when true |= consistent then updateBound(domains) end end
+       end
+    <> run bab.solve();
+    end
+  end
+
+  public proc solveMDLB() =
+    modelChoco(write domains, write constraints);
+    module Solver solver = new Solver(write domains, write constraints, write consistent);
+    single_space IntVar x = rulerLengthVar(write domains);
+    module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
+    par
+    <> run solver.minDomLB()
+    <> run solver.propagation()
+    <> flow when consistent |= true then
+             when true |= consistent then updateBound(domains) end end
+       end
+    <> run bab.solve();
     end
   end
 

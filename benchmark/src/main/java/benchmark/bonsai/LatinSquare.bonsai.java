@@ -48,14 +48,6 @@ public class LatinSquare
     end
   end
 
-  public proc solveWithStats() =
-    module BenchStats stats = new BenchStats(write consistent);
-    par
-    <> run solve()
-    <> run stats.record()
-    end
-  end
-
   private static void modelChoco(VarStore domains,
     ConstraintStore constraints)
   {

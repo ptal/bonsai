@@ -37,8 +37,7 @@ public class Problems
       par
       || module NQueens nqueens = new NQueens();
          run nqueens.solve()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+      || run abortWhenTimeout()
       end
     end
   end
@@ -46,11 +45,12 @@ public class Problems
   public proc nqueensWithStats() =
     single_space StackLR stack = new StackLR();
     universe with stack in
+      module NQueens nqueens = new NQueens();
+      module BenchStats stats = new BenchStats(write nqueens.consistent);
       par
-      || module NQueens nqueens = new NQueens();
-         run nqueens.solveWithStats()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+      <> run nqueens.solve()
+      <> run stats.record()
+      <> run abortWhenTimeout()
       end
     end
   end
@@ -61,8 +61,7 @@ public class Problems
       par
       || module LatinSquare latinSquare = new LatinSquare();
          run latinSquare.solve()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+      || run abortWhenTimeout()
       end
     end
   end
@@ -70,61 +69,92 @@ public class Problems
   public proc latinSquareWithStats() =
     single_space StackLR stack = new StackLR();
     universe with stack in
+      module LatinSquare latinSquare = new LatinSquare();
+      module BenchStats stats = new BenchStats(write latinSquare.consistent);
       par
-      || module LatinSquare latinSquare = new LatinSquare();
-         run latinSquare.solveWithStats()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+      <> run latinSquare.solve()
+      <> run stats.record()
+      <> run abortWhenTimeout()
       end
     end
   end
 
-  public proc golombRuler() =
+  public proc golombRulerIOLB() =
     single_space StackLR stack = new StackLR();
     universe with stack in
       par
       || module GolombRuler golombRuler = new GolombRuler();
-         run golombRuler.solve()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+         run golombRuler.solveIOLB()
+      || run abortWhenTimeout()
       end
     end
   end
 
-  public proc golombRulerWithStats() =
+  public proc golombRulerIOLBWithStats() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      module GolombRuler golombRuler = new GolombRuler();
+      module BenchStats stats = new BenchStats(write golombRuler.consistent);
+      par
+      <> run golombRuler.solveIOLB()
+      <> run stats.record()
+      <> run abortWhenTimeout()
+      end
+    end
+  end
+
+  public proc golombRulerFFM() =
     single_space StackLR stack = new StackLR();
     universe with stack in
       par
       || module GolombRuler golombRuler = new GolombRuler();
-         run golombRuler.solveWithStats()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+         run golombRuler.solveFFM()
+      || run abortWhenTimeout()
       end
     end
   end
 
-  public proc golombRulerReverse() =
-    single_space StackRL stack = new StackRL();
+  public proc golombRulerFFMWithStats() =
+    single_space StackLR stack = new StackLR();
     universe with stack in
+      module GolombRuler golombRuler = new GolombRuler();
+      module BenchStats stats = new BenchStats(write golombRuler.consistent);
       par
-      || module GolombRuler golombRuler = new GolombRuler();
-         run golombRuler.solve()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+      <> run golombRuler.solveFFM()
+      <> run stats.record()
+      <> run abortWhenTimeout()
       end
     end
   end
 
-  public proc golombRulerWithStatsReverse() =
-    single_space StackRL stack = new StackRL();
+  public proc golombRulerMDLB() =
+    single_space StackLR stack = new StackLR();
     universe with stack in
       par
       || module GolombRuler golombRuler = new GolombRuler();
-         run golombRuler.solveWithStats()
-      || single_space long start = currentTime();
-         flow checkTime(start) end
+         run golombRuler.solveMDLB()
+      || run abortWhenTimeout()
       end
     end
+  end
+
+  public proc golombRulerMDLBWithStats() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      module GolombRuler golombRuler = new GolombRuler();
+      module BenchStats stats = new BenchStats(write golombRuler.consistent);
+      par
+      <> run golombRuler.solveMDLB()
+      <> run stats.record()
+      <> run abortWhenTimeout()
+      end
+    end
+  end
+
+
+  private proc abortWhenTimeout() =
+    single_space long start = currentTime();
+    flow checkTime(start) end
   end
 
   public static long currentTime() {
