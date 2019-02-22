@@ -16,7 +16,7 @@ package bonsai.runtime.synchronous.interfaces;
 
 import bonsai.runtime.synchronous.env.Layer;
 
-public interface Module
+public interface BModule
 {
   /// Initialize the UIDs of field variables.
   public void __init();

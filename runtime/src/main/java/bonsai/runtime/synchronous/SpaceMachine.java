@@ -22,7 +22,7 @@ import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.search.*;
 
-public class SpaceMachine<T extends Module>
+public class SpaceMachine<T extends BModule>
 {
   private Statement program;
   private Environment env;

@@ -133,7 +133,7 @@ impl<'a> ExpressionCompiler<'a>
 
   fn var_access(&mut self, var: Variable, free_access: bool) {
     let access_class =
-      if free_access { format!("FreeAccess") }
+      if free_access || var.permission.is_none() { format!("FreeAccess") }
       else {
         match var.permission.expect(&format!("All variables must have a permission at generation stage ({}).", var)) {
           Permission::Read => format!("ReadAccess"),

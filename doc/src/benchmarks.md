@@ -1,9 +1,9 @@
-# Supplementary material to the submission to ESOP 2019
+# Benchmark of the language
 
 This supplementary page completes the evaluation of spacetime presented in the paper.
 It also gives instructions to compile the examples presented in the paper.
 
-If you want to replicate any benchmark and running examples, please go through the [Getting Started](getting-started.md) section first.
+If you want to replicate any benchmark and running examples, please go through the [Getting Started](getting-started.html) section first.
 
 ## Evaluation
 
@@ -49,12 +49,13 @@ As for correctness, spacetime always find the same number of solutions as Choco,
 
 ### How to run the benchmark
 
-First install spacetime by following the instructions in [Getting Started](getting-started.md).
+First install spacetime by following the instructions in [Getting Started](getting-started.html).
 Then you can simply type:
 
-```
+```sh
 cd benchmark
-./run.sh
+# The "2> /dev/null" is to prevent Choco to print logging messages.
+./run.sh 2> /dev/null
 ```
 
 The file [Benchmark.java](https://github.com/ptal/bonsai/blob/master/benchmark/src/main/java/benchmark/Benchmark.java) contains some parameters that can be tweaked such as the size of the instances and the number of trials for each instance.
@@ -63,7 +64,7 @@ The file [Benchmark.java](https://github.com/ptal/bonsai/blob/master/benchmark/s
 
 The compiler and runtime of spacetime are well tested, you can run the tests of the compiler with:
 
-```
+```sh
 cargo test
 cd runtime
 mvn test
@@ -79,7 +80,7 @@ The [benchmark problems](https://github.com/ptal/bonsai/blob/master/benchmark/sr
 To explore a simple example, have a look at the [HelloWorld](https://github.com/ptal/bonsai/tree/master/examples/bonsai/HelloWorld) folder.
 It can be run with the following commands:
 
-```
+```sh
 cd examples/bonsai/HelloWorld
 ./run.sh
 ```

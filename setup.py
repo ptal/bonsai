@@ -13,7 +13,7 @@ ending_message = "\nSuccesfully installed bonsai (and its standard library) and 
 install_rust_cmd = ["rustup", "override", "set", rust_nightly_version]
 list_target_rustup_cmd = ["rustup", "target", "list"]
 clone_bonsai_cmd = ["git", "clone", "https://github.com/ptal/bonsai.git"]
-install_bonsai_cmd = ["cargo", "install", "--force"]
+install_bonsai_cmd = ["cargo", "install", "--path", ".", "--force"]
 try_bonsai = ["bonsai", "-h"]
 
 def mvn_install_cmd(groupId, artifactId, version, file):
@@ -72,12 +72,16 @@ def rustup_target():
   input('Unknown target directory (enter the name of the target directory, it is in `~/.multirust/toolchains/`): ')
 
 def install_bonsai():
+  print("Installing bonsai compiler...")
+  subprocess.run(install_bonsai_cmd, stdout=subprocess.DEVNULL).check_returncode()
+  print("`bonsai` compiler has been installed.")
+
+def bonsai_is_installed():
   try:
     subprocess.run(try_bonsai, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    True
   except OSError:
-    print("Installing bonsai compiler...")
-    subprocess.run(install_bonsai_cmd, stdout=subprocess.DEVNULL).check_returncode()
-    print("`bonsai` compiler has been installed.")
+    False
 
 def install_bonsai_libstd():
   print("Installing Bonsai standard libary...")
