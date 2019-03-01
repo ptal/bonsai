@@ -124,7 +124,7 @@ public class GolombRulerModel
     if (isFFM) {
       model.getSolver().setSearch(Search.intVarSearch(new FirstFail(model),
         new IntDomainMiddle(true),
-        DecisionOperator.int_split,
+        DecisionOperatorFactory.makeIntSplit(),
         model.retrieveIntVars(true)));
     }
     else {

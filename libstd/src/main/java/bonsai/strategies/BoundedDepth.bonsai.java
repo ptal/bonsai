@@ -27,8 +27,8 @@ public class BoundedDepth
   public proc bound() =
     module Depth depth = new Depth();
     par
-    || run depth.count();
-    || flow
+    <> run depth.count();
+    <> flow
         when depth.value |= limit then
           prune
         end

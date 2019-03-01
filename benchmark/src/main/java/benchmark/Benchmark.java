@@ -30,8 +30,8 @@ public class Benchmark
   private int trials = 10;
   private int timeLimitSeconds = 1080;
 
-  private List<Integer> paramsNQueens = Arrays.asList(4,5,6,7,8,9,10,11,12,13,14);
-  private List<Integer> paramsGolombRuler = Arrays.asList(4,5,6,7,8,9,10,11,12,13,14);
+  private List<Integer> paramsNQueens = Arrays.asList(4,5,6,7,8,9,10);//,11,12,13,14);
+  private List<Integer> paramsGolombRuler = Arrays.asList(4,5,6,7,8,9);//,10,11,12,13,14);
   private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55,60,65,70,75,80);
 
   public static void main(String[] args) {
@@ -42,7 +42,7 @@ public class Benchmark
     Config.timeout = timeLimitSeconds;
     System.out.println(Config.headerCSV());
     benchNQueens();
-    benchLatinSquare();
+    // benchLatinSquare();
     benchGolombRuler();
   }
 
@@ -59,18 +59,18 @@ public class Benchmark
     for (Integer n : paramsGolombRuler) {
       runBonsaiGolombRulerIOLB(n);
     }
-    // for (Integer n : paramsGolombRuler) {
-    //   runBonsaiGolombRulerFFM(n);
-    // }
+    for (Integer n : paramsGolombRuler) {
+      runBonsaiGolombRulerFFM(n);
+    }
     // for (Integer n : paramsGolombRuler) {
     //   runBonsaiGolombRulerMDLB(n);
     // }
     for (Integer n : paramsGolombRuler) {
       runChocoGolombRulerIOLB(n);
     }
-    // for (Integer n : paramsGolombRuler) {
-    //   runChocoGolombRulerFFM(n);
-    // }
+    for (Integer n : paramsGolombRuler) {
+      runChocoGolombRulerFFM(n);
+    }
   }
 
   private void benchLatinSquare() {
