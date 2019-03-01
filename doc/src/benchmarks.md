@@ -54,8 +54,7 @@ Then you can simply type:
 
 ```sh
 cd benchmark
-# The "2> /dev/null" is to prevent Choco to print logging messages.
-./run.sh 2> /dev/null
+./run.sh
 ```
 
 The file [Benchmark.java](https://github.com/ptal/bonsai/blob/master/benchmark/src/main/java/benchmark/Benchmark.java) contains some parameters that can be tweaked such as the size of the instances and the number of trials for each instance.
