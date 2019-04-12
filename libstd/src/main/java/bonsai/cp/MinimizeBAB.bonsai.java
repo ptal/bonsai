@@ -22,6 +22,8 @@ import bonsai.runtime.lattices.*;
 
 import bonsai.runtime.lattices.choco.*;
 import org.chocosolver.solver.variables.*;
+import org.chocosolver.solver.Cause;
+import org.chocosolver.solver.exception.ContradictionException;
 
 public class MinimizeBAB
 {
@@ -30,8 +32,6 @@ public class MinimizeBAB
   ref single_space IntVar x;
 
   public single_space LMin obj = bot;
-  single_space LMax objV = new LMax(0);
-  world_line LMax conV = new LMax(1);
 
   public MinimizeBAB(ConstraintStore constraints, ES consistent, IntVar x) {
     this.constraints = constraints;
@@ -49,19 +49,20 @@ public class MinimizeBAB
           single_space LMin pre_obj = new LMin(x.getLB());
           pause;
           obj <- pre_obj;
-          readwrite objV.inc();
         else pause end
       else pause end
     end
 
   flow yield_objective() =
-    when objV |= conV then
-      when conV |= objV then nothing
-      else
-        constraints <- x.lt(obj.unwrap());
-        single_time LMax objV2 = new LMax(objV.unwrap());
-        space conV <- objV2; end;
-      end
-    end
-  end
+    consistent <- updateBound(write x, read obj)
+
+  public static ES updateBound(IntVar x, LMin obj) {
+    try {
+      x.updateUpperBound(obj.unwrap() - 1, Cause.Null);
+      return new ES(Kleene.UNKNOWN);
+    }
+    catch (ContradictionException c) {
+      return new ES(Kleene.FALSE);
+    }
+  }
 }

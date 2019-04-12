@@ -48,16 +48,16 @@ public class Branching
     when unknown |= consistent then
       single_time IntVar x = readwrite var.getVariable(domains.vars());
       single_time Integer v = readwrite val.selectValue(x);
-      space constraints <- x.eq(v) end;
-      space constraints <- x.ne(v) end
+      space readwrite domains.join_eq(x, v) end;
+      space readwrite domains.join_neq(x, v) end
     end
 
   public flow split() =
     when unknown |= consistent then
       single_time IntVar x = readwrite var.getVariable(domains.vars());
       single_time Integer v = readwrite val.selectValue(x);
-      space constraints <- x.le(v) end;
-      space constraints <- x.gt(v) end
+      space readwrite domains.join_le(x, v) end;
+      space readwrite domains.join_gt(x, v) end
     end
 
   public static VariableSelector<IntVar> inputOrder(VarStore domains) {

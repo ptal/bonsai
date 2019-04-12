@@ -22,6 +22,8 @@ import bonsai.runtime.lattices.*;
 
 import bonsai.runtime.lattices.choco.*;
 import org.chocosolver.solver.variables.*;
+import org.chocosolver.solver.Cause;
+import org.chocosolver.solver.exception.ContradictionException;
 
 public class MaximizeBAB
 {
@@ -46,22 +48,23 @@ public class MaximizeBAB
     loop
       when consistent |= true then
         when true |= consistent then
-          single_space LMax pre_obj = new LMax(x.getUB());
+          single_space LMax pre_obj = new LMin(x.getUB());
           pause;
           obj <- pre_obj;
-          readwrite objV.inc();
         else pause end
       else pause end
     end
 
   flow yield_objective() =
-    when objV |= conV then
-      when conV |= objV then nothing
-      else
-        constraints <- x.gt(obj.unwrap());
-        single_time LMax objV2 = new LMax(objV.unwrap());
-        space conV <- objV2; end;
-      end
-    end
-  end
+    consistent <- updateBound(write x, read obj)
+
+  public static ES updateBound(IntVar x, LMax obj) {
+    try {
+      x.updateLowerBound(obj.unwrap() + 1, Cause.Null);
+      return new ES(Kleene.UNKNOWN);
+    }
+    catch (ContradictionException c) {
+      return new ES(Kleene.FALSE);
+    }
+  }
 }
