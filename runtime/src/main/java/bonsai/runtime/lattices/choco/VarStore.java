@@ -20,6 +20,8 @@ import org.chocosolver.solver.*;
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.util.ESat;
+import org.chocosolver.solver.Cause;
+import org.chocosolver.solver.exception.ContradictionException;
 
 public class VarStore implements Store, Restorable
 {
@@ -110,6 +112,42 @@ public class VarStore implements Store, Restorable
   public VarStore join(Object value) {
     throw new UnsupportedOperationException(
       "`join` is currently not defined for `VarStore`.");
+  }
+
+  public void join_eq(IntVar x, Integer v) {
+    try {
+      x.instantiateTo(v, Cause.Null);
+    }
+    catch (ContradictionException c) {
+      throw new RuntimeException("`join_eq` was called with an unsatisfiable constraint x = v.");
+    }
+  }
+
+  public void join_neq(IntVar x, Integer v) {
+    try {
+      x.removeValue(v, Cause.Null);
+    }
+    catch (ContradictionException c) {
+      throw new RuntimeException("`join_neq` was called with an unsatisfiable constraint x != v.");
+    }
+  }
+
+  public void join_le(IntVar x, Integer v) {
+    try {
+      x.updateUpperBound(v, Cause.Null);
+    }
+    catch (ContradictionException c) {
+      throw new RuntimeException("`join_le` was called with an unsatisfiable constraint x <= v.");
+    }
+  }
+
+  public void join_gt(IntVar x, Integer v) {
+    try {
+      x.updateLowerBound(v+1, Cause.Null);
+    }
+    catch (ContradictionException c) {
+      throw new RuntimeException("`join_gt` was called with an unsatisfiable constraint x > v.");
+    }
   }
 
   public VarStore meet(Object value) {

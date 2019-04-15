@@ -109,7 +109,7 @@ impl<'a> ModuleCompiler<'a>
   }
 
   fn interfaces(&mut self, interfaces: Vec<JType>) {
-    self.fmt.push(" implements Module");
+    self.fmt.push(" implements BModule");
     for interface in interfaces {
       self.fmt.push(", ");
       self.fmt.push(&format!("{}", interface));

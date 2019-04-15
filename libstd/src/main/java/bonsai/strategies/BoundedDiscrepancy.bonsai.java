@@ -17,6 +17,9 @@ package bonsai.strategies;
 import bonsai.runtime.lattices.*;
 import bonsai.statistics.Discrepancy;
 
+// This strategy explores the search tree until it reaches a limit for the number of discrepancies taken, it is described in the following paper:
+//   W. D. Harvey and M. L. Ginsberg, “Limited discrepancy search,” in IJCAI (1), 1995, pp. 607–615.
+// Note that this class only perform one iteration (given by limit).
 public class BoundedDiscrepancy
 {
   ref single_space LMax limit;
@@ -27,8 +30,8 @@ public class BoundedDiscrepancy
   public proc bound() =
     module Discrepancy dis = new Discrepancy();
     par
-    || run dis.count();
-    || flow
+    <> run dis.count();
+    <> flow
         space nothing end;
         when dis.value |= limit then
           prune

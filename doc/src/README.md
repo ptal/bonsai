@@ -18,6 +18,8 @@ Finally, we go through a full application of this language by designing a intera
 
 The code is available on [github](https://github.com/ptal/bonsai).
 
+Note that this tutorial is a work-in-progress.
+
 ### Syntax cheat sheet
 
 `p` and `q` are statements, `e` is an expression, `x` a variable identifier and `st` is a spacetime attribute (either `single_space`, `single_time` and `world_line`).

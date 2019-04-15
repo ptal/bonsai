@@ -87,5 +87,6 @@ public class NQueensModel {
   public void configureSearch() {
     model.getSolver().setSearch(minDomLBSearch(vars));
     model.getSolver().limitTime(Config.timeout + "s");
+    // model.getSolver().showDecisions();
   }
 }

@@ -38,11 +38,9 @@ public class NQueens
   public proc solve() =
     modelChoco(write domains, write constraints);
     module Solver solver = new Solver(write domains, write constraints, write consistent);
-    module SolutionNode solutions = new SolutionNode(write consistent);
     par
     <> run solver.propagation()
     <> run solver.minDomLB()
-    <> flow when solutions.value |= 1 then stop end end
     end
   end
 

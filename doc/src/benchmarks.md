@@ -1,4 +1,4 @@
-# Supplementary material to the submission to ESOP 2019
+# Benchmark of the language
 
 This supplementary page completes the evaluation of spacetime presented in the paper.
 It also gives instructions to compile the examples presented in the paper.
