@@ -436,8 +436,9 @@ grammar! bonsai {
     / new_instance_expr > make_new_instance
 
   entailment_kind
-    = ENTAILMENT > make_false
-    / ENTAILMENT_STRICT > make_true
+    = ENTAILMENT > make_entailment_op
+    / ENTAILMENT_STRICT > make_strict_entailment_op
+    / EQUALITY > make_equality_op
 
   fn fold_left_binary_op(head: Expr, rest: Vec<(bool, Expr)>) -> Expr {
     rest.into_iter().fold(head,
@@ -456,12 +457,13 @@ grammar! bonsai {
     make_expr(span, ExprKind::Not(Box::new(expr)))
   }
 
-  fn make_entailment_rel(span: Span, left: Expr, strict: bool, right: Expr) -> Expr {
-    let e = EntailmentRel {
-      left: left,
-      right: right,
-      strict: strict,
+  fn make_entailment_rel(span: Span, left: Expr, op: EntailmentKind, right: Expr) -> Expr {
+    match op {
+      EntailmentKind::StrictEntailment => { panic!("|< is not yet implemented."); }
+      EntailmentKind::Equality => { panic!("== is not yet implemented."); }
+      _ => ()
     };
+    let e = EntailmentRel { left, right, op };
     make_expr(span, ExprKind::Entailment(Box::new(e)))
   }
 
@@ -479,6 +481,10 @@ grammar! bonsai {
   fn make_trilean_expr(t: SKleene) -> ExprKind { ExprKind::Trilean(t) }
   fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
+
+  fn make_entailment_op() -> EntailmentKind { EntailmentKind::Entailment }
+  fn make_strict_entailment_op() -> EntailmentKind { EntailmentKind::StrictEntailment }
+  fn make_equality_op() -> EntailmentKind { EntailmentKind::Equality }
 
   new_instance_expr = (.. NEW java_ty LPAREN list_expr RPAREN_OS) spacing > make_new_object_instance
 
@@ -667,6 +673,7 @@ grammar! bonsai {
   DIAMOND = "<>" spacing
   ENTAILMENT = "|=" spacing
   ENTAILMENT_STRICT = "|<" spacing
+  EQUALITY = "==" spacing
   LEFT_ARROW = "<-" spacing
   BIND_OP = "=" spacing
   ADD_OP = "+" spacing

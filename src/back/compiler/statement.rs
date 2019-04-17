@@ -278,12 +278,11 @@ impl<'a> StatementCompiler<'a>
     let rel = match cond.node.clone() {
       ExprKind::Entailment(rel) => rel,
       _ =>
-        // transform x to x |= true
-        // TODO: should be x == true.
+        // transform x to x == true
         Box::new(EntailmentRel {
           left: cond.clone(),
           right: Expr::new(DUMMY_SP, ExprKind::Trilean(SKleene::True)),
-          strict: false
+          op: EntailmentKind::Equality
         })
     };
     cond.node = ExprKind::Entailment(rel);

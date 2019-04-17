@@ -422,11 +422,18 @@ impl Binding
   }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EntailmentKind {
+  Entailment,
+  StrictEntailment,
+  Equality
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntailmentRel {
   pub left: Expr,
   pub right: Expr,
-  pub strict: bool
+  pub op: EntailmentKind
 }
 
 #[derive(Clone, Debug, Eq)]
