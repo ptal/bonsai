@@ -39,8 +39,8 @@ impl Maven {
   pub fn delete_source_files(&self) {
     let source_path = self.source_path();
     if source_path.exists() {
-      fs::remove_dir_all(self.source_path()).unwrap();
-      fs::remove_dir_all(self.sandbox.join("target/")).unwrap();
+      let _ = fs::remove_dir_all(self.source_path());
+      let _ = fs::remove_dir_all(self.sandbox.join("target/"));
     }
   }
 

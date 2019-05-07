@@ -263,7 +263,7 @@ impl<'a> ExpressionCompiler<'a>
   fn entailment(&mut self, rel: EntailmentRel, vars: &Vec<Variable>) {
     match rel.op {
       EntailmentKind::StrictEntailment => { panic!("|< is not yet implemented."); }
-      EntailmentKind::Equality => { panic!("== is not yet implemented."); }
+      // EntailmentKind::Equality => { panic!("== is not yet implemented."); }
       _ => ()
     };
     self.fmt.push("Cast.toLattice(\"<expr in entailment relation>\",");

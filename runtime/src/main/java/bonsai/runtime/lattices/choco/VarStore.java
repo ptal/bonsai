@@ -116,6 +116,8 @@ public class VarStore implements Store, Restorable
 
   public void join_eq(IntVar x, Integer v) {
     try {
+      // for(int i=0; i < depth; i++) { System.out.print("."); }
+      // System.out.println(x + "=" + v);
       x.instantiateTo(v, Cause.Null);
     }
     catch (ContradictionException c) {
@@ -125,6 +127,8 @@ public class VarStore implements Store, Restorable
 
   public void join_neq(IntVar x, Integer v) {
     try {
+      // for(int i=0; i < depth; i++) { System.out.print("."); }
+      // System.out.println(x + "!=" + v);
       x.removeValue(v, Cause.Null);
     }
     catch (ContradictionException c) {

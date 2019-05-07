@@ -27,16 +27,14 @@ import org.chocosolver.solver.exception.ContradictionException;
 
 public class MaximizeBAB
 {
-  ref world_line ConstraintStore constraints;
+  ref world_line VarStore domains;
   ref single_time ES consistent;
   ref single_space IntVar x;
 
   single_space LMax obj = bot;
-  single_space LMax objV = new LMax(0);
-  world_line LMax conV = new LMax(1);
 
-  public MaximizeBAB(ConstraintStore constraints, ES consistent, IntVar x) {
-    this.constraints = constraints;
+  public MaximizeBAB(VarStore domains, ES consistent, IntVar x) {
+    this.domains = domains;
     this.consistent = consistent;
     this.x = x;
   }
@@ -56,9 +54,9 @@ public class MaximizeBAB
     end
 
   flow yield_objective() =
-    consistent <- updateBound(write x, read obj)
+    consistent <- updateBound(write domains, write x, read obj)
 
-  public static ES updateBound(IntVar x, LMax obj) {
+  public static ES updateBound(VarStore _domains, IntVar x, LMax obj) {
     try {
       x.updateLowerBound(obj.unwrap() + 1, Cause.Null);
       return new ES(Kleene.UNKNOWN);

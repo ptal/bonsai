@@ -105,6 +105,7 @@ public class ConstraintStore implements Lattice, Restorable
     }
     catch (ContradictionException e) {
       solver.getEngine().flush();
+      return Kleene.FALSE;
     }
     switch (solver.isSatisfied()) {
       case TRUE: return Kleene.TRUE;

@@ -86,7 +86,7 @@ public class GolombRulerModel
       }
     }
     MeasuresRecorder m = model.getSolver().getMeasures();
-    Config.current.nodes = m.getBackTrackCount();
+    Config.current.nodes = m.getDecisionCount() * 2 + 1;
     Config.current.solutions = m.getSolutionCount();
     Config.current.fails = m.getFailCount();
     Config.current.time = m.getTimeCountInNanoSeconds();
@@ -118,6 +118,7 @@ public class GolombRulerModel
     if (m > 2) {
       model.arithm(diffs[0], "<", diffs[diffs.length - 1]).post();
     }
+    // model.getSolver().showDecisions();
   }
 
   public void configureSearch(boolean isFFM) {

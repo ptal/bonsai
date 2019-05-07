@@ -39,7 +39,7 @@ public class GolombRuler
     modelChoco(write domains, write constraints);
     module Solver solver = new Solver(write domains, write constraints, write consistent);
     single_space IntVar x = rulerLengthVar(write domains);
-    module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
+    module MinimizeBAB bab = new MinimizeBAB(write domains, write consistent, write x);
     par
     <> run solver.inputOrderLB()
     <> run solver.propagation()
@@ -54,7 +54,7 @@ public class GolombRuler
     modelChoco(write domains, write constraints);
     module Solver solver = new Solver(write domains, write constraints, write consistent);
     single_space IntVar x = rulerLengthVar(write domains);
-    module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
+    module MinimizeBAB bab = new MinimizeBAB(write domains, write consistent, write x);
     par
     <> run solver.failFirstMiddle()
     <> run solver.propagation()
@@ -69,7 +69,7 @@ public class GolombRuler
     modelChoco(write domains, write constraints);
     module Solver solver = new Solver(write domains, write constraints, write consistent);
     single_space IntVar x = rulerLengthVar(write domains);
-    module MinimizeBAB bab = new MinimizeBAB(write constraints, write consistent, write x);
+    module MinimizeBAB bab = new MinimizeBAB(write domains, write consistent, write x);
     par
     <> run solver.minDomLB()
     <> run solver.propagation()

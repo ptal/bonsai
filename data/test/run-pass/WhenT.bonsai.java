@@ -27,7 +27,7 @@
 #[run(WhenT.whenAndTell, "94")]
 #[run(WhenT.nonMonotonicTell, "4")]
 #[run(WhenT.nonMonotonicTell2, "344")]
-// #[run(WhenT.example4_4_thesis, "33")]
+#[debug(WhenT.example4_4_thesis, "33")]
 
 package test;
 

@@ -27,11 +27,10 @@ import org.chocosolver.solver.Model;
 public class Benchmark
 {
   private boolean human = true;
-  private int trials = 10;
   private int timeLimitSeconds = 1080;
 
   private List<Integer> paramsNQueens = Arrays.asList(7,8,9,10,11,12,13);//,11,12,13,14);
-  private List<Integer> paramsGolombRuler = Arrays.asList(10,11);//,10,11,12,13,14);
+  private List<Integer> paramsGolombRuler = Arrays.asList(7,8,9,10,11);//,10,11,12,13,14);
   private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55,60,65,70,75,80);
 
   public static void main(String[] args) {
@@ -57,20 +56,26 @@ public class Benchmark
 
   private void benchGolombRuler() {
     for (Integer n : paramsGolombRuler) {
+      runBonsaiInlinedGolombRulerIOLB(n);
+    }
+    for (Integer n : paramsGolombRuler) {
+      runBonsaiInlinedGolombRulerIOLB(n);
+    }
+    for (Integer n : paramsGolombRuler) {
       runBonsaiGolombRulerIOLB(n);
     }
-    for (Integer n : paramsGolombRuler) {
-      runBonsaiGolombRulerFFM(n);
-    }
-    for (Integer n : paramsGolombRuler) {
-      runBonsaiGolombRulerMDLB(n);
-    }
+    // for (Integer n : paramsGolombRuler) {
+    //   runBonsaiGolombRulerFFM(n);
+    // }
+    // for (Integer n : paramsGolombRuler) {
+    //   runBonsaiGolombRulerMDLB(n);
+    // }
     for (Integer n : paramsGolombRuler) {
       runChocoGolombRulerIOLB(n);
     }
-    for (Integer n : paramsGolombRuler) {
-      runChocoGolombRulerFFM(n);
-    }
+    // for (Integer n : paramsGolombRuler) {
+    //   runChocoGolombRulerFFM(n);
+    // }
   }
 
   private void benchLatinSquare() {
@@ -88,6 +93,10 @@ public class Benchmark
 
   private void runBonsaiGolombRulerIOLB(int n) {
     runBonsai("GolombRulerIOLB", n, (p) -> p.golombRulerIOLBWithStats(), (p) -> p.golombRulerIOLB());
+  }
+
+  private void runBonsaiInlinedGolombRulerIOLB(int n) {
+    runBonsai("InlinedGolombRulerIOLB", n, (p) -> p.inlined_golomb_iolb(), (p) -> p.inlined_golomb_iolb());
   }
 
   private void runBonsaiGolombRulerFFM(int n) {
@@ -116,15 +125,6 @@ public class Benchmark
       System.out.println(Config.current.toCSV(human));
       return;
     }
-    ArrayList<Long> cumulatedTime = new ArrayList();
-    for (int i = 0; i < trials; ++i) {
-      Config.current.time = 0;
-      Config.current.obj = -1;
-      machine = new SpaceMachine<>(new Problems(), process, false);
-      machine.execute();
-      cumulatedTime.add(Config.current.time);
-    }
-    Config.current.time = cumulatedTime.get(cumulatedTime.size()/2);
     System.out.println(Config.current.toCSV(human));
   }
 
@@ -137,13 +137,6 @@ public class Benchmark
       System.out.println(Config.current.toCSV(human));
       return;
     }
-    ArrayList<Long> cumulatedTime = new ArrayList();
-    for (int i = 0; i < trials; ++i) {
-      Config.current.time = 0;
-      model.get();
-      cumulatedTime.add(Config.current.time);
-    }
-    Config.current.time = cumulatedTime.get(cumulatedTime.size()/2);
     System.out.println(Config.current.toCSV(human));
   }
 

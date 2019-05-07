@@ -29,6 +29,11 @@ import bonsai.runtime.lattices.choco.*;
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.constraints.nary.alldifferent.*;
 
+import org.chocosolver.solver.search.strategy.selectors.variables.*;
+import org.chocosolver.solver.search.strategy.selectors.values.*;
+import org.chocosolver.solver.*;
+import org.chocosolver.solver.exception.ContradictionException;
+
 public class Problems
 {
   public proc nqueens() =
@@ -151,7 +156,6 @@ public class Problems
     end
   end
 
-
   private proc abortWhenTimeout() =
     single_space long start = currentTime();
     flow checkTime(start) end
@@ -165,5 +169,113 @@ public class Problems
     if (Config.current.hasTimedOut()) {
       throw new TimeLimitException();
     }
+  }
+
+  public proc inlined_golomb_iolb() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      world_line VarStore domains = new VarStore();
+      world_line ConstraintStore constraints = new ConstraintStore();
+      single_time ES consistent = unknown;
+      modelChoco(write domains, write constraints);
+      single_space IntVar x = rulerLengthVar(write domains);
+      single_space LMin obj = bot;
+      single_space VariableSelector<IntVar> var = inputOrder(write domains);
+      single_space IntValueSelector val = min();
+      par
+        single_space long start = currentTime();
+        flow checkTime(start) end
+      <>
+        flow consistent <- updateBound(write domains, write x, read obj) end
+      <>
+        flow consistent <- constraints.propagate(readwrite domains) end
+      <>
+        loop
+          when consistent |= true then
+            when true |= consistent then
+              single_space LMin pre_obj = new LMin(x.getLB());
+              pause;
+              obj <- pre_obj;
+            else pause end
+          else pause end
+        end
+      <>
+        flow
+          when unknown |= consistent then
+            single_time IntVar y = readwrite var.getVariable(domains.vars());
+            single_time Integer v = readwrite val.selectValue(y);
+            space readwrite domains.join_eq(y, v) end;
+            space readwrite domains.join_neq(y, v) end
+          end
+        end
+      end
+    end
+  end
+
+  public static VariableSelector<IntVar> inputOrder(VarStore domains) {
+    return new InputOrder(domains.model());
+  }
+
+  public static IntValueSelector min() {
+    return new IntDomainMin();
+  }
+
+  public static ES updateBound(VarStore _domains, IntVar x, LMin obj) {
+    Config.current.nodes++;
+    Config.current.fails++;
+    Config.current.solutions++;
+    Config.current.obj = obj.unwrap();
+    try {
+      x.updateUpperBound(obj.unwrap() - 1, Cause.Null);
+      return new ES(Kleene.UNKNOWN);
+    }
+    catch (ContradictionException c) {
+      return new ES(Kleene.FALSE);
+    }
+  }
+
+  private static void modelChoco(VarStore domains, ConstraintStore constraints)
+  {
+    int m = Config.current.n;
+    IntVar[] ticks = new IntVar[m];
+    IntVar[] diffs = new IntVar[(m*m -m)/2];
+    Model model = domains.model();
+
+    int ub =  (m < 31) ? (1 << (m + 1)) - 1 : 9999;
+    for(int i=0; i < ticks.length; i++) {
+      ticks[i] = (IntVar) domains.alloc(new VarStore.IntDomain(0, ub, true));
+    }
+    for(int i=0; i < diffs.length; i++) {
+      diffs[i] = (IntVar) domains.alloc(new VarStore.IntDomain(0, ub, true));
+    }
+
+    constraints.join_in_place(model.arithm(ticks[0], "=", 0));
+    for (int i = 0; i < m - 1; i++) {
+      constraints.join_in_place(model.arithm(ticks[i + 1], ">", ticks[i]));
+    }
+
+    IntVar[][] m_diffs = new IntVar[m][m];
+    for (int k = 0, i = 0; i < m - 1; i++) {
+      for (int j = i + 1; j < m; j++, k++) {
+        // d[k] is m[j]-m[i] and must be at least sum of first j-i integers
+        // <cpru 04/03/12> it is worth adding a constraint instead of a view
+        constraints.join_in_place(model.scalar(new IntVar[]{ticks[j], ticks[i]}, new int[]{1, -1}, "=", diffs[k]));
+        constraints.join_in_place(model.arithm(diffs[k], ">=", (j - i) * (j - i + 1) / 2));
+        constraints.join_in_place(model.arithm(diffs[k], "-", ticks[m - 1], "<=", -((m - 1 - j + i) * (m - j + i)) / 2));
+        constraints.join_in_place(model.arithm(diffs[k], "<=", ticks[m - 1], "-", ((m - 1 - j + i) * (m - j + i)) / 2));
+        m_diffs[i][j] = diffs[k];
+      }
+    }
+    constraints.join_in_place(model.allDifferent(diffs, "BC"));
+
+    // break symmetries
+    if (m > 2) {
+      constraints.join_in_place(model.arithm(diffs[0], "<", diffs[diffs.length - 1]));
+    }
+  }
+
+  private static IntVar rulerLengthVar(VarStore domains) {
+    int m = Config.current.n;
+    return (IntVar)domains.model().getVars()[m - 1];
   }
 }
