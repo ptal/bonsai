@@ -26,7 +26,7 @@ pub fn compile_statement(session: &Session, context: &Context, fmt: &mut CodeFor
 // See `open_decl`.
 pub fn compile_field(session: &Session, context: &Context, fmt: &mut CodeFormatter, mod_name: Ident, binding: Binding) -> usize {
   let proc_uid = ProcessUID::new(mod_name, Ident::gen("<not_in_process>"));
-  StatementCompiler::new(session, context, proc_uid, fmt).open_decl(binding)
+  StatementCompiler::new(session, context, proc_uid, fmt).open_decl(binding, true)
 }
 
 struct StatementCompiler<'a> {
@@ -81,22 +81,28 @@ impl<'a> StatementCompiler<'a>
   // We compile binding to `new SingleSpaceVarDecl(v, val, ` without terminating the statement with the body of the "let".
   // It is useful to compile the field in `module.rs`.
   // Returns the number of parenthesis to close.
-  fn open_decl(&mut self, binding: Binding) -> usize {
+  fn open_decl(&mut self, binding: Binding, is_field: bool) -> usize {
     use ast::Kind::*;
     use ast::Spacetime::*;
     match binding.kind {
-      Spacetime(SingleSpace) => self.single_space_local_decl(binding),
-      Spacetime(SingleTime) => self.single_time_local_decl(binding),
-      Spacetime(WorldLine) => self.world_line_local_decl(binding),
+      Spacetime(SingleSpace) => self.single_space_local_decl(binding, is_field),
+      Spacetime(SingleTime) => self.single_time_local_decl(binding, is_field),
+      Spacetime(WorldLine) => self.world_line_local_decl(binding, is_field),
       Product => self.module_local_decl(binding),
       Host => unimplemented!("Kind::Host in open_decl")
     }
   }
 
-  fn local_decl_init_expr(&mut self, binding: Binding) {
+  fn local_decl_init_expr(&mut self, binding: Binding, is_field: bool) {
     let ty = Some(binding.ty);
     match binding.expr {
-      Some(expr) => compile_functional_expr(self.session, self.context, self.fmt, expr, ty),
+      Some(expr) =>
+        if is_field {
+          self.fmt.push(&format!("new FunctionCall(Arrays.asList(), (__args) -> {{ return {}; }})", binding.name));
+        }
+        else {
+          compile_functional_expr(self.session, self.context, self.fmt, expr, ty)
+        },
       None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
     }
   }
@@ -165,7 +171,7 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn let_decl(&mut self, let_decl: LetStmt) {
-    let p = self.open_decl(let_decl.binding);
+    let p = self.open_decl(let_decl.binding, false);
     self.compile(*let_decl.body);
     for _ in 0..p {
       self.fmt.unindent();
@@ -173,26 +179,26 @@ impl<'a> StatementCompiler<'a>
     }
   }
 
-  fn local_decl(&mut self, binding: Binding, decl_class: &str) -> usize {
+  fn local_decl(&mut self, binding: Binding, decl_class: &str, is_field: bool) -> usize {
     self.fmt.push(&format!("new {}(", decl_class));
     compile_var_uid(self.session, self.context, self.fmt, binding.clone().to_field_var());
     self.fmt.terminate_line(",");
     self.fmt.indent();
-    self.local_decl_init_expr(binding);
+    self.local_decl_init_expr(binding, is_field);
     self.fmt.terminate_line(",");
     1
   }
 
-  fn single_space_local_decl(&mut self, binding: Binding) -> usize {
-    self.local_decl(binding, "SingleSpaceVarDecl")
+  fn single_space_local_decl(&mut self, binding: Binding, is_field: bool) -> usize {
+    self.local_decl(binding, "SingleSpaceVarDecl", is_field)
   }
 
-  fn single_time_local_decl(&mut self, binding: Binding) -> usize {
-    self.local_decl(binding, "SingleTimeVarDecl")
+  fn single_time_local_decl(&mut self, binding: Binding, is_field: bool) -> usize {
+    self.local_decl(binding, "SingleTimeVarDecl", is_field)
   }
 
-  fn world_line_local_decl(&mut self, binding: Binding) -> usize {
-    self.local_decl(binding, "WorldLineVarDecl")
+  fn world_line_local_decl(&mut self, binding: Binding, is_field: bool) -> usize {
+    self.local_decl(binding, "WorldLineVarDecl", is_field)
   }
 
   fn nary_operator(&mut self, op_name: &str, mut branches: Vec<Stmt>, extra: Option<&str>)

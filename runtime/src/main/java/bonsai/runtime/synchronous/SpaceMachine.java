@@ -21,12 +21,26 @@ import bonsai.runtime.synchronous.interfaces.*;
 import bonsai.runtime.synchronous.exceptions.*;
 import bonsai.runtime.synchronous.env.*;
 import bonsai.runtime.synchronous.search.*;
+import bonsai.runtime.synchronous.statements.*;
+import bonsai.runtime.synchronous.expressions.*;
 
 public class SpaceMachine<T extends BModule>
 {
   private Statement program;
   private Environment env;
   private boolean debug;
+
+  public SpaceMachine(T rootModule, Function<T, Statement> process, Queueing queue) {
+    rootModule.__init();
+    this.program = process.apply(rootModule);
+    this.program = rootModule.__wrap_process(true, this.program);
+    // We encapsulate the process into a universe with the given queue.
+    this.program = new SingleSpaceVarDecl("__internal_queue",
+      new FunctionCall(Arrays.asList(), (__args) -> { return queue; }),
+      new Universe("__internal_queue", this.program));
+    this.program.prepare();
+    this.env = new Environment(program.countLayers()+1);
+  }
 
   // `rootModule` is the module from which we obtain the process to execute with `process`.
   public SpaceMachine(T rootModule, Function<T, Statement> process, boolean debug) {
