@@ -133,7 +133,7 @@ pub trait Visitor<H>
     walk_method_call(self, call)
   }
 
-  fn visit_number(&mut self, _value: u64) {}
+  fn visit_number(&mut self, _value: i64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_var(&mut self, _var: Variable) {}
   fn visit_bot(&mut self) {}
@@ -390,7 +390,7 @@ pub trait VisitorMut<H>
   }
 
   fn visit_var(&mut self, _var: &mut Variable) {}
-  fn visit_number(&mut self, _value: u64) {}
+  fn visit_number(&mut self, _value: i64) {}
   fn visit_string_lit(&mut self, _value: String) {}
   fn visit_bot(&mut self) {}
   fn visit_top(&mut self) {}

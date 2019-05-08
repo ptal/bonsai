@@ -63,6 +63,10 @@ public class BranchAlgebra {
     BiPredicate<ArrayList<BranchAlgebra>, Integer> isPruned,
     Function<ArrayList<Statement>, Statement> parStatement)
   {
+    CapturedSpace capturedSpace = new CapturedSpace();
+    for(BranchAlgebra ba : processes) {
+      capturedSpace.merge(ba.space);
+    }
     // We remove neutral branch algebras.
     for(int i=0; i < processes.size(); i++) {
       if(processes.get(i).branches.isEmpty()) {
@@ -89,21 +93,21 @@ public class BranchAlgebra {
     BranchAlgebra res = BranchAlgebra.neutralElement();
     for(int i=0; i < max; i++) {
       if (isPruned.test(processes, i)) {
-        res.concat(BranchAlgebra.prunedBranch());
+        BranchAlgebra pruned = BranchAlgebra.prunedBranch();
+        pruned.space = capturedSpace;
+        res.concat(pruned);
       }
       else {
         ArrayList<Statement> parProcesses = new ArrayList();
-        CapturedSpace parSpace = new CapturedSpace();
         for(BranchAlgebra ba: processes) {
           // We ignore the pruned branches.
           if (ba.branches.get(i).isPresent()) {
             parProcesses.add(ba.branches.get(i).get());
-            parSpace.merge(ba.space);
           }
         }
         res.concat(BranchAlgebra.spaceBranch(
           parStatement.apply(parProcesses),
-          parSpace
+          capturedSpace
         ));
       }
     }
@@ -144,6 +148,7 @@ public class BranchAlgebra {
   }
 
   public void registerWL(Variable var, boolean exitScope) {
+    // System.out.println("BranchAlgebra.registerWL: " + var.uid());
     space.registerWL(var, exitScope);
   }
 

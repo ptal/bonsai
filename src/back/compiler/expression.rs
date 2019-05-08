@@ -252,7 +252,7 @@ impl<'a> ExpressionCompiler<'a>
     self.fmt.push(&format!("new ES({})", k));
   }
 
-  fn number(&mut self, n: u64) {
+  fn number(&mut self, n: i64) {
     self.fmt.push(&format!("{}", n));
   }
 

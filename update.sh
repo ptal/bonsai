@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cargo install --force
+cargo install --force --path .
 cd runtime/
 ./install.sh
 cd ..

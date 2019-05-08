@@ -28,7 +28,7 @@ import bonsai.runtime.synchronous.interfaces.*;
 // `CapturedSpace` is shared among all the children nodes created during an instant.
 // The modifications performed on `single_space` or `world_line` variables through this class are automatically forwarded to the current space.
 // The reason is that the variables in `memory` are the same than the ones of the current layer.
-// If this pointer does exist anymore in the current layer, it means that the variable went out of scope, thus we only use its value in the current branch, and the changes are not forwarded.
+// If this pointer does exist anymore in the current layer, it means that the variable went out of scope, thus we only see its value in the current branch, and the changes are not forwarded.
 public class CapturedSpace extends Space
 {
   // It contains the label of the `world_line` variables (see `Restorable`).
@@ -48,24 +48,24 @@ public class CapturedSpace extends Space
     String uid = var.uid();
     boolean inMemory = memory.get(uid) != null;
     boolean inLabels = labels.get(uid) != null;
+    // System.out.println(uid + ", inMemory:" + inMemory + ", inLabels:" + inLabels + ", exitScope:" + exitScope);
     // If `uid` is in `memory` but not in `labels` it means it is captured by a space statement.
-    // The variables exit its scope and is not captured in a space statement, so we do not need to save it.
+    // The variable exits its scope and is not captured in a space statement, so we do not need to save it.
     if (!inMemory && !inLabels && exitScope) {
       return;
     }
-    else {
-      if (!inMemory) {
-        memory.put(uid, var);
-      }
-      if (!inLabels) {
-        Restorable r = Cast.toRestorable(uid, var.value());
-        labels.put(uid, r.label());
-      }
+    if (!inMemory) {
+      memory.put(uid, var);
+    }
+    if (!inLabels) {
+      Restorable r = Cast.toRestorable(uid, var.value());
+      labels.put(uid, r.label());
     }
   }
 
   public void restore() {
     for (Map.Entry<String, Object> label : labels.entrySet()) {
+      // System.out.println("Restore: " + label.getKey());
       Variable v = lookUpVar(label.getKey());
       Cast.toRestorable(label.getKey(), v.value()).restore(label.getValue());
     }

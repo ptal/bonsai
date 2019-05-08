@@ -771,7 +771,7 @@ impl Expr {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExprKind {
   // Host expressions
-  Number(u64),
+  Number(i64),
   StringLiteral(String),
   NewInstance(NewObjectInstance),
   Call(MethodCall),

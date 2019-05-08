@@ -39,7 +39,7 @@ grammar! bonsai {
     / "debug" > make_true
 
   fn make_compiler_test(level: String, code: String,
-   line: u64, column: u64) -> TestAnnotation
+   line: i64, column: i64) -> TestAnnotation
   {
     TestAnnotation::Compiler(CompilerTest::new(level, code, line as usize, column as usize))
   }
@@ -107,7 +107,7 @@ grammar! bonsai {
 
   item
     = module_field
-    / (.. java_visibility? proc_or_flow identifier java_param_list) EQ open_sequence > make_process_item
+    / (.. java_visibility? proc_or_flow identifier java_param_list?) EQ open_sequence > make_process_item
     / java_field
     / java_method
     / java_constructor
@@ -124,14 +124,14 @@ grammar! bonsai {
   }
 
   fn make_process_item(span: Span, visibility: Option<JVisibility>, flow_kw_sp: Span, is_flow: bool,
-    name: Ident, params: JParameters, body: Stmt) -> Item
+    name: Ident, params: Option<JParameters>, body: Stmt) -> Item
   {
     let body = if is_flow {
       let sp = body.span.clone();
       Stmt::new(sp, make_flow(flow_kw_sp, body))
     }
     else { body };
-    Item::Proc(Process::new(span, visibility, name, params, body))
+    Item::Proc(Process::new(span, visibility, name, params.unwrap_or(vec![]), body))
   }
 
   java_method
@@ -479,7 +479,7 @@ grammar! bonsai {
   }
   fn make_call(call: MethodCall) -> ExprKind { ExprKind::Call(call) }
   fn make_trilean_expr(t: SKleene) -> ExprKind { ExprKind::Trilean(t) }
-  fn make_number_expr(n: u64) -> ExprKind { ExprKind::Number(n) }
+  fn make_number_expr(n: i64) -> ExprKind { ExprKind::Number(n) }
   fn make_string_literal(lit: String) -> ExprKind { ExprKind::StringLiteral(lit) }
 
   fn make_entailment_op() -> EntailmentKind { EntailmentKind::Entailment }
@@ -571,7 +571,7 @@ grammar! bonsai {
   string_identifier_os = !digit !(keyword !ident_char) ident_char+ > to_string
   ident_char = ["a-zA-Z0-9_"]
 
-  number = digits spacing > make_number
+  number = (SUB_OP -> ())? digits spacing > make_number
   digits = digit+ (UNDERSCORE* digit)* > concat
   digit = ["0-9"]
 
@@ -717,10 +717,11 @@ grammar! bonsai {
     x
   }
 
-  fn make_number(raw_number: Vec<char>) -> u64 {
-    match u64::from_str(&*to_string(raw_number)).ok() {
-      Some(x) => x,
-      None => panic!("int literal is too large")
+  fn make_number(sign: Option<()>, raw_number: Vec<char>) -> i64 {
+    match (i64::from_str(&*to_string(raw_number)).ok(), sign) {
+      (Some(x), None) => x,
+      (Some(x), _) => -x,
+      (None, _) => panic!("int literal is too large")
     }
   }
 
