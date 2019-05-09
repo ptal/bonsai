@@ -32,6 +32,31 @@ public class BoundedTree
     end
   end
 
+  public proc bounded_dis =
+    module Tree tree = new Tree();
+    single_space LMax max_depth = new LMax(2);
+    module BoundedDepth bd = new BoundedDepth(max_depth);
+    module BoundedDiscrepancy ld = new BoundedDiscrepancy(limit);
+    par
+    <> run tree.binary()
+    <> run ld.bound_dis()
+    <> run bd.bound_depth()
+    <> run vizualize()
+    end
+  end
+
+  public proc bounded_depth_dis =
+    module Tree tree = new Tree();
+    module BoundedDepth bd = new BoundedDepth(limit);
+    module BoundedDiscrepancy ld = new BoundedDiscrepancy(limit);
+    par
+    <> run tree.binary()
+    <> run ld.bound_dis()
+    <> run bd.bound_depth()
+    <> run vizualize()
+    end
+  end
+
   public proc vizualize =
     module Depth viz_depth = new Depth();
     par

@@ -40,7 +40,7 @@ public class Benchmark
   private void start() {
     Config.timeout = timeLimitSeconds;
     System.out.println(Config.headerCSV());
-    // benchNQueens();
+    benchNQueens();
     // benchLatinSquare();
     benchGolombRuler();
   }

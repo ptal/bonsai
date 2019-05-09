@@ -30,13 +30,28 @@ import org.chocosolver.solver.*;
 public class Solver
 {
   single_time ES consistent = unknown;
-  ref world_line VarStore domains;
-  ref world_line ConstraintStore constraints;
+  public world_line VarStore domains = new VarStore();
+  public world_line ConstraintStore constraints = new ConstraintStore();
+  single_space ArrayList<IntVar> queens = new ArrayList();
 
-  public Solver(VarStore domains, ConstraintStore constraints) {
-    this.domains = domains;
-    this.constraints = constraints;
-  }
+  public proc nqueens =
+    modelNQueens(8, write queens, write domains, write constraints);
+    run search_one_sol()
+  end
+
+  public proc search_one_sol =
+    par
+    <> run search()
+    <> loop
+        when consistent |= true then
+          when true |= consistent then
+            printSolution(queens);
+            stop;
+          else pause end
+        else pause end
+       end
+    end
+  end
 
   public proc search = par run propagation() <> run branch() end
 
@@ -45,22 +60,59 @@ public class Solver
     when consistent |= true then prune end
   end
 
-  flow branch =
-    when unknown |= consistent then
-      single_time IntVar x = failFirstVar(domains);
-      single_time Integer v = middleValue(x);
-      space constraints <- x.le(v) end;
-      space constraints <- x.gt(v) end
+  proc branch =
+    single_space VariableSelector<IntVar> var = firstFail(domains);
+    single_space IntValueSelector val = middle();
+    flow
+      when unknown |= consistent then
+        single_time IntVar x = failFirstVar(var, domains);
+        single_time Integer v = middleValue(val, x);
+        space constraints <- x.le(v) end;
+        space constraints <- x.gt(v) end
+      end
     end
+  end
+
+  private VariableSelector<IntVar> firstFail(VarStore domains) {
+    return new FirstFail(domains.model());
+  }
+
+  private IntValueSelector middle() {
+    return new IntDomainMiddle(true);
+  }
 
   // Interface to the Choco solver.
-  private IntVar failFirstVar(VarStore domains) {
-    VariableSelector<IntVar> var = new FirstFail(domains.model());
+  private IntVar failFirstVar(VariableSelector<IntVar> var, VarStore domains) {
     return var.getVariable(domains.vars());
   }
 
-  private Integer middleValue(IntVar x) {
-    IntValueSelector val = new IntDomainMiddle(true);
+  private Integer middleValue(IntValueSelector val, IntVar x) {
     return val.selectValue(x);
   }
+
+  private void modelNQueens(int n, ArrayList<IntVar> queens, VarStore domains,
+    ConstraintStore constraints)
+  {
+    IntVar[] vars = new IntVar[n];
+    IntVar[] diag1 = new IntVar[n];
+    IntVar[] diag2 = new IntVar[n];
+    for(int i = 0; i < n; i++) {
+      vars[i] = (IntVar) domains.alloc(new VarStore.IntDomain(1, n, false));
+      diag1[i] = domains.model().intOffsetView(vars[i], i);
+      diag2[i] = domains.model().intOffsetView(vars[i], -i);
+    }
+    constraints.join_in_place(new AllDifferent(vars, "BC"));
+    constraints.join_in_place(new AllDifferent(diag1, "BC"));
+    constraints.join_in_place(new AllDifferent(diag2, "BC"));
+    for(IntVar v : vars) { queens.add(v); }
+  }
+
+  private void printSolution(ArrayList<IntVar> queens) {
+    System.out.print("solution: [");
+    for (IntVar v : queens) {
+      System.out.print(v.getValue() + ",");
+    }
+    System.out.println("]");
+  }
+
 }

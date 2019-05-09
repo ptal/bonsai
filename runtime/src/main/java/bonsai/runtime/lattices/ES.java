@@ -99,4 +99,8 @@ public class ES implements Lattice {
     }
     return (ES) o;
   }
+
+  public String toString() {
+    return value.toString();
+  }
 }

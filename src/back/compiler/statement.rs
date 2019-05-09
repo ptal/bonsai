@@ -94,14 +94,15 @@ impl<'a> StatementCompiler<'a>
   }
 
   fn local_decl_init_expr(&mut self, binding: Binding, is_field: bool) {
+    let is_single_time = binding.is_single_time();
     let ty = Some(binding.ty);
     match binding.expr {
       Some(expr) =>
-        if is_field {
+        if is_field && !is_single_time {
           self.fmt.push(&format!("new FunctionCall(Arrays.asList(), (__args) -> {{ return {}; }})", binding.name));
         }
         else {
-          compile_functional_expr(self.session, self.context, self.fmt, expr, ty)
+          compile_functional_expr(self.session, self.context, self.fmt, expr, ty);
         },
       None => compile_functional_expr(self.session, self.context, self.fmt, Expr::new(DUMMY_SP, ExprKind::Bottom), ty)
     }
