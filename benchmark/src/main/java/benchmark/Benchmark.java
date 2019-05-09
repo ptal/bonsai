@@ -29,9 +29,9 @@ public class Benchmark
   private boolean human = true;
   private int timeLimitSeconds = 1080;
 
-  private List<Integer> paramsNQueens = Arrays.asList(7,8,9,10,11,12,13);//,11,12,13,14);
+  private List<Integer> paramsNQueens = Arrays.asList(7,8,9,10,11);//,11,12,13,14);
   private List<Integer> paramsGolombRuler = Arrays.asList(7,8,9,10,11);//,10,11,12,13,14);
-  private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55,60,65,70,75,80);
+  private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55);
 
   public static void main(String[] args) {
     new Benchmark().start();
@@ -40,7 +40,10 @@ public class Benchmark
   private void start() {
     Config.timeout = timeLimitSeconds;
     System.out.println(Config.headerCSV());
-    benchNQueens();
+    // WARM-UP
+    // runChocoNQueens(14);
+    // Benches
+    // benchNQueens();
     // benchLatinSquare();
     benchGolombRuler();
   }
@@ -50,17 +53,17 @@ public class Benchmark
       runBonsaiNQueens(n);
     }
     for (Integer n : paramsNQueens) {
+      runBonsaiInlinedNQueens(n);
+    }
+    for (Integer n : paramsNQueens) {
       runChocoNQueens(n);
     }
   }
 
   private void benchGolombRuler() {
-    for (Integer n : paramsGolombRuler) {
-      runBonsaiInlinedGolombRulerIOLB(n);
-    }
-    for (Integer n : paramsGolombRuler) {
-      runBonsaiInlinedGolombRulerIOLB(n);
-    }
+    // for (Integer n : paramsGolombRuler) {
+    //   runBonsaiInlinedGolombRulerIOLB(n);
+    // }
     for (Integer n : paramsGolombRuler) {
       runBonsaiGolombRulerIOLB(n);
     }
@@ -70,9 +73,9 @@ public class Benchmark
     // for (Integer n : paramsGolombRuler) {
     //   runBonsaiGolombRulerMDLB(n);
     // }
-    for (Integer n : paramsGolombRuler) {
-      runChocoGolombRulerIOLB(n);
-    }
+    // for (Integer n : paramsGolombRuler) {
+    //   runChocoGolombRulerIOLB(n);
+    // }
     // for (Integer n : paramsGolombRuler) {
     //   runChocoGolombRulerFFM(n);
     // }
@@ -89,6 +92,10 @@ public class Benchmark
 
   private void runBonsaiNQueens(int n) {
     runBonsai("NQueens", n, (p) -> p.nqueensWithStats(), (p) -> p.nqueens());
+  }
+
+  private void runBonsaiInlinedNQueens(int n) {
+    runBonsai("InlinedNQueens", n, (p) -> p.inlined_nqueens(), (p) -> p.inlined_nqueens());
   }
 
   private void runBonsaiGolombRulerIOLB(int n) {

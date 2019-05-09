@@ -174,26 +174,31 @@ public class Problems
   public proc inlined_golomb_iolb() =
     single_space StackLR stack = new StackLR();
     universe with stack in
+      single_space LMax nodes = new LMax(0);
+      single_space LMax fails = new LMax(0);
+      single_space LMax solutions = new LMax(0);
+      single_space long start = currentTime();
       world_line VarStore domains = new VarStore();
       world_line ConstraintStore constraints = new ConstraintStore();
       single_time ES consistent = unknown;
-      modelChoco(write domains, write constraints);
+      modelGolombRuler(write domains, write constraints);
       single_space IntVar x = rulerLengthVar(write domains);
       single_space LMin obj = bot;
       single_space VariableSelector<IntVar> var = inputOrder(write domains);
       single_space IntValueSelector val = min();
       par
-        single_space long start = currentTime();
-        flow checkTime(start) end
-      <>
         flow consistent <- updateBound(write domains, write x, read obj) end
       <>
-        flow consistent <- constraints.propagate(readwrite domains) end
+        flow
+          readwrite nodes.inc();
+          consistent <- constraints.propagate(readwrite domains)
+        end
       <>
         loop
           when consistent |= true then
             when true |= consistent then
               single_space LMin pre_obj = new LMin(x.getLB());
+              readwrite solutions.inc();
               pause;
               obj <- pre_obj;
             else pause end
@@ -208,12 +213,30 @@ public class Problems
             space readwrite domains.join_neq(y, v) end
           end
         end
+      <>
+        flow
+          when consistent |= false then
+            readwrite fails.inc();
+            updateStats(start, nodes, fails, solutions)
+          end
+        end
       end
     end
   end
 
+  private static void updateStats(long start, LMax nodes, LMax fails, LMax solutions) {
+    Config.current.nodes = nodes.unwrap();
+    Config.current.fails = fails.unwrap();
+    Config.current.solutions = solutions.unwrap();
+    checkTime(start);
+  }
+
   public static VariableSelector<IntVar> inputOrder(VarStore domains) {
     return new InputOrder(domains.model());
+  }
+
+  public static VariableSelector<IntVar> firstFail(VarStore domains) {
+    return new FirstFail(domains.model());
   }
 
   public static IntValueSelector min() {
@@ -221,9 +244,6 @@ public class Problems
   }
 
   public static ES updateBound(VarStore _domains, IntVar x, LMin obj) {
-    Config.current.nodes++;
-    Config.current.fails++;
-    Config.current.solutions++;
     Config.current.obj = obj.unwrap();
     try {
       x.updateUpperBound(obj.unwrap() - 1, Cause.Null);
@@ -234,7 +254,7 @@ public class Problems
     }
   }
 
-  private static void modelChoco(VarStore domains, ConstraintStore constraints)
+  private static void modelGolombRuler(VarStore domains, ConstraintStore constraints)
   {
     int m = Config.current.n;
     IntVar[] ticks = new IntVar[m];
@@ -277,5 +297,60 @@ public class Problems
   private static IntVar rulerLengthVar(VarStore domains) {
     int m = Config.current.n;
     return (IntVar)domains.model().getVars()[m - 1];
+  }
+
+  public proc inlined_nqueens() =
+    single_space StackLR stack = new StackLR();
+    universe with stack in
+      single_space LMax nodes = new LMax(0);
+      single_space LMax fails = new LMax(0);
+      single_space LMax solutions = new LMax(0);
+      single_space long start = currentTime();
+      world_line VarStore domains = new VarStore();
+      world_line ConstraintStore constraints = new ConstraintStore();
+      single_time ES consistent = unknown;
+      modelNQueens(write domains, write constraints);
+      single_space VariableSelector<IntVar> var = firstFail(write domains);
+      single_space IntValueSelector val = min();
+      par
+        flow
+          readwrite nodes.inc();
+          consistent <- constraints.propagate(readwrite domains)
+        end
+      <>
+        flow
+          when unknown |= consistent then
+            single_time IntVar y = readwrite var.getVariable(domains.vars());
+            single_time Integer v = readwrite val.selectValue(y);
+            space readwrite domains.join_eq(y, v) end;
+            space readwrite domains.join_neq(y, v) end
+          else
+            when consistent |= false then
+              readwrite fails.inc();
+            else
+              readwrite solutions.inc();
+            end;
+            updateStats(start, nodes, fails, solutions);
+          end
+        end
+      end
+    end
+  end
+
+  private static void modelNQueens(VarStore domains,
+    ConstraintStore constraints)
+  {
+    int n = Config.current.n;
+    IntVar[] vars = new IntVar[n];
+    IntVar[] diag1 = new IntVar[n];
+    IntVar[] diag2 = new IntVar[n];
+    for(int i = 0; i < n; i++) {
+      vars[i] = (IntVar) domains.alloc(new VarStore.IntDomain(1, n, false));
+      diag1[i] = domains.model().intOffsetView(vars[i], i);
+      diag2[i] = domains.model().intOffsetView(vars[i], -i);
+    }
+    constraints.join_in_place(new AllDifferent(vars, "BC"));
+    constraints.join_in_place(new AllDifferent(diag1, "BC"));
+    constraints.join_in_place(new AllDifferent(diag2, "BC"));
   }
 }

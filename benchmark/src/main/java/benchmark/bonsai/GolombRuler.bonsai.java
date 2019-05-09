@@ -44,7 +44,7 @@ public class GolombRuler
     <> run solver.inputOrderLB()
     <> run solver.propagation()
     <> flow when consistent |= true then
-             when true |= consistent then updateBound(domains) end end
+             when true |= consistent then updateBound(domains); end end
        end
     <> run bab.solve();
     end
