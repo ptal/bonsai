@@ -5,5 +5,5 @@
 * [Learn Spacetime](learn-spacetime.md)
 * [Universe](universe.md)
 * [Application: Musical Composition](application-composition.md)
-* [Benchmarks](benchmarks.md)
+* [Complementary materials](PPDP19.md)
 * [Contributing](contributing.md)

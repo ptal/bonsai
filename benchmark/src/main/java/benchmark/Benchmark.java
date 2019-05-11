@@ -43,8 +43,8 @@ public class Benchmark
     // WARM-UP
     // runChocoNQueens(14);
     // Benches
-    // benchNQueens();
-    // benchLatinSquare();
+    benchNQueens();
+    benchLatinSquare();
     benchGolombRuler();
   }
 
@@ -61,9 +61,9 @@ public class Benchmark
   }
 
   private void benchGolombRuler() {
-    // for (Integer n : paramsGolombRuler) {
-    //   runBonsaiInlinedGolombRulerIOLB(n);
-    // }
+    for (Integer n : paramsGolombRuler) {
+      runBonsaiInlinedGolombRulerIOLB(n);
+    }
     for (Integer n : paramsGolombRuler) {
       runBonsaiGolombRulerIOLB(n);
     }
@@ -73,9 +73,9 @@ public class Benchmark
     // for (Integer n : paramsGolombRuler) {
     //   runBonsaiGolombRulerMDLB(n);
     // }
-    // for (Integer n : paramsGolombRuler) {
-    //   runChocoGolombRulerIOLB(n);
-    // }
+    for (Integer n : paramsGolombRuler) {
+      runChocoGolombRulerIOLB(n);
+    }
     // for (Integer n : paramsGolombRuler) {
     //   runChocoGolombRulerFFM(n);
     // }

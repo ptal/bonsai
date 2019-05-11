@@ -6,6 +6,8 @@
 [travis]: https://travis-ci.org/ptal/bonsai
 -->
 
+[Companion guide to the paper submitted to PPDP19](http://hyc.io/spacetime/PPDP19.html)
+
 Spacetime programming is a programming language on top of Java to describe search strategies exploring combinatorial state-space such as in constraint satisfaction problems.
 Please consult the [spacetime manual](http://hyc.io/spacetime) for more information.
 
