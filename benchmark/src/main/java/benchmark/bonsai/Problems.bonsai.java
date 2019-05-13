@@ -171,6 +171,7 @@ public class Problems
     }
   }
 
+  // To test the overhead of abstraction inside modules, we inlined all the processes in a single process.
   public proc inlined_golomb_iolb() =
     single_space StackLR stack = new StackLR();
     universe with stack in
@@ -299,6 +300,7 @@ public class Problems
     return (IntVar)domains.model().getVars()[m - 1];
   }
 
+  // To test the overhead of abstraction inside modules, we inlined all the processes in a single process.
   public proc inlined_nqueens() =
     single_space StackLR stack = new StackLR();
     universe with stack in
