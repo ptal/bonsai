@@ -2,7 +2,16 @@
 
 This supplementary material gives instructions to compile and run the examples and benchmarks presented in the paper submitted to PPDP19.
 
-If you want to replicate any benchmark and running examples, please go through the [Getting Started](getting-started.html) section first.
+If you want to replicate any benchmark and running examples, first install the compiler and runtime as follows:
+
+```
+git clone https://github.com/ptal/bonsai.git
+cd bonsai
+git checkout PPDP19
+python3 setup.py
+```
+
+For more explanations, please go to the [Getting Started](getting-started.html) section (but do not forget to switch to the `PPDP19` branch).
 
 ## Demo of the examples in the paper
 
