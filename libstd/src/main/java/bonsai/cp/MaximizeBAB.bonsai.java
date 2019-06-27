@@ -58,7 +58,9 @@ public class MaximizeBAB
 
   public static ES updateBound(VarStore _domains, IntVar x, LMax obj) {
     try {
-      x.updateLowerBound(obj.unwrap() + 1, Cause.Null);
+      if (!obj.isBottom()) {
+        x.updateLowerBound(obj.unwrap() + 1, Cause.Null);
+      }
       return new ES(Kleene.UNKNOWN);
     }
     catch (ContradictionException c) {

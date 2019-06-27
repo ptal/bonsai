@@ -29,29 +29,15 @@ import org.chocosolver.solver.*;
 
 public class Solver
 {
-  single_time ES consistent = unknown;
-  public world_line VarStore domains = new VarStore();
-  public world_line ConstraintStore constraints = new ConstraintStore();
-  single_space ArrayList<IntVar> queens = new ArrayList();
+  public ref single_time ES consistent;
+  public ref world_line VarStore domains;
+  public ref world_line ConstraintStore constraints;
 
-  public proc nqueens =
-    modelNQueens(8, write queens, write domains, write constraints);
-    run search_one_sol()
-  end
-
-  public proc search_one_sol =
-    par
-    <> run search()
-    <> loop
-        when consistent |= true then
-          when true |= consistent then
-            printSolution(queens);
-            stop;
-          else pause end
-        else pause end
-       end
-    end
-  end
+  public Solver(VarStore domains, ConstraintStore constraints, ES consistent) {
+    this.domains = domains;
+    this.constraints = constraints;
+    this.consistent = consistent;
+  }
 
   public proc search = par run propagation() <> run branch() end
 
@@ -61,7 +47,7 @@ public class Solver
   end
 
   proc branch =
-    single_space VariableSelector<IntVar> var = firstFail(domains);
+    single_space VariableSelector<IntVar> var = firstFail(write domains);
     single_space IntValueSelector val = middle();
     flow
       when unknown |= consistent then
@@ -69,6 +55,22 @@ public class Solver
         single_time Integer v = middleValue(val, x);
         space constraints <- x.le(v) end;
         space constraints <- x.gt(v) end
+      end
+    end
+  end
+
+  // This strategy is to illustrate Golomb Ruler with BAB.
+  public proc searchInputOrderLB = par run propagation() <> run branchInputOrderLB() end
+
+  proc branchInputOrderLB =
+    single_space VariableSelector<IntVar> var = inputOrder(write domains);
+    single_space IntValueSelector val = min();
+    flow
+      when unknown |= consistent then
+        single_time IntVar x = readwrite var.getVariable(domains.vars());
+        single_time Integer v = readwrite val.selectValue(x);
+        space readwrite domains.join_eq(x, v) end;
+        space readwrite domains.join_neq(x, v) end
       end
     end
   end
@@ -81,6 +83,14 @@ public class Solver
     return new IntDomainMiddle(true);
   }
 
+  private VariableSelector<IntVar> inputOrder(VarStore domains) {
+    return new InputOrder(domains.model());
+  }
+
+  private IntValueSelector min() {
+    return new IntDomainMin();
+  }
+
   // Interface to the Choco solver.
   private IntVar failFirstVar(VariableSelector<IntVar> var, VarStore domains) {
     return var.getVariable(domains.vars());
@@ -89,30 +99,4 @@ public class Solver
   private Integer middleValue(IntValueSelector val, IntVar x) {
     return val.selectValue(x);
   }
-
-  private void modelNQueens(int n, ArrayList<IntVar> queens, VarStore domains,
-    ConstraintStore constraints)
-  {
-    IntVar[] vars = new IntVar[n];
-    IntVar[] diag1 = new IntVar[n];
-    IntVar[] diag2 = new IntVar[n];
-    for(int i = 0; i < n; i++) {
-      vars[i] = (IntVar) domains.alloc(new VarStore.IntDomain(1, n, false));
-      diag1[i] = domains.model().intOffsetView(vars[i], i);
-      diag2[i] = domains.model().intOffsetView(vars[i], -i);
-    }
-    constraints.join_in_place(new AllDifferent(vars, "BC"));
-    constraints.join_in_place(new AllDifferent(diag1, "BC"));
-    constraints.join_in_place(new AllDifferent(diag2, "BC"));
-    for(IntVar v : vars) { queens.add(v); }
-  }
-
-  private void printSolution(ArrayList<IntVar> queens) {
-    System.out.print("solution: [");
-    for (IntVar v : queens) {
-      System.out.print(v.getValue() + ",");
-    }
-    System.out.println("]");
-  }
-
 }

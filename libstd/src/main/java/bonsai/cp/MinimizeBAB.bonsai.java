@@ -58,7 +58,9 @@ public class MinimizeBAB
 
   public static ES updateBound(VarStore _domains, IntVar x, LMin obj) {
     try {
-      x.updateUpperBound(obj.unwrap() - 1, Cause.Null);
+      if (!obj.isBottom()) {
+        x.updateUpperBound(obj.unwrap() - 1, Cause.Null);
+      }
       return new ES(Kleene.UNKNOWN);
     }
     catch (ContradictionException c) {

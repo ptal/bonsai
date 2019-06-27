@@ -18,8 +18,11 @@ import bonsai.runtime.core.*;
 
 public class LMax extends TotalOrder<Integer>
 {
+  static Integer BOT = Integer.MIN_VALUE;
+  static Integer TOP = Integer.MAX_VALUE;
+
   public LMax() {
-    super(new Integer(0));
+    super(BOT);
   }
 
   public LMax(Integer v) {
@@ -31,11 +34,19 @@ public class LMax extends TotalOrder<Integer>
   }
 
   public LMax bottom() {
-    return new LMax(Integer.MIN_VALUE);
+    return new LMax(BOT);
   }
 
   public LMax top() {
-    return new LMax(Integer.MAX_VALUE);
+    return new LMax(TOP);
+  }
+
+  public boolean isBottom() {
+    return value == BOT;
+  }
+
+  public boolean isTop() {
+    return value == TOP;
   }
 
   // Access: READWRITE(this)

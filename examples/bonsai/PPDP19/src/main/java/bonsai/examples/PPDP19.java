@@ -30,18 +30,19 @@ public class PPDP19
   public static void main(String[] args) {
     PPDP19 demo = new PPDP19();
     demo.beginMessage();
-    demo.section3BoundedDepth();
-    demo.section5CSP();
-    demo.section5LDS();
-    demo.section5LDS_IDS();
+    demo.section4BoundedDepth();
+    demo.section6CSP();
+    demo.section6BAB();
+    demo.section6LDS();
+    demo.section6LDS_IDS();
     demo.endMessage();
   }
 
   // The code is slightly different than in the paper (which is simplified for clarity).
   // We must initialize the field "limit" of the class "BoundedTree" outside of the constructor.
   // The interface with "SpaceMachine" takes the module creating the program, and the process constructor separately.
-  void section3BoundedDepth() {
-    System.out.println("\n  Section 3. Demo of iterative deepening search (IDS).");
+  void section4BoundedDepth() {
+    System.out.println("\n  Section 4. Demo of iterative deepening search (IDS).");
     System.out.println("  =========\n");
 
     for(int limit = 0; limit < 3; limit++) {
@@ -54,20 +55,30 @@ public class PPDP19
     }
   }
 
-  // We illustrate the section 5.1 with the NQueen CSP.
-  void section5CSP() {
-    System.out.println("\n  Section 5.1. Demo of CSP state space exploration (3 first solutions of the 8-Queens problem).");
+  // We illustrate the section 6.1 with the NQueen CSP.
+  void section6CSP() {
+    System.out.println("\n  Section 6.1. Demo of CSP state space exploration (3 first solutions of the 8-Queens problem).");
     System.out.println("  ===========\n");
-    Solver solver = new Solver();
+    SolveNQueens solver = new SolveNQueens();
     StackLR queue = new StackLR();
-    SpaceMachine<Solver> machine = new SpaceMachine<>(solver, (p) -> p.nqueens(), queue);
+    SpaceMachine<SolveNQueens> machine = new SpaceMachine<>(solver, (p) -> p.nqueens(), queue);
     for(int i = 0; i < 3; i++) {
       machine.execute();
     }
   }
 
-  void section5LDS() {
-    System.out.println("\n  Section 5.2. Demo of limited-discrepancy search (LDS).");
+  // We illustrate the branch and bound algorithm of section 6.2 with the Golomb ruler CSP.
+  void section6BAB() {
+    System.out.println("\n  Section 6.2. Demo of Branch and Bound algorithm (intermediate and best solution of the Golomb Ruler problem of size 10).");
+    System.out.println("  ===========\n");
+    SolveBAB solver = new SolveBAB();
+    StackLR queue = new StackLR();
+    SpaceMachine<SolveBAB> machine = new SpaceMachine<>(solver, (p) -> p.solve(), queue);
+    machine.execute();
+  }
+
+  void section6LDS() {
+    System.out.println("\n  Section 6.3. Demo of limited-discrepancy search (LDS).");
     System.out.println("  ===========\n");
 
     for(int limit = 0; limit < 3; limit++) {
@@ -80,8 +91,8 @@ public class PPDP19
     }
   }
 
-  void section5LDS_IDS() {
-    System.out.println("\n  Section 5.3. Demo of LDS+IDS.");
+  void section6LDS_IDS() {
+    System.out.println("\n  Section 6.3. Demo of LDS+IDS.");
     System.out.println("  ===========\n");
 
     for(int limit = 0; limit < 3; limit++) {
