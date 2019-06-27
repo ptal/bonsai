@@ -31,6 +31,7 @@ In particular, we have the following:
 * [Depth-bounded discrepancy search (DDS)](https://github.com/ptal/bonsai/blob/PPDP19/libstd/src/main/java/bonsai/strategies/DDS.bonsai.java)
 * [Improved Limited Discrepancy Search (ILDS)](https://github.com/ptal/bonsai/blob/PPDP19/libstd/src/main/java/bonsai/strategies/ILDS.bonsai.java)
 * Highest and lowest discrepancy first variations of LDS can be obtained by changing the queueing strategy from `StackLR` to `StackRL`.
+* [Branch and bound search (BAB)](https://github.com/ptal/bonsai/blob/PPDP19/libstd/src/main/java/bonsai/cp/MaximizeBAB.bonsai.java)
 
 ## How to run the benchmark
 
