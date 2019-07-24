@@ -6,6 +6,15 @@
 
 This supplementary material gives instructions to compile and run the examples and benchmarks presented in the paper.
 
+### Prerequisites
+
+* [rustup](http://www.rustup.rs): `curl https://sh.rustup.rs -sSf | sh` (do not forget to source your profile or restart your terminal).
+* [Maven](https://maven.apache.org), it is usually available in the package manager of your distribution:
+  1. MacOSX: `sudo brew install maven`
+  2. Linux Ubuntu: `sudo apt-get install maven`
+
+### Installing Bonsai (tag PPDP19)
+
 If you want to replicate any benchmark and running examples, first install the compiler and runtime as follows:
 
 ```
@@ -15,7 +24,7 @@ git checkout PPDP19
 python3 setup.py
 ```
 
-In case of problems, please go to the [Getting Started](getting-started.html) section (but do not forget to switch to the `PPDP19` branch).
+If you have any issue, please consult [Getting Started](getting-started.html) for further instructions.
 
 ## Demo of the examples in the paper
 
