@@ -1,6 +1,10 @@
-# Companion guide to the paper submitted to PPDP19
+# Companion guide (PPDP19)
 
-This supplementary material gives instructions to compile and run the examples and benchmarks presented in the paper submitted to PPDP19.
+* Reference: P. Talbot, “Spacetime Programming: A Synchronous Language for Composable Search Strategies,” in Proceedings of the 21st ACM International Symposium on Principles and Practice of Declarative Programming (PPDP 2019), Porto, Portugal, 2019.
+* The paper is available [here](http://hyc.io/papers/ppdp2019.pdf).
+* Tagged version of the language used in the paper on [Github](https://github.com/ptal/bonsai/tree/PPDP19).
+
+This supplementary material gives instructions to compile and run the examples and benchmarks presented in the paper.
 
 If you want to replicate any benchmark and running examples, first install the compiler and runtime as follows:
 
@@ -11,7 +15,7 @@ git checkout PPDP19
 python3 setup.py
 ```
 
-For more explanations, please go to the [Getting Started](getting-started.html) section (but do not forget to switch to the `PPDP19` branch).
+In case of problems, please go to the [Getting Started](getting-started.html) section (but do not forget to switch to the `PPDP19` branch).
 
 ## Demo of the examples in the paper
 
@@ -54,4 +58,4 @@ cd runtime
 mvn test
 ```
 
-There are about 200 tests, ranging from the static analysis of the compiler ([compile-fail](https://github.com/ptal/bonsai/tree/master/data/test/compile-fail) and [compile-pass](https://github.com/ptal/bonsai/tree/master/data/test/compile-pass)) as well as the runtime behavior ([run-pass](https://github.com/ptal/bonsai/tree/master/data/test/run-pass)) to the correctness of the lattice library.
+There are about 200 tests, ranging from the static analysis of the compiler ([compile-fail](https://github.com/ptal/bonsai/tree/master/data/test/compile-fail) and [compile-pass](https://github.com/ptal/bonsai/tree/master/data/test/compile-pass)), to the runtime behavior ([run-pass](https://github.com/ptal/bonsai/tree/master/data/test/run-pass)), and the correctness of the lattice library.

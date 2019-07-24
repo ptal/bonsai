@@ -29,9 +29,9 @@ public class Benchmark
   private boolean human = true;
   private int timeLimitSeconds = 1080;
 
-  private List<Integer> paramsNQueens = Arrays.asList(7,8,9,10,11);//,11,12,13,14);
-  private List<Integer> paramsGolombRuler = Arrays.asList(7,8,9,10,11);//,10,11,12,13,14);
-  private List<Integer> paramsLatinSquare = Arrays.asList(30,35,40,45,50,55);
+  private List<Integer> paramsNQueens = Arrays.asList(13,14,15);
+  private List<Integer> paramsGolombRuler = Arrays.asList(10,11,12);
+  private List<Integer> paramsLatinSquare = Arrays.asList(60,75,90);
 
   public static void main(String[] args) {
     new Benchmark().start();

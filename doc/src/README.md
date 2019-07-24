@@ -29,6 +29,7 @@ Note that this tutorial is a work-in-progress.
 | `st T x = e`    | Declares the variable `x` of type `T` with the spacetime `st`. |
 | `when e then p else q end` | Executes `p` if `e` is equal to `true`, otherwise `q`. |
 | `x <- e`        | Joins the information of `e` into `x`. |
+| `o.m(x1,..,xn)` | Executes the Java method `m` on the object `o`. Variables must be annotated by `read`, `write` or `readwrite` (`read` by default). |
 | `pause`         | Delays the execution to the next instant. |
 | `pause up`      | Delays and gives the control back to the upper universe. |
 | `stop`          | Delays and gives the control back to the host language. |
@@ -36,6 +37,8 @@ Note that this tutorial is a work-in-progress.
 | `par p <> q end`| Same as \|\| but terminates in the next instant if one process terminates before the other (weak preemption). |
 | `p ; q`         | Executes `p`, when it terminates, executes `q`. |
 | `loop p end`    | Executes indefinitely `p`. When `p` terminates it is executed from its beginning again. |
+| `space p end`   | Creates a new branch. All world_line variables are copied and are modified by `p` when the node is popped. |
+| `prune`         | Indicates that a branch should be pruned. |
 | `abort when e in p end`| Executes `p` unless `e` is `true`, in which case the statement terminates in the current instant. |
 | `suspend when e in p end`| Executes `p` in every instant in which `e` is `false`. |
 | `universe with x in p end`| Executes `p` in a universe with the queue `x`. |

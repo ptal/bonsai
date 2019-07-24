@@ -106,7 +106,7 @@ public class PPDP19
   }
 
   void beginMessage() {
-    System.out.println("\n >>>> Welcome to the demo of the code presented in the paper submitted to PPDP19. <<<<\n");
+    System.out.println("\n >>>> Welcome to the demo of the code presented in the paper accepted to PPDP19. <<<<\n");
     System.out.println("Note: The tree are drawn as follows: a '*' represents one node, and the spaces before '*' represent the depth of this node.");
     System.out.println("For additional strategies including DDS and ILDS, please see libstd/ in the package `bonsai.strategies.*`.\n");
   }
